@@ -53,7 +53,9 @@ public final class MainActivity extends Activity {
     private LinearLayout fullscreenHud;
     private Button fsOriginalButton, fsCodecButton, fsGpuButton;
     private Button fsPrevFrameButton, fsNextFrameButton;
-    private Display.HdrSdrRatioListener hdrSdrRatioListener;
+    private java.util.function.Consumer<Display> hdrSdrRatioListener;
+
+    private boolean inspectionPending, hdr, fullscreen, started, resumePlaying;
     private final Runnable hideFullscreenHud = () -> {
         if (fullscreenHud != null && fullscreen) {
             fullscreenHud.animate().alpha(0f).setDuration(250)
@@ -73,7 +75,7 @@ public final class MainActivity extends Activity {
     private final Map<String, Variant> variants = new HashMap<>();
     private String mode = "original";
     private long lastPosition, droppedFrames;
-    private boolean inspectionPending, hdr, fullscreen, started, resumePlaying;
+
     private float fixedBrightness = -1f;
     private File pendingExport, savingVideo;
     private ProgressHolder progressHolder;
