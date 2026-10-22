@@ -12,10 +12,95 @@ import android.view.Display;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 
 /** Reports declarations from Android APIs; these are not panel measurements. */
 final class Diagnostics {
+
+    static final class DeviceSummary {
+        final String modelAndVersion;
+        final String hdrSupport;
+        final boolean hasHdr;
+        final String wideGamut;
+        final boolean isWideGamut;
+        final String peakBrightness;
+        final float peakBrightnessNits;
+
+        DeviceSummary(String modelAndVersion, String hdrSupport, boolean hasHdr,
+                      String wideGamut, boolean isWideGamut,
+                      String peakBrightness, float peakBrightnessNits) {
+            this.modelAndVersion = modelAndVersion;
+            this.hdrSupport = hdrSupport;
+            this.hasHdr = hasHdr;
+            this.wideGamut = wideGamut;
+            this.isWideGamut = isWideGamut;
+            this.peakBrightness = peakBrightness;
+            this.peakBrightnessNits = peakBrightnessNits;
+        }
+    }
+
+    static DeviceSummary summarize(Context context, JSONObject deviceSnapshot) {
+        String modelAndVersion = Build.MANUFACTURER + " " + Build.MODEL + "  ·  Android " + Build.VERSION.RELEASE;
+        Display display = null;
+        try { display = context.getDisplay(); }
+        catch (Throwable ignored) { /* Fall back for contexts without a display */ }
+        if (display == null) {
+            try {
+                display = context.getSystemService(DisplayManager.class).getDisplay(Display.DEFAULT_DISPLAY);
+            } catch (Throwable ignored) {}
+        }
+
+        boolean hasHdr = false;
+        String hdrSupport = "Não (Apenas SDR)";
+        boolean isWideGamut = false;
+        String wideGamut = "Normal (sRGB)";
+        float maxLum = -1f;
+        String peakBrightness = "N/D (Não declarado pelo sistema)";
+
+        if (display != null) {
+            isWideGamut = display.isWideColorGamut();
+            wideGamut = isWideGamut ? "Sim (DCI-P3 / BT.2020)" : "Normal (sRGB)";
+
+            Display.HdrCapabilities caps = display.getHdrCapabilities();
+            if (caps != null && caps.getSupportedHdrTypes() != null && caps.getSupportedHdrTypes().length > 0) {
+                hasHdr = true;
+                List<String> types = new ArrayList<>();
+                for (int t : caps.getSupportedHdrTypes()) types.add(hdrName(t));
+                hdrSupport = "Sim (" + String.join(", ", types) + ")";
+                maxLum = caps.getDesiredMaxLuminance();
+                if (maxLum > 0 && Float.isFinite(maxLum)) {
+                    int nits = Math.round(maxLum);
+                    String tag = nits >= 1000 ? " (Brilho Muito Alto)" : nits >= 700 ? " (Brilho Alto)" : " (Brilho Médio)";
+                    peakBrightness = "~" + nits + " nits" + tag;
+                }
+            }
+        } else if (deviceSnapshot != null && deviceSnapshot.has("display")) {
+            JSONObject screen = deviceSnapshot.optJSONObject("display");
+            if (screen != null) {
+                JSONArray advertised = screen.optJSONArray("advertisedHdrTypes");
+                if (advertised != null && advertised.length() > 0) {
+                    hasHdr = true;
+                    List<String> types = new ArrayList<>();
+                    for (int i = 0; i < advertised.length(); i++) types.add(advertised.optString(i));
+                    hdrSupport = "Sim (" + String.join(", ", types) + ")";
+                }
+                isWideGamut = screen.optBoolean("wideColorGamut", false);
+                wideGamut = isWideGamut ? "Sim (DCI-P3 / BT.2020)" : "Normal (sRGB)";
+                double lum = screen.optDouble("desiredMaxLuminanceNits", -1);
+                if (lum > 0 && Double.isFinite(lum)) {
+                    int nits = (int) Math.round(lum);
+                    String tag = nits >= 1000 ? " (Brilho Muito Alto)" : nits >= 700 ? " (Brilho Alto)" : " (Brilho Médio)";
+                    peakBrightness = "~" + nits + " nits" + tag;
+                    maxLum = (float) lum;
+                }
+            }
+        }
+
+        return new DeviceSummary(modelAndVersion, hdrSupport, hasHdr, wideGamut, isWideGamut, peakBrightness, maxLum);
+    }
+
     static JSONObject device(Context context) throws Exception {
         JSONObject root = new JSONObject();
         root.put("manufacturer", Build.MANUFACTURER);

@@ -1,14 +1,14 @@
 package dev.hdrlab;
 
-import android.net.Uri;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import androidx.media3.common.C;
 import androidx.media3.common.ColorInfo;
-import androidx.media3.common.Format;
+import androidx.media3.ui.PlayerView;
 import org.json.JSONObject;
 import org.junit.After;
 import org.junit.Before;
@@ -19,14 +19,12 @@ import org.robolectric.RobolectricTestRunner;
 import org.robolectric.android.controller.ActivityController;
 import org.robolectric.annotation.Config;
 import org.robolectric.annotation.GraphicsMode;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.lang.reflect.*;
-import java.util.Map;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import static org.junit.Assert.*;
 
 @RunWith(RobolectricTestRunner.class)
-@Config(sdk = 35, qualifiers = "sw720dp-w1280dp-h800dp-mdpi")
+@Config(sdk = 35)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 public class LayoutTest {
     private ActivityController<MainActivity> controller;
@@ -41,270 +39,215 @@ public class LayoutTest {
 
     @SuppressWarnings("unchecked")
     private <T> T field(String name) throws Exception {
-        Field f = MainActivity.class.getDeclaredField(name); f.setAccessible(true);
+        Field f = MainActivity.class.getDeclaredField(name);
+        f.setAccessible(true);
         return (T) f.get(activity);
     }
-    private void set(String name, Object value) throws Exception {
-        Field f = MainActivity.class.getDeclaredField(name); f.setAccessible(true); f.set(activity, value);
-    }
+
     private void call(String name) throws Exception {
-        Method m = MainActivity.class.getDeclaredMethod(name); m.setAccessible(true); m.invoke(activity);
-    }
-    private void viewport(int width, int height) throws Exception {
-        LinearLayout root = field("root");
-        root.measure(View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
-            View.MeasureSpec.makeMeasureSpec(height, View.MeasureSpec.EXACTLY));
-        root.layout(0, 0, width, height);
-        call("applyResponsiveLayout");
-        root.forceLayout();
-        root.measure(View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
-            View.MeasureSpec.makeMeasureSpec(height, View.MeasureSpec.EXACTLY));
-        root.layout(0, 0, width, height);
+        Method m = MainActivity.class.getDeclaredMethod(name);
+        m.setAccessible(true);
+        m.invoke(activity);
     }
 
-    private void capture(String name) throws Exception {
-        String destination = System.getProperty("hdrlab.screenshots");
-        if (destination == null) return;
-        View root = field("root");
-        android.graphics.Bitmap bitmap = android.graphics.Bitmap.createBitmap(root.getWidth(), root.getHeight(), android.graphics.Bitmap.Config.ARGB_8888);
-        root.draw(new android.graphics.Canvas(bitmap));
-        File dir = new File(destination); dir.mkdirs();
-        try (FileOutputStream output = new FileOutputStream(new File(dir, name + ".png"))) {
-            bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, output);
-        } finally { bitmap.recycle(); }
+    @Test public void deviceCapabilitiesCardDisplaysModelHdrGamutBrightness() throws Exception {
+        LinearLayout capCard = field("deviceCapabilitiesCard");
+        assertNotNull("Capacidades do Teu Ecrã card must exist", capCard);
+
+        TextView capModelLabel = field("capModelLabel");
+        TextView capHdrLabel = field("capHdrLabel");
+        TextView capGamutLabel = field("capGamutLabel");
+        TextView capBrightnessLabel = field("capBrightnessLabel");
+        Button btnDetailedReport = field("btnDetailedReport");
+
+        assertNotNull(capModelLabel);
+        assertNotNull(capHdrLabel);
+        assertNotNull(capGamutLabel);
+        assertNotNull(capBrightnessLabel);
+        assertNotNull(btnDetailedReport);
+
+        assertTrue("Model label should contain Android version or model",
+            capModelLabel.getText().toString().contains(android.os.Build.MODEL)
+                || capModelLabel.getText().toString().contains("Android"));
+        assertTrue("HDR label should be non-empty", capHdrLabel.getText().length() > 0);
+        assertTrue("Gamut label should be non-empty", capGamutLabel.getText().length() > 0);
+        assertTrue("Brightness label should be non-empty", capBrightnessLabel.getText().length() > 0);
+        assertEquals("Ver Relatório Técnico Detalhado", btnDetailedReport.getText().toString());
     }
 
-    @Test public void tabletUsesQuarterSidebarAndRestoresPhoneLayoutWithoutReplacingVideo() throws Exception {
-        View video = field("videoFrame");
-        call("ensurePlayer");
-        Object playback = field("player");
-        viewport(1280, 800);
-        LinearLayout workspace = field("workspaceLayout");
-        assertEquals(LinearLayout.HORIZONTAL, workspace.getOrientation());
-        assertEquals(2, workspace.getChildCount());
-        assertEquals(320, workspace.getChildAt(0).getLayoutParams().width);
-        assertSame(field("testScroll"), ((View) field("testingSection")).getParent());
-        capture("tablet");
-        viewport(411, 891);
-        assertEquals(LinearLayout.VERTICAL, workspace.getOrientation());
-        assertEquals(1, workspace.getChildCount());
-        assertSame(field("page"), ((View) field("testingSection")).getParent());
-        assertEquals(411, ((View) field("controlScroll")).getWidth());
-        assertEquals(371, ((View) field("testingSection")).getWidth());
-        assertTrue(((View) field("testingSection")).getTop() >= ((View) field("sourceSection")).getBottom());
-        assertSame(video, field("videoFrame"));
-        assertSame(playback, field("player"));
-        capture("phone");
-        viewport(1280, 800);
-        assertEquals(2, workspace.getChildCount());
-        assertSame(video, field("videoFrame"));
-        assertSame(playback, field("player"));
-    }
+    @Test public void quickTestCardContainsInstructionsAndStartButton() throws Exception {
+        LinearLayout testCard = field("quickTestCard");
+        assertNotNull("Teste Rápido card must exist", testCard);
 
-    @Test public void everyComparisonHasAnExplicitAndExclusiveSelectedState() throws Exception {
-        set("source", Uri.parse("file:///test.mp4"));
-        Class<?> variantClass = Class.forName("dev.hdrlab.MainActivity$Variant");
-        Constructor<?> constructor = variantClass.getDeclaredConstructors()[0]; constructor.setAccessible(true);
-        Map<String, Object> variants = field("variants");
-        for (String key : new String[] {"codec", "gpu"})
-            variants.put(key, constructor.newInstance(Uri.parse("file:///" + key + ".mp4"), new File(key), 0L, new JSONObject()));
-        String[] keys = {"original", "codec", "gpu"};
-        String[] fields = {"originalButton", "codecButton", "gpuButton"};
-        for (int i = 0; i < keys.length; i++) {
-            set("mode", keys[i]); call("refreshButtons");
-            for (int j = 0; j < fields.length; j++) {
-                Button button = field(fields[j]);
-                assertEquals(i == j, button.isSelected());
-                assertEquals(i == j, button.getText().toString().contains("Selected"));
-                if (i == j) {
-                    assertTrue(button.getContentDescription().toString().contains("selected"));
-                    assertEquals("Selected", button.getStateDescription());
-                }
-            }
-        }
-        assertTrue(((TextView) field("modeLabel")).getText().toString().contains("GPU"));
-        viewport(1280, 800); capture("tablet-selection");
-    }
+        Button btnStartTest = field("btnStartTest");
+        assertNotNull(btnStartTest);
+        assertEquals("▶ Iniciar Teste SDR vs HDR em Ecrã Cheio", btnStartTest.getText().toString());
 
-    @Test public void uncreatedCopiesAreDisabledAndBusyStatePreservesSelection() throws Exception {
-        set("source", Uri.parse("file:///test.mp4")); call("refreshButtons");
-        assertFalse(((Button) field("codecButton")).isEnabled());
-        assertTrue(((Button) field("codecButton")).getText().toString().contains("Create first"));
-        set("inspectionPending", true); call("refreshButtons");
-        Button original = field("originalButton");
-        assertFalse(original.isEnabled()); assertTrue(original.isSelected());
-        assertEquals(1f, original.getAlpha(), 0);
-    }
+        // Verify instructions text inside card contains key explanation items
+        boolean foundSdrExplanation = false;
+        boolean foundBlackExplanation = false;
+        boolean foundStepsExplanation = false;
 
-    @Test public void tappingSelectedModeDoesNotStartANewPlaybackPipeline() throws Exception {
-        set("source", Uri.parse("file:///test.mp4")); call("refreshButtons");
-        ((Button) field("originalButton")).performClick();
-        assertNull(field("player"));
-    }
-
-    @Test public void fullscreenReturnsVideoToCorrectParentAcrossBreakpoints() throws Exception {
-        viewport(1280, 800);
-        Method fullscreen = MainActivity.class.getDeclaredMethod("setFullscreen", boolean.class);
-        fullscreen.setAccessible(true);
-        View video = field("videoFrame");
-        fullscreen.invoke(activity, true);
-        assertSame(field("root"), video.getParent());
-        assertEquals(View.GONE, ((View) field("workspaceLayout")).getVisibility());
-        fullscreen.invoke(activity, false);
-        assertSame(field("testingSection"), video.getParent());
-        assertEquals(View.VISIBLE, ((View) field("workspaceLayout")).getVisibility());
-        viewport(411, 891);
-        assertSame(field("page"), ((View) field("testingSection")).getParent());
-    }
-
-    @Test public void fullscreenHudSyncsWithModeSelectionAndTogglesVariants() throws Exception {
-        set("source", Uri.parse("file:///test.mp4"));
-        Class<?> variantClass = Class.forName("dev.hdrlab.MainActivity$Variant");
-        Constructor<?> constructor = variantClass.getDeclaredConstructors()[0]; constructor.setAccessible(true);
-        Map<String, Object> variants = field("variants");
-        for (String key : new String[] {"codec", "gpu"})
-            variants.put(key, constructor.newInstance(Uri.parse("file:///" + key + ".mp4"), new File(key), 0L, new JSONObject()));
-        call("refreshButtons");
-
-        Method fullscreenMethod = MainActivity.class.getDeclaredMethod("setFullscreen", boolean.class);
-        fullscreenMethod.setAccessible(true);
-        fullscreenMethod.invoke(activity, true);
-
-        View hud = field("fullscreenHud");
-        assertNotNull(hud);
-        assertEquals(View.VISIBLE, hud.getVisibility());
-
-        Button fsOriginal = field("fsOriginalButton");
-        Button fsCodec = field("fsCodecButton");
-        Button fsGpu = field("fsGpuButton");
-        assertTrue(fsOriginal.isSelected());
-        assertEquals("✓ Original", fsOriginal.getText().toString());
-        assertFalse(fsCodec.isSelected());
-        assertEquals("Codec", fsCodec.getText().toString());
-        assertFalse(fsGpu.isSelected());
-        assertEquals("GPU", fsGpu.getText().toString());
-
-        fsCodec.performClick();
-        assertEquals("codec", field("mode"));
-        assertTrue(fsCodec.isSelected());
-        assertEquals("✓ Codec", fsCodec.getText().toString());
-        assertFalse(fsOriginal.isSelected());
-        assertEquals("Original", fsOriginal.getText().toString());
-
-        fullscreenMethod.invoke(activity, false);
-        assertEquals(View.GONE, hud.getVisibility());
-    }
-
-    @Test public void fullscreenHudLayoutMarginsAndContentDescriptions() throws Exception {
-        View hud = field("fullscreenHud");
-        assertNotNull(hud);
-        FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) hud.getLayoutParams();
-        assertNotNull(params);
-        Method dp = MainActivity.class.getDeclaredMethod("dp", float.class);
-        dp.setAccessible(true);
-        int expectedBottom = (int) dp.invoke(activity, 76f);
-        int expectedHorizontal = (int) dp.invoke(activity, 8f);
-        assertEquals(expectedBottom, params.bottomMargin);
-        assertEquals(expectedHorizontal, params.leftMargin);
-        assertEquals(expectedHorizontal, params.rightMargin);
-
-        int expectedPadH = (int) dp.invoke(activity, 6f);
-        int expectedPadV = (int) dp.invoke(activity, 3f);
-        assertEquals(expectedPadH, hud.getPaddingLeft());
-        assertEquals(expectedPadV, hud.getPaddingTop());
-        assertEquals(expectedPadH, hud.getPaddingRight());
-        assertEquals(expectedPadV, hud.getPaddingBottom());
-
-        Button fsOriginal = field("fsOriginalButton");
-        Button fsCodec = field("fsCodecButton");
-        Button fsGpu = field("fsGpuButton");
-        Button fsPrev = field("fsPrevFrameButton");
-        Button fsNext = field("fsNextFrameButton");
-
-        assertEquals("Original HDR view", fsOriginal.getContentDescription().toString());
-        assertEquals("SDR MediaCodec view", fsCodec.getContentDescription().toString());
-        assertEquals("SDR OpenGL view", fsGpu.getContentDescription().toString());
-        assertEquals("Step backward one frame", fsPrev.getContentDescription().toString());
-        assertEquals("Step forward one frame", fsNext.getContentDescription().toString());
-
-        int expectedBtnMinH = (int) dp.invoke(activity, 34f);
-        int expectedBtnMinW = (int) dp.invoke(activity, 32f);
-        int expectedBtnPadH = (int) dp.invoke(activity, 6f);
-        int expectedBtnPadV = (int) dp.invoke(activity, 2f);
-
-        for (Button b : new Button[] {fsPrev, fsOriginal, fsCodec, fsGpu, fsNext}) {
-            assertEquals(expectedBtnMinH, b.getMinHeight());
-            assertEquals(expectedBtnMinW, b.getMinimumWidth());
-            assertTrue(b.isSingleLine());
-            assertEquals(expectedBtnPadH, b.getPaddingLeft());
-            assertEquals(expectedBtnPadV, b.getPaddingTop());
-            assertEquals(expectedBtnPadH, b.getPaddingRight());
-            assertEquals(expectedBtnPadV, b.getPaddingBottom());
-        }
-    }
-
-    @Test public void modeButtonsInHudDisplayOriginalCodecGpuWithCheckmarkWhenSelected() throws Exception {
-        set("source", Uri.parse("file:///test.mp4"));
-        Class<?> variantClass = Class.forName("dev.hdrlab.MainActivity$Variant");
-        Constructor<?> constructor = variantClass.getDeclaredConstructors()[0]; constructor.setAccessible(true);
-        Map<String, Object> variants = field("variants");
-        for (String key : new String[] {"codec", "gpu"})
-            variants.put(key, constructor.newInstance(Uri.parse("file:///" + key + ".mp4"), new File(key), 0L, new JSONObject()));
-
-        Button fsOriginal = field("fsOriginalButton");
-        Button fsCodec = field("fsCodecButton");
-        Button fsGpu = field("fsGpuButton");
-
-        set("mode", "original");
-        call("refreshButtons");
-        assertEquals("✓ Original", fsOriginal.getText().toString());
-        assertEquals("Codec", fsCodec.getText().toString());
-        assertEquals("GPU", fsGpu.getText().toString());
-
-        set("mode", "codec");
-        call("refreshButtons");
-        assertEquals("Original", fsOriginal.getText().toString());
-        assertEquals("✓ Codec", fsCodec.getText().toString());
-        assertEquals("GPU", fsGpu.getText().toString());
-
-        set("mode", "gpu");
-        call("refreshButtons");
-        assertEquals("Original", fsOriginal.getText().toString());
-        assertEquals("Codec", fsCodec.getText().toString());
-        assertEquals("✓ GPU", fsGpu.getText().toString());
-    }
-
-    @Test public void testBenchFullscreenButtonTextAndSingleLineControls() throws Exception {
-        LinearLayout testingSection = field("testingSection");
-        assertNotNull(testingSection);
-        Button fsBtn = null;
-        Button prevFrame = null;
-        Button nextFrame = null;
-        for (int i = 0; i < testingSection.getChildCount(); i++) {
-            View child = testingSection.getChildAt(i);
+        for (int i = 0; i < testCard.getChildCount(); i++) {
+            View child = testCard.getChildAt(i);
             if (child instanceof LinearLayout) {
-                LinearLayout layout = (LinearLayout) child;
-                for (int j = 0; j < layout.getChildCount(); j++) {
-                    View inner = layout.getChildAt(j);
-                    if (inner instanceof Button) {
-                        Button b = (Button) inner;
-                        String text = b.getText().toString();
-                        if (text.contains("Fullscreen")) fsBtn = b;
-                        else if (text.contains("◀  Step")) prevFrame = b;
-                        else if (text.contains("Step  ▶")) nextFrame = b;
+                LinearLayout box = (LinearLayout) child;
+                for (int j = 0; j < box.getChildCount(); j++) {
+                    View inner = box.getChildAt(j);
+                    if (inner instanceof TextView) {
+                        String text = ((TextView) inner).getText().toString();
+                        if (text.contains("10 segundos em SDR") || text.contains("transição automática para HDR")) {
+                            foundSdrExplanation = true;
+                        }
+                        if (text.contains("Fundo Preto Puro") || text.contains("OLED") || text.contains("LCD")) {
+                            foundBlackExplanation = true;
+                        }
+                        if (text.contains("Degraus Quase-Preto") || text.contains("1%, 2%")) {
+                            foundStepsExplanation = true;
+                        }
                     }
                 }
             }
         }
-        assertNotNull("Fullscreen button not found", fsBtn);
-        assertNotNull("Prev frame button not found", prevFrame);
-        assertNotNull("Next frame button not found", nextFrame);
 
-        assertEquals("↗  Fullscreen", fsBtn.getText().toString());
-        assertTrue(fsBtn.isSingleLine());
-        assertEquals(android.text.TextUtils.TruncateAt.END, fsBtn.getEllipsize());
-        assertTrue(prevFrame.isSingleLine());
-        assertTrue(nextFrame.isSingleLine());
+        assertTrue("Should contain 10-second SDR to HDR transition instruction", foundSdrExplanation);
+        assertTrue("Should contain OLED black surround vs LCD glow instruction", foundBlackExplanation);
+        assertTrue("Should contain 6 near-black grey steps instruction", foundStepsExplanation);
+    }
+
+    @Test public void startTestEntersFullscreenSetsMaxBrightnessAndPlaysSdr() throws Exception {
+        Button btnStartTest = field("btnStartTest");
+        btnStartTest.performClick();
+
+        boolean fullscreen = field("fullscreen");
+        assertTrue("Fullscreen mode must be active after clicking start test", fullscreen);
+
+        WindowManager.LayoutParams lp = activity.getWindow().getAttributes();
+        assertEquals(1.0f, lp.screenBrightness, 0.001f);
+
+        String currentMode = field("currentMode");
+        assertEquals("sdr", currentMode);
+
+        boolean isAutomated = field("isAutomatedTest");
+        assertTrue("Automated test should be in progress", isAutomated);
+
+        PlayerView playerView = field("playerView");
+        assertNotNull(playerView);
+        FrameLayout fullscreenContainer = field("fullscreenContainer");
+        assertEquals(View.VISIBLE, fullscreenContainer.getVisibility());
+    }
+
+    @Test public void countdownTransitionsFromSdrToHdrAtTenSeconds() throws Exception {
+        call("startAutomatedTest");
+
+        TextView hudTitleLabel = field("hudTitleLabel");
+        assertTrue(hudTitleLabel.getText().toString().contains("MODO SDR"));
+
+        Runnable ticker = field("testCountdownTicker");
+        assertNotNull(ticker);
+
+        // Advance 9 ticks
+        for (int i = 0; i < 9; i++) {
+            ticker.run();
+        }
+        String modeAfter9 = field("currentMode");
+        assertEquals("sdr", modeAfter9);
+
+        // Advance 10th tick (triggers transition to HDR)
+        ticker.run();
+        String modeAfter10 = field("currentMode");
+        assertEquals("hdr", modeAfter10);
+
+        boolean isAutomated = field("isAutomatedTest");
+        assertFalse("Automated phase ends after 10s transition", isAutomated);
+        assertTrue(hudTitleLabel.getText().toString().contains("MODO HDR (HDR10 / PQ) ATIVADO"));
+    }
+
+    @Test public void fullscreenHudHasRequiredButtonsWithProperClearanceAndConstraints() throws Exception {
+        call("startAutomatedTest");
+
+        LinearLayout bottomHud = field("fullscreenBottomHud");
+        assertNotNull(bottomHud);
+        FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) bottomHud.getLayoutParams();
+        assertNotNull(params);
+
+        Method dpMethod = MainActivity.class.getDeclaredMethod("dp", float.class);
+        dpMethod.setAccessible(true);
+        int expectedClearance = (int) dpMethod.invoke(activity, 76f);
+        assertTrue("HUD bottom margin must be >= 76dp for PlayerView clearance",
+            params.bottomMargin >= expectedClearance);
+
+        Button btnVerSdr = field("btnVerSdr");
+        Button btnVerHdr = field("btnVerHdr");
+        Button btnReiniciar = field("btnReiniciar");
+        Button btnSair = field("btnSair");
+
+        assertNotNull(btnVerSdr);
+        assertNotNull(btnVerHdr);
+        assertNotNull(btnReiniciar);
+        assertNotNull(btnSair);
+
+        int minH = (int) dpMethod.invoke(activity, 36f);
+        int minW = (int) dpMethod.invoke(activity, 44f);
+
+        for (Button b : new Button[] {btnVerSdr, btnVerHdr, btnReiniciar, btnSair}) {
+            assertTrue("Button must enforce singleLine", b.isSingleLine());
+            assertTrue("Button minHeight must be >= 36dp", b.getMinHeight() >= minH);
+            assertTrue("Button minimumWidth must be >= 44dp", b.getMinimumWidth() >= minW);
+        }
+    }
+
+    @Test public void switchingBetweenSdrAndHdrInHud() throws Exception {
+        call("startAutomatedTest");
+
+        Button btnVerSdr = field("btnVerSdr");
+        Button btnVerHdr = field("btnVerHdr");
+        Button btnReiniciar = field("btnReiniciar");
+
+        // Initially SDR
+        assertEquals("sdr", field("currentMode"));
+        assertTrue(btnVerSdr.isSelected());
+        assertFalse(btnVerHdr.isSelected());
+
+        // Switch to HDR
+        btnVerHdr.performClick();
+        assertEquals("hdr", field("currentMode"));
+        assertTrue(btnVerHdr.isSelected());
+        assertFalse(btnVerSdr.isSelected());
+
+        // Switch back to SDR
+        btnVerSdr.performClick();
+        assertEquals("sdr", field("currentMode"));
+        assertTrue(btnVerSdr.isSelected());
+        assertFalse(btnVerHdr.isSelected());
+
+        // Restart test
+        btnReiniciar.performClick();
+        assertEquals("sdr", field("currentMode"));
+        boolean isAutomated = field("isAutomatedTest");
+        assertTrue(isAutomated);
+    }
+
+    @Test public void exitingFullscreenRestoresOriginalBrightnessAndUi() throws Exception {
+        // Set an arbitrary initial brightness
+        WindowManager.LayoutParams lp = activity.getWindow().getAttributes();
+        lp.screenBrightness = 0.5f;
+        activity.getWindow().setAttributes(lp);
+
+        call("startAutomatedTest");
+        assertEquals(1.0f, activity.getWindow().getAttributes().screenBrightness, 0.001f);
+        assertTrue((Boolean) field("fullscreen"));
+
+        Button btnSair = field("btnSair");
+        btnSair.performClick();
+
+        assertFalse((Boolean) field("fullscreen"));
+        assertEquals(0.5f, activity.getWindow().getAttributes().screenBrightness, 0.001f);
+
+        FrameLayout fullscreenContainer = field("fullscreenContainer");
+        assertEquals(View.GONE, fullscreenContainer.getVisibility());
+        View workspace = field("workspaceLayout");
+        assertEquals(View.VISIBLE, workspace.getVisibility());
     }
 
     @Test public void formatColorInfoFormatsAllRequiredColorMetadata() {
@@ -362,17 +305,6 @@ public class LayoutTest {
             .setColorTransfer(C.COLOR_TRANSFER_SDR)
             .build();
         assertEquals("BT.709 · Full · SDR", MainActivity.formatColorInfo(bt709Sdr));
-    }
-
-    @Test public void updateFormatLabelDisplaysHumanizedColorInfoAndDroppedFrames() throws Exception {
-        call("updateFormatLabel");
-        TextView formatLabel = field("formatLabel");
-        String text = formatLabel.getText().toString();
-        assertTrue(text.contains("Reading decoder input…"));
-        assertTrue(text.contains("Decoder: "));
-        assertTrue(text.contains("Dropped frames: "));
-        assertFalse(text.contains("Dropped frames (session): "));
-        assertTrue(text.contains("Source/decoder metadata · panel HDR state is not verified"));
     }
 
     @Test public void hdrStaticInfoParsesCta861DescriptorCorrectly() throws Exception {
