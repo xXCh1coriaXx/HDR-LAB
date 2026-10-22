@@ -166,7 +166,7 @@ public final class MainActivity extends Activity {
         TextView eyebrow = label("DIAGNÓSTICO VISUAL DE ECRÃ", 10, ACCENT);
         eyebrow.setLetterSpacing(.14f);
         headerSection.addView(eyebrow);
-        headerSection.addView(label("HDR Lab", 32, TEXT));
+        headerSection.addView(label("HDR Lab Light", 32, TEXT));
         headerSection.addView(label("Verifica a calibração de pretos e capacidade HDR do teu ecrã.", 14, MUTED));
         cardsLayout.addView(headerSection);
 
@@ -542,7 +542,7 @@ public final class MainActivity extends Activity {
         try {
             File dir = new File(getFilesDir(), "reports");
             dir.mkdirs();
-            File file = new File(dir, "hdr-lab-report-" + System.currentTimeMillis() + ".json");
+            File file = new File(dir, "hdr-lab-light-report-" + System.currentTimeMillis() + ".json");
             try (OutputStream output = new FileOutputStream(file)) {
                 output.write(report.toString(2).getBytes(StandardCharsets.UTF_8));
             }
@@ -551,8 +551,8 @@ public final class MainActivity extends Activity {
                 .setType("application/json")
                 .putExtra(Intent.EXTRA_STREAM, uri)
                 .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-            share.setClipData(ClipData.newRawUri("HDR Lab report", uri));
-            startActivity(Intent.createChooser(share, "Partilhar Relatório HDR Lab"));
+            share.setClipData(ClipData.newRawUri("HDR Lab Light report", uri));
+            startActivity(Intent.createChooser(share, "Partilhar Relatório HDR Lab Light"));
         } catch (Exception e) {
             Toast.makeText(this, "Falha ao partilhar: " + e.getMessage(), Toast.LENGTH_SHORT).show();
         }

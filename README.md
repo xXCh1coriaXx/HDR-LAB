@@ -1,7 +1,7 @@
-# HDR Lab 📱
+# HDR Lab Light 📱
 
 > **Are your blacks actually black, or are your dark movie scenes glowing grey?**  
-> HDR Lab is a free, simple Android app designed to test if your phone or tablet is messing up black levels when playing HDR videos.
+> HDR Lab Light is a free, simple Android app designed to test if your phone or tablet is messing up black levels when playing HDR videos.
 
 ---
 
@@ -11,17 +11,17 @@ Have you ever watched a dark movie at night on your OLED phone, but instead of t
 
 That problem is called **"raised blacks"**. It happens when a phone's video processor, display driver, or tone-mapping curve boosts near-black code values too aggressively whenever HDR kicks in.
 
-**HDR Lab gives you a simple, automated 10-second test so you can check your screen in under 2 minutes.**
+**HDR Lab Light gives you a simple, automated 10-second test so you can check your screen in under 2 minutes.**
 
 ---
 
 ## 📱 The Simplified Two-Button Interface
 
-HDR Lab is designed with a focused, two-card interface so anyone can run an instant diagnostic:
+HDR Lab Light is designed with a focused, two-card interface so anyone can run an instant diagnostic:
 
 ```
 +-----------------------------------------------------------+
-|                        HDR Lab                            |
+|                     HDR Lab Light                         |
 |                                                           |
 |  [ Card 1: Capacidades do Teu Ecrã ]                      |
 |  * HDR Support: Yes (HDR10, HLG, Dolby Vision) or SDR     |
