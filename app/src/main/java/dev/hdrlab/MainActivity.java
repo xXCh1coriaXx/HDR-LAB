@@ -15,6 +15,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.provider.OpenableColumns;
+import android.text.TextUtils;
 import android.view.Display;
 import android.view.Gravity;
 import android.view.View;
@@ -233,9 +234,13 @@ public final class MainActivity extends Activity {
         });
         LinearLayout playControls = new LinearLayout(this);
         playControls.setOrientation(LinearLayout.HORIZONTAL);
-        Button fsBtn = button("↗  Fullscreen / dark-room view", () -> setFullscreen(true));
+        Button fsBtn = button("↗  Fullscreen", () -> setFullscreen(true));
+        fsBtn.setSingleLine(true);
+        fsBtn.setEllipsize(TextUtils.TruncateAt.END);
         Button prevFrame = button("◀  Step", () -> stepFrame(-1));
+        prevFrame.setSingleLine(true);
         Button nextFrame = button("Step  ▶", () -> stepFrame(1));
+        nextFrame.setSingleLine(true);
         LinearLayout.LayoutParams pFs = new LinearLayout.LayoutParams(0, -2, 3);
         pFs.setMarginEnd(dp(4));
         LinearLayout.LayoutParams pStep = new LinearLayout.LayoutParams(0, -2, 2);
@@ -471,11 +476,39 @@ public final class MainActivity extends Activity {
         updateFormatLabel();
     }
 
+    public static String formatColorInfo(ColorInfo colorInfo) {
+        if (colorInfo == null) return "Color metadata unspecified";
+        String space = null;
+        switch (colorInfo.colorSpace) {
+            case C.COLOR_SPACE_BT2020: space = "BT.2020"; break;
+            case C.COLOR_SPACE_BT709: space = "BT.709"; break;
+            case C.COLOR_SPACE_BT601: space = "BT.601"; break;
+        }
+        String range = null;
+        switch (colorInfo.colorRange) {
+            case C.COLOR_RANGE_LIMITED: range = "Limited"; break;
+            case C.COLOR_RANGE_FULL: range = "Full"; break;
+        }
+        String transfer = null;
+        switch (colorInfo.colorTransfer) {
+            case C.COLOR_TRANSFER_ST2084: transfer = "PQ / HDR10"; break;
+            case C.COLOR_TRANSFER_HLG: transfer = "HLG"; break;
+            case C.COLOR_TRANSFER_SDR: transfer = "SDR"; break;
+            case C.COLOR_TRANSFER_SRGB: transfer = "sRGB"; break;
+        }
+        List<String> parts = new ArrayList<>();
+        if (space != null) parts.add(space);
+        if (range != null) parts.add(range);
+        if (transfer != null) parts.add(transfer);
+        if (parts.isEmpty()) return "Color metadata unspecified";
+        return String.join(" · ", parts);
+    }
+
     private void updateFormatLabel() {
         Format format = player == null ? null : player.getVideoFormat();
         formatLabel.setText((format == null ? "Reading decoder input…" : format.width + " × " + format.height
-            + " · " + (format.colorInfo == null ? "Color metadata unspecified" : format.colorInfo.toString()))
-            + "\nDecoder: " + decoder + " · Dropped frames (session): " + droppedFrames
+            + " · " + formatColorInfo(format.colorInfo))
+            + "\nDecoder: " + decoder + " · Dropped frames: " + droppedFrames
             + "\nSource/decoder metadata · panel HDR state is not verified");
     }
 
@@ -709,8 +742,8 @@ public final class MainActivity extends Activity {
             fsCodecButton.setEnabled(variants.containsKey("codec") && !busy);
             fsGpuButton.setEnabled(variants.containsKey("gpu") && !busy);
             hudModeStyle(fsOriginalButton, "Original", "original", source != null);
-            hudModeStyle(fsCodecButton, "SDR Codec", "codec", variants.containsKey("codec"));
-            hudModeStyle(fsGpuButton, "SDR GPU", "gpu", variants.containsKey("gpu"));
+            hudModeStyle(fsCodecButton, "Codec", "codec", variants.containsKey("codec"));
+            hudModeStyle(fsGpuButton, "GPU", "gpu", variants.containsKey("gpu"));
         }
         exportButton.setEnabled(source != null && !busy);
         exportButton.setAlpha(exportButton.isEnabled() ? 1f : .45f);
@@ -744,19 +777,24 @@ public final class MainActivity extends Activity {
         fullscreenHud = new LinearLayout(this);
         fullscreenHud.setOrientation(LinearLayout.HORIZONTAL);
         fullscreenHud.setGravity(Gravity.CENTER);
-        fullscreenHud.setPadding(dp(10), dp(4), dp(10), dp(4));
         GradientDrawable pill = new GradientDrawable();
         pill.setColor(0xdd101411);
         pill.setCornerRadius(dp(20));
         pill.setStroke(dp(1), 0x55485546);
         fullscreenHud.setBackground(pill);
+        fullscreenHud.setPadding(dp(6), dp(3), dp(6), dp(3));
         fullscreenHud.setVisibility(View.GONE);
 
         fsPrevFrameButton = hudButton("◀", () -> { stepFrame(-1); showFullscreenHud(); });
+        fsPrevFrameButton.setContentDescription("Step backward one frame");
         fsOriginalButton = hudButton("Original", () -> { switchMode("original"); showFullscreenHud(); });
-        fsCodecButton = hudButton("SDR Codec", () -> { switchMode("codec"); showFullscreenHud(); });
-        fsGpuButton = hudButton("SDR GPU", () -> { switchMode("gpu"); showFullscreenHud(); });
+        fsOriginalButton.setContentDescription("Original HDR view");
+        fsCodecButton = hudButton("Codec", () -> { switchMode("codec"); showFullscreenHud(); });
+        fsCodecButton.setContentDescription("SDR MediaCodec view");
+        fsGpuButton = hudButton("GPU", () -> { switchMode("gpu"); showFullscreenHud(); });
+        fsGpuButton.setContentDescription("SDR OpenGL view");
         fsNextFrameButton = hudButton("▶", () -> { stepFrame(1); showFullscreenHud(); });
+        fsNextFrameButton.setContentDescription("Step forward one frame");
 
         fullscreenHud.addView(fsPrevFrameButton);
         fullscreenHud.addView(fsOriginalButton);
@@ -765,7 +803,9 @@ public final class MainActivity extends Activity {
         fullscreenHud.addView(fsNextFrameButton);
 
         FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(-2, -2, Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL);
-        params.bottomMargin = dp(24);
+        params.bottomMargin = dp(76);
+        params.leftMargin = dp(8);
+        params.rightMargin = dp(8);
         videoFrame.addView(fullscreenHud, params);
     }
 
@@ -777,10 +817,11 @@ public final class MainActivity extends Activity {
         b.setTextColor(TEXT);
         b.setBackgroundTintList(null);
         b.setGravity(Gravity.CENTER);
-        b.setMinHeight(dp(36));
-        b.setMinimumWidth(dp(36));
-        b.setPadding(dp(8), dp(4), dp(8), dp(4));
+        b.setSingleLine(true);
+        b.setMinHeight(dp(34));
+        b.setMinimumWidth(dp(32));
         b.setBackground(ripple(0x33252e25, 0x443b4739, 14));
+        b.setPadding(dp(6), dp(2), dp(6), dp(2));
         LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(-2, -2);
         p.setMarginStart(dp(2)); p.setMarginEnd(dp(2));
         b.setLayoutParams(p);

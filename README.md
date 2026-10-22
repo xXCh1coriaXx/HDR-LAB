@@ -22,7 +22,7 @@ You don't need any technical knowledge to test your device:
 1. **Get in the dark:** Turn off the lights in your room (or do this at night).
 2. **Turn off auto-brightness:** In your Android settings, disable automatic brightness and any "Eye Comfort" / "Night Light" filters.
 3. **Open the app:** Tap the button that says **`Built-in black & near-black tests`**.
-4. **Test Normal Black (SDR):** Tap **`SDR · reference black`**, then tap **`↗ Fullscreen / dark-room view`**.
+4. **Test Normal Black (SDR):** Tap **`SDR · reference black`**, then tap **`↗ Fullscreen`**.
    * *What you should see:* On an OLED screen, your phone should look like it is **completely powered off**.
 5. **Test HDR Black:** Tap your screen to exit fullscreen, tap **`Built-in black & near-black tests`** again, and select **`HDR10 / PQ · reference black`**. Go fullscreen.
    * **If the screen is pitch black:** Your phone's HDR black floor is working properly!
@@ -43,7 +43,7 @@ You don't need any technical knowledge to test your device:
 ## 📥 Download & Install
 
 1. Go to the [**Releases section**](https://github.com/xXCh1coriaXx/HDR-LAB/releases/latest).
-2. Download `HDR-Lab-v0.3.0.apk`.
+2. Download `HDR-Lab-v0.3.0.1.apk`.
 3. Tap the downloaded file to install it on your device (requires Android 12 or newer).
 
 ---
