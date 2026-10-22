@@ -82,3 +82,24 @@ Always maintain distinct documentation files:
 * **No Bloat:** Do not introduce heavy third-party libraries, databases, analytics, or background services.
 * **Offline & Private:** HDR Lab operates 100% offline with zero network permissions in `AndroidManifest.xml`.
 * **Preserve Existing Behavior:** Never remove existing functionality merely to simplify implementation. Responsive layouts, rotation handling, and private data retention mechanisms must be preserved.
+
+
+---
+
+## 5. AI Agent Operational Standards: Token Efficiency & Autonomous Quality
+
+All AI coding agents operating on this repository must enforce the following standards:
+
+### A. Token Reduction & Context Economy
+* **Targeted Operations:** Avoid reading entire massive files when targeted line ranges, grep searches, or symbol lookups suffice.
+* **Compact Command Output:** Filter or limit long command outputs (e.g. `git log -n 5`, selective test runs) to prevent polluting the context window with thousands of redundant tokens.
+* **High-Density Communication:** Eliminate conversational fluff, repetitive throat-clearing, and verbose summaries. Provide direct, structured, information-dense updates to the user.
+* **YAGNI Pass:** Do not introduce speculative abstractions, unused helper utilities, or boilerplate layers that consume tokens and maintenance overhead.
+
+### B. Agent Quality & Rigorous Self-Verification
+* **Proactive Continuous Learning:** Always update `AGENTS.md` immediately whenever a new technical lesson, hardware quirk, layout gotcha, or toolchain constraint is discovered. Never let hard-won lessons vanish across sessions.
+* **Verification Before Proclamation:** Never claim an implementation or bugfix works without verifying it:
+  1. Inspect the exact `git diff`.
+  2. Run unit tests (`.\gradlew.bat testDebugUnitTest`).
+  3. Validate release compilation (`.\gradlew.bat assembleRelease`) whenever build or manifest configurations change.
+* **Failure Mode & Edge Case Anticipation:** Proactively analyze lifecycle events (screen rotation, backgrounding, multi-window, detached views), display hardware limits (OLED vs LCD, custom vendor video enhancers), and gesture clearance before writing code.
