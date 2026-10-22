@@ -1,12 +1,13 @@
 # HDR Lab — Changelog
 
-## v0.4.0 (HDR Lab Light Edition)
+## v0.1.0 (HDR Lab Light Initial Release)
 
-- Streamlined two-card architecture ("Capacidades do Teu Ecrã" and "Teste Rápido: SDR vs HDR").
-- Automated 10-second SDR-to-HDR transition in fullscreen on calibrated 6-patch near-black step pattern.
-- Auto-boost fullscreen window brightness to 100% with guaranteed restoration to system brightness on exit.
+- Standalone lightweight package (`dev.hdrlab.light`): Coexists side-by-side with full HDR Lab (`dev.hdrlab`) without package conflicts or version downgrade errors (`INSTALL_FAILED_VERSION_DOWNGRADE`).
+- Streamlined two-card architecture ("Capacidades do Teu Ecrã" and "Teste Rápido: SDR vs HDR") tailored for fast 2-minute display evaluation.
+- Automated 10-second SDR-to-HDR transition in fullscreen on calibrated 6-patch near-black step pattern with countdown timer and matching-frame switch.
+- Auto-boost fullscreen window brightness to 100% (`screenBrightness = 1.0f`) with guaranteed restoration to system brightness on exit.
 - Tap-to-reveal floating HUD with 3-second auto-dimming and manual mode toggles.
-- Preserved zero-shader SurfaceView bypass direct to Hardware Composer (HWC).
+- Preserved zero-shader SurfaceView bypass directly to Android Hardware Composer (HWC).
 
 ---
 

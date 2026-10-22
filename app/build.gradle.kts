@@ -5,11 +5,11 @@ android {
     compileSdk = 36
     buildToolsVersion = "36.0.0"
     defaultConfig {
-        applicationId = "dev.hdrlab"
+        applicationId = "dev.hdrlab.light"
         minSdk = 31
         targetSdk = 36
-        versionCode = 5
-        versionName = "0.4.0"
+        versionCode = 1
+        versionName = "0.1.0"
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
