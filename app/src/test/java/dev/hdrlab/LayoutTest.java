@@ -334,4 +334,45 @@ public class LayoutTest {
         assertEquals(0.3127, wp.getDouble("x"), 0.001);
         assertEquals(0.329, wp.getDouble("y"), 0.001);
     }
+
+    @Test public void responsiveLayoutAdaptsToTabletLandscapeAndNarrowPortrait() throws Exception {
+        FrameLayout root = field("root");
+        LinearLayout cardsContainer = field("cardsContainer");
+        LinearLayout capCard = field("deviceCapabilitiesCard");
+        LinearLayout testCard = field("quickTestCard");
+
+        assertNotNull(root);
+        assertNotNull(cardsContainer);
+        assertNotNull(capCard);
+        assertNotNull(testCard);
+
+        float density = activity.getResources().getDisplayMetrics().density;
+
+        // 1. Wide landscape (e.g. 1280x800, sw720dp)
+        activity.getResources().getConfiguration().orientation = android.content.res.Configuration.ORIENTATION_LANDSCAPE;
+        int wideWidthPx = (int) (1280 * density);
+        int wideHeightPx = (int) (800 * density);
+        root.layout(0, 0, wideWidthPx, wideHeightPx);
+        call("applyResponsiveLayout");
+
+        assertEquals("cardsContainer must be HORIZONTAL in wide landscape",
+            LinearLayout.HORIZONTAL, cardsContainer.getOrientation());
+
+        LinearLayout.LayoutParams capParamsWide = (LinearLayout.LayoutParams) capCard.getLayoutParams();
+        LinearLayout.LayoutParams testParamsWide = (LinearLayout.LayoutParams) testCard.getLayoutParams();
+        assertNotNull(capParamsWide);
+        assertNotNull(testParamsWide);
+        assertEquals("deviceCapabilitiesCard weight must be 1.0f in wide landscape", 1.0f, capParamsWide.weight, 0.001f);
+        assertEquals("quickTestCard weight must be 1.0f in wide landscape", 1.0f, testParamsWide.weight, 0.001f);
+
+        // 2. Narrow portrait (e.g. 400x800)
+        activity.getResources().getConfiguration().orientation = android.content.res.Configuration.ORIENTATION_PORTRAIT;
+        int narrowWidthPx = (int) (400 * density);
+        int narrowHeightPx = (int) (800 * density);
+        root.layout(0, 0, narrowWidthPx, narrowHeightPx);
+        call("applyResponsiveLayout");
+
+        assertEquals("cardsContainer must be VERTICAL in narrow portrait",
+            LinearLayout.VERTICAL, cardsContainer.getOrientation());
+    }
 }

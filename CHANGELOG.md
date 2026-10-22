@@ -1,5 +1,14 @@
 # HDR Lab — Changelog
 
+## v0.1.1 (Tablet Adaptive Side-by-Side Layout)
+
+- Adaptive two-card tablet and landscape layout: dynamically positions "Capacidades do Teu Ecrã" and "Teste Rápido: SDR vs HDR" side-by-side in 2 columns on wide screens and tablets in landscape (>= 720dp width or >= 580dp in landscape).
+- Equal card height and button alignment: matched card heights with weighted vertical spacers aligning action buttons ("Ver Relatório Técnico Detalhado" and "Iniciar Teste SDR vs HDR") along the same horizontal baseline.
+- Scroll-free landscape viewport: fits entire test setup and action controls on-screen simultaneously, preventing the start button from being pushed offscreen or requiring vertical scrolling.
+- Fluid responsive reflow: maintains clean 1-column vertical stacking on portrait and narrow devices.
+
+---
+
 ## v0.1.0 (HDR Lab Light Initial Release)
 
 - Standalone lightweight package (`dev.hdrlab.light`): Coexists side-by-side with full HDR Lab (`dev.hdrlab`) without package conflicts or version downgrade errors (`INSTALL_FAILED_VERSION_DOWNGRADE`).

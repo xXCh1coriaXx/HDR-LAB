@@ -58,6 +58,7 @@ public final class MainActivity extends Activity {
     private FrameLayout root;
     private ScrollView workspaceLayout;
     private LinearLayout cardsLayout;
+    private LinearLayout cardsContainer;
     private FrameLayout fullscreenContainer;
 
     private LinearLayout headerSection;
@@ -170,6 +171,10 @@ public final class MainActivity extends Activity {
         headerSection.addView(label("Verifica a calibração de pretos e capacidade HDR do teu ecrã.", 14, MUTED));
         cardsLayout.addView(headerSection);
 
+        cardsContainer = new LinearLayout(this);
+        cardsContainer.setOrientation(LinearLayout.VERTICAL);
+        cardsLayout.addView(cardsContainer, new LinearLayout.LayoutParams(-1, -2));
+
         buildDeviceCapabilitiesCard();
         buildQuickTestCard();
 
@@ -200,9 +205,11 @@ public final class MainActivity extends Activity {
         deviceCapabilitiesCard.addView(cardProperty("Gama de Cores:", capGamutLabel));
         deviceCapabilitiesCard.addView(cardProperty("Brilho de Pico Estimado:", capBrightnessLabel));
 
+        View spacer = new View(this);
+        deviceCapabilitiesCard.addView(spacer, new LinearLayout.LayoutParams(-1, 0, 1f));
         btnDetailedReport = button("Ver Relatório Técnico Detalhado", this::showDetailedReport);
         deviceCapabilitiesCard.addView(btnDetailedReport);
-        cardsLayout.addView(deviceCapabilitiesCard);
+        cardsContainer.addView(deviceCapabilitiesCard);
     }
 
     private void buildQuickTestCard() {
@@ -242,7 +249,7 @@ public final class MainActivity extends Activity {
         primaryStyle(btnStartTest);
         quickTestCard.addView(btnStartTest);
 
-        cardsLayout.addView(quickTestCard);
+        cardsContainer.addView(quickTestCard);
     }
 
     private void buildFullscreenContainer() {
@@ -587,25 +594,48 @@ public final class MainActivity extends Activity {
     }
 
     private void applyResponsiveLayout() {
-        if (fullscreen || cardsLayout == null) return;
+        if (fullscreen || cardsLayout == null || cardsContainer == null) return;
         int availableWidth = root.getWidth() - root.getPaddingLeft() - root.getPaddingRight();
         float widthDp = availableWidth / getResources().getDisplayMetrics().density;
-        boolean wide = widthDp >= 720;
+        boolean isLandscape = getResources().getConfiguration().orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE;
+        boolean wide = widthDp >= 720 || (widthDp >= 580 && isLandscape);
+
         if (wide) {
-            int contentWidth = Math.min(dp(720), availableWidth - dp(48));
+            int contentWidth = Math.min(dp(1100), availableWidth - dp(32));
             ScrollView.LayoutParams params = (ScrollView.LayoutParams) cardsLayout.getLayoutParams();
-            if (params.width != contentWidth) {
+            if (params.width != contentWidth || params.gravity != Gravity.CENTER_HORIZONTAL) {
                 params.width = contentWidth;
                 params.gravity = Gravity.CENTER_HORIZONTAL;
                 cardsLayout.setLayoutParams(params);
             }
+            if (cardsContainer.getOrientation() != LinearLayout.HORIZONTAL) {
+                cardsContainer.setOrientation(LinearLayout.HORIZONTAL);
+                cardsContainer.setBaselineAligned(false);
+            }
+            LinearLayout.LayoutParams p1 = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1f);
+            p1.setMargins(0, dp(16), dp(10), dp(12));
+            deviceCapabilitiesCard.setLayoutParams(p1);
+
+            LinearLayout.LayoutParams p2 = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1f);
+            p2.setMargins(dp(10), dp(16), 0, dp(12));
+            quickTestCard.setLayoutParams(p2);
         } else {
             ScrollView.LayoutParams params = (ScrollView.LayoutParams) cardsLayout.getLayoutParams();
-            if (params.width != -1) {
+            if (params.width != -1 || params.gravity != Gravity.NO_GRAVITY) {
                 params.width = -1;
                 params.gravity = Gravity.NO_GRAVITY;
                 cardsLayout.setLayoutParams(params);
             }
+            if (cardsContainer.getOrientation() != LinearLayout.VERTICAL) {
+                cardsContainer.setOrientation(LinearLayout.VERTICAL);
+            }
+            LinearLayout.LayoutParams p1 = new LinearLayout.LayoutParams(-1, -2);
+            p1.setMargins(0, dp(16), 0, dp(6));
+            deviceCapabilitiesCard.setLayoutParams(p1);
+
+            LinearLayout.LayoutParams p2 = new LinearLayout.LayoutParams(-1, -2);
+            p2.setMargins(0, dp(6), 0, dp(12));
+            quickTestCard.setLayoutParams(p2);
         }
     }
 
