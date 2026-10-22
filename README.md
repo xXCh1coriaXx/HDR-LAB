@@ -20,7 +20,7 @@ That problem is called **"raised blacks"**. It happens when a phone's video proc
 HDR Lab Light features an adaptive dual-column layout optimized for smartphones and tablets (automatically switching between portrait single-column and landscape side-by-side):
 
 <p align="center">
-  <img src="docs/screenshots/hdr-lab-light-tablet-ui.jpg" alt="HDR Lab Light Tablet Interface" width="900">
+  <img src="docs/screenshots/hdr-lab-light-tablet-ui.png" alt="HDR Lab Light Tablet Interface" width="900">
 </p>
 
 ### 1. `Screen Capabilities` / `Capacidades do Teu Ecrã`
@@ -38,7 +38,7 @@ Instantly reports what your display hardware actually supports in plain language
 Tap **Start Fullscreen SDR vs HDR Test** to launch an automated, full-screen evaluation using the calibrated 6-patch near-black step pattern:
 
 <p align="center">
-  <img src="docs/screenshots/hdr-lab-light-test-player.jpg" alt="HDR Lab Light Fullscreen Test Player" width="900">
+  <img src="docs/screenshots/hdr-lab-light-test-player.png" alt="HDR Lab Light Fullscreen Test Player" width="900">
 </p>
 
 * **Automatic 10-Second Transition:**
