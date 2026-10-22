@@ -1,6 +1,6 @@
 # HDR Lab — Agent Instructions & Working Preferences
 
-> **Branch Context: `main` (`HDR Lab — Full Test Bench / Pro Edition`)**  
+> **Branch Context: `pro` (`HDR Lab — Full Test Bench / Pro Edition`)**  
 > This file defines the architecture, technical constraints, lessons learned, and workflows for all AI coding agents working on the core **HDR Lab** engineering test bench (`dev.hdrlab`).
 
 ---
