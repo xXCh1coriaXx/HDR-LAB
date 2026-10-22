@@ -1,0 +1,74 @@
+[
+  {
+    "file": "hlg_black.mp4",
+    "transfer": "arib-std-b67",
+    "range": "limited",
+    "profile": "Main 10",
+    "level": 123,
+    "decodedFirstAndLastFrameChecks": "passed"
+  },
+  {
+    "file": "hlg_steps.mp4",
+    "transfer": "arib-std-b67",
+    "range": "limited",
+    "profile": "Main 10",
+    "level": 123,
+    "decodedFirstAndLastFrameChecks": "passed"
+  },
+  {
+    "file": "hlg_window.mp4",
+    "transfer": "arib-std-b67",
+    "range": "limited",
+    "profile": "Main 10",
+    "level": 123,
+    "decodedFirstAndLastFrameChecks": "passed"
+  },
+  {
+    "file": "pq_black.mp4",
+    "transfer": "smpte2084",
+    "range": "limited",
+    "profile": "Main 10",
+    "level": 123,
+    "decodedFirstAndLastFrameChecks": "passed"
+  },
+  {
+    "file": "pq_steps.mp4",
+    "transfer": "smpte2084",
+    "range": "limited",
+    "profile": "Main 10",
+    "level": 123,
+    "decodedFirstAndLastFrameChecks": "passed"
+  },
+  {
+    "file": "pq_window.mp4",
+    "transfer": "smpte2084",
+    "range": "limited",
+    "profile": "Main 10",
+    "level": 123,
+    "decodedFirstAndLastFrameChecks": "passed"
+  },
+  {
+    "file": "sdr_black.mp4",
+    "transfer": "bt709",
+    "range": "limited",
+    "profile": "Main 10",
+    "level": 123,
+    "decodedFirstAndLastFrameChecks": "passed"
+  },
+  {
+    "file": "sdr_steps.mp4",
+    "transfer": "bt709",
+    "range": "limited",
+    "profile": "Main 10",
+    "level": 123,
+    "decodedFirstAndLastFrameChecks": "passed"
+  },
+  {
+    "file": "sdr_window.mp4",
+    "transfer": "bt709",
+    "range": "limited",
+    "profile": "Main 10",
+    "level": 123,
+    "decodedFirstAndLastFrameChecks": "passed"
+  }
+]

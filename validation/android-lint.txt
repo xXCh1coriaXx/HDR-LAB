@@ -1,0 +1,140 @@
+/workspace/HdrLab/gradle/wrapper/gradle-wrapper.properties:3: Warning: A newer version of Gradle than 8.13 is available: 8.14.6 [AndroidGradlePluginVersion]
+distributionUrl=https\://services.gradle.org/distributions/gradle-8.13-bin.zip
+                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+   Explanation for issues of type "AndroidGradlePluginVersion":
+   This detector looks for usage of the Android Gradle Plugin where the
+   version you are using is not the current stable release. Using older
+   versions is fine, and there are cases where you deliberately want to stick
+   with an older version. However, you may simply not be aware that a more
+   recent version is available, and that is what this lint check helps find.
+
+/workspace/HdrLab/app/build.gradle.kts:32: Warning: A newer version of androidx.media3:media3-exoplayer than 1.5.1 is available: 1.11.1 [GradleDependency]
+    implementation("androidx.media3:media3-exoplayer:1.5.1")
+                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/workspace/HdrLab/app/build.gradle.kts:33: Warning: A newer version of androidx.media3:media3-ui than 1.5.1 is available: 1.11.1 [GradleDependency]
+    implementation("androidx.media3:media3-ui:1.5.1")
+                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/workspace/HdrLab/app/build.gradle.kts:34: Warning: A newer version of androidx.media3:media3-transformer than 1.5.1 is available: 1.11.1 [GradleDependency]
+    implementation("androidx.media3:media3-transformer:1.5.1")
+                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/workspace/HdrLab/app/build.gradle.kts:35: Warning: A newer version of androidx.core:core than 1.15.0 is available: 1.19.1 [GradleDependency]
+    implementation("androidx.core:core:1.15.0")
+                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+   Explanation for issues of type "GradleDependency":
+   This detector looks for usages of libraries where the version you are using
+   is not the current stable release. Using older versions is fine, and there
+   are cases where you deliberately want to stick with an older version.
+   However, you may simply not be aware that a more recent version is
+   available, and that is what this lint check helps find.
+
+/workspace/HdrLab/app/build.gradle.kts:37: Warning: A newer version of org.robolectric:robolectric than 4.16.1 is available: 4.17 [NewerVersionAvailable]
+    testImplementation("org.robolectric:robolectric:4.16.1")
+                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+   Explanation for issues of type "NewerVersionAvailable":
+   This detector checks with a central repository to see if there are newer
+   versions available for the dependencies used by this project. This is
+   similar to the GradleDependency check, which checks for newer versions
+   available in the Android SDK tools and libraries, but this works with any
+   MavenCentral dependency, and connects to the library every time, which
+   makes it more flexible but also much slower.
+
+/workspace/HdrLab/app/src/main/res/layout/player.xml:4: Warning: Possible overdraw: Root element paints background #000000 with a theme that also paints a background (inferred theme is @style/AppTheme) [Overdraw]
+    android:background="#000000" app:surface_type="surface_view"
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+   Explanation for issues of type "Overdraw":
+   If you set a background drawable on a root view, then you should use a
+   custom theme where the theme background is null. Otherwise, the theme
+   background will be painted first, only to have your custom background
+   completely cover it; this is called "overdraw".
+
+   NOTE: This detector relies on figuring out which layouts are associated
+   with which activities based on scanning the Java code, and it's currently
+   doing that using an inexact pattern matching algorithm. Therefore, it can
+   incorrectly conclude which activity the layout is associated with and then
+   wrongly complain that a background-theme is hidden.
+
+   If you want your custom background on multiple pages, then you should
+   consider making a custom theme with your custom background and just using
+   that theme instead of a root element background.
+
+   Of course it's possible that your custom drawable is translucent and you
+   want it to be mixed with the background. However, you will get better
+   performance if you pre-mix the background with your drawable and use that
+   resulting image or color as a custom theme background instead.
+
+/workspace/HdrLab/app/src/main/java/dev/hdrlab/MainActivity.java:100: Warning: Do not concatenate text displayed with setText. Use resource string with placeholders. [SetTextI18n]
+                    capabilityLabel.setText(android.os.Build.MODEL + "  ·  Android " + android.os.Build.VERSION.RELEASE
+                                            ^
+/workspace/HdrLab/app/src/main/java/dev/hdrlab/MainActivity.java:100: Warning: String literal in setText can not be translated. Use Android resources instead. [SetTextI18n]
+                    capabilityLabel.setText(android.os.Build.MODEL + "  ·  Android " + android.os.Build.VERSION.RELEASE
+                                                                     ~~~~~~~~~~~~~~~
+/workspace/HdrLab/app/src/main/java/dev/hdrlab/MainActivity.java:105: Warning: Do not concatenate text displayed with setText. Use resource string with placeholders. [SetTextI18n]
+            } catch (Exception e) { handler.post(() -> capabilityLabel.setText("Capability query: " + e.getMessage())); }
+                                                                               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/workspace/HdrLab/app/src/main/java/dev/hdrlab/MainActivity.java:105: Warning: String literal in setText can not be translated. Use Android resources instead. [SetTextI18n]
+            } catch (Exception e) { handler.post(() -> capabilityLabel.setText("Capability query: " + e.getMessage())); }
+                                                                               ~~~~~~~~~~~~~~~~~~~~
+/workspace/HdrLab/app/src/main/java/dev/hdrlab/MainActivity.java:245: Warning: String literal in setText can not be translated. Use Android resources instead. [SetTextI18n]
+        lock.setText("Use fixed brightness (80%)"); lock.setTextColor(TEXT); controls.addView(lock);
+                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/workspace/HdrLab/app/src/main/java/dev/hdrlab/MainActivity.java:255: Warning: Do not concatenate text displayed with setText. Use resource string with placeholders. [SetTextI18n]
+                lock.setText("Use fixed brightness (" + p + "%)");
+                             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/workspace/HdrLab/app/src/main/java/dev/hdrlab/MainActivity.java:255: Warning: String literal in setText can not be translated. Use Android resources instead. [SetTextI18n]
+                lock.setText("Use fixed brightness (" + p + "%)");
+                             ~~~~~~~~~~~~~~~~~~~~~~~~
+/workspace/HdrLab/app/src/main/java/dev/hdrlab/MainActivity.java:296: Warning: String literal in setText can not be translated. Use Android resources instead. [SetTextI18n]
+                    handler.post(() -> status.setText("SDR video saved"));
+                                                      ~~~~~~~~~~~~~~~~~
+/workspace/HdrLab/app/src/main/java/dev/hdrlab/MainActivity.java:343: Warning: String literal in setText can not be translated. Use Android resources instead. [SetTextI18n]
+        status.setText("Reading source metadata…");
+                       ~~~~~~~~~~~~~~~~~~~~~~~~~~
+/workspace/HdrLab/app/src/main/java/dev/hdrlab/MainActivity.java:410: Warning: String literal in setText can not be translated. Use Android resources instead. [SetTextI18n]
+                status.setText("Outside the converted section · moved to its start");
+                               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/workspace/HdrLab/app/src/main/java/dev/hdrlab/MainActivity.java:432: Warning: Do not concatenate text displayed with setText. Use resource string with placeholders. [SetTextI18n]
+        formatLabel.setText((format == null ? "Reading decoder input…" : format.width + " × " + format.height
+                            ^
+/workspace/HdrLab/app/src/main/java/dev/hdrlab/MainActivity.java:434: Warning: String literal in setText can not be translated. Use Android resources instead. [SetTextI18n]
+            + "\nDecoder: " + decoder + " · Dropped frames (session): " + droppedFrames
+                                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/workspace/HdrLab/app/src/main/java/dev/hdrlab/MainActivity.java:479: Warning: String literal in setText can not be translated. Use Android resources instead. [SetTextI18n]
+                    progressLabel.setText("Checking output metadata…");
+                                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/workspace/HdrLab/app/src/main/java/dev/hdrlab/MainActivity.java:495: Warning: String literal in setText can not be translated. Use Android resources instead. [SetTextI18n]
+                                progressLabel.setText("SDR copy ready · select it above to compare");
+                                                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/workspace/HdrLab/app/src/main/java/dev/hdrlab/MainActivity.java:507: Warning: String literal in setText can not be translated. Use Android resources instead. [SetTextI18n]
+                    progressLabel.setText("Failed · try the other mapper. Dolby Vision support depends on its profile and device.");
+                                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/workspace/HdrLab/app/src/main/java/dev/hdrlab/MainActivity.java:541: Warning: String literal in setText can not be translated. Use Android resources instead. [SetTextI18n]
+            if (progressLabel != null) progressLabel.setText("Conversion canceled");
+                                                             ~~~~~~~~~~~~~~~~~~~~~
+/workspace/HdrLab/app/src/main/java/dev/hdrlab/MainActivity.java:554: Warning: String literal in setText can not be translated. Use Android resources instead. [SetTextI18n]
+        status.setText("Generated SDR copies cleared"); refreshButtons();
+                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/workspace/HdrLab/app/src/main/java/dev/hdrlab/MainActivity.java:671: Warning: String literal in setText can not be translated. Use Android resources instead. [SetTextI18n]
+        if (source == null) modeLabel.setText("Choose a video or a built-in test to begin");
+                                              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/workspace/HdrLab/app/src/main/java/dev/hdrlab/MainActivity.java:679: Warning: Do not concatenate text displayed with setText. Use resource string with placeholders. [SetTextI18n]
+        button.setText((selected ? "✓  " : "") + title + "\n"
+                       ^
+
+   Explanation for issues of type "SetTextI18n":
+   When calling TextView#setText
+   * Never call Number#toString() to format numbers; it will not handle
+   fraction separators and locale-specific digits properly. Consider using
+   String#format with proper format specifications (%d or %f) instead.
+   * Do not pass a string literal (e.g. "Hello") to display text. Hardcoded
+   text can not be properly translated to other languages. Consider using
+   Android resource strings instead.
+   * Do not build messages by concatenating text chunks. Such messages can not
+   be properly translated.
+
+   https://developer.android.com/guide/topics/resources/localization.html
+
+0 errors, 26 warnings
