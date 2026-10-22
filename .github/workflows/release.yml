@@ -54,15 +54,15 @@ jobs:
           
           # Locate built APK
           APK_SRC="app/build/outputs/apk/release/app-release.apk"
-          APK_DEST="HDR-Lab-${TAG}.apk"
+          APK_DEST="HDR-Lab-Light-${TAG}.apk"
           cp "$APK_SRC" "$APK_DEST"
           
           # Generate Source Archive
-          SOURCE_ZIP="HDR-Lab-${TAG}-source.zip"
+          SOURCE_ZIP="HDR-Lab-Light-${TAG}-source.zip"
           git archive --format=zip --output="$SOURCE_ZIP" HEAD
           
           # Generate SHA-256 Checksums
-          CHECKSUMS="HDR-Lab-${TAG}-checksums.txt"
+          CHECKSUMS="HDR-Lab-Light-${TAG}-checksums.txt"
           sha256sum "$APK_DEST" "$SOURCE_ZIP" > "$CHECKSUMS"
           
           echo "tag=$TAG" >> $GITHUB_OUTPUT
@@ -84,6 +84,6 @@ jobs:
             gh release upload "$TAG" "$APK" "$SOURCE" "$CHECKSUMS" --clobber
           else
             gh release create "$TAG" "$APK" "$SOURCE" "$CHECKSUMS" \
-              --title "HDR Lab $TAG" \
+              --title "HDR Lab Light $TAG" \
               --notes-file RELEASE_NOTES.md
           fi

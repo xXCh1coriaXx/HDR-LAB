@@ -1,5 +1,15 @@
 # HDR Lab — Changelog
 
+## v0.4.0 (HDR Lab Light Edition)
+
+- Streamlined two-card architecture ("Capacidades do Teu Ecrã" and "Teste Rápido: SDR vs HDR").
+- Automated 10-second SDR-to-HDR transition in fullscreen on calibrated 6-patch near-black step pattern.
+- Auto-boost fullscreen window brightness to 100% with guaranteed restoration to system brightness on exit.
+- Tap-to-reveal floating HUD with 3-second auto-dimming and manual mode toggles.
+- Preserved zero-shader SurfaceView bypass direct to Hardware Composer (HWC).
+
+---
+
 ## v0.3.0.1 (Maintenance & Dark-Room UI Polish)
 
 - Fullscreen HUD timeline clearance: Raised floating HUD baseline (76dp bottom clearance) to completely clear ExoPlayer's DefaultTimeBar scrubber and settings gear, avoiding accidental touch interception.
