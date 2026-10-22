@@ -15,6 +15,14 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
+    signingConfigs {
+        create("release") {
+            storeFile = file("hdrlab-release.keystore")
+            storePassword = "hdrlab123"
+            keyAlias = "hdrlab"
+            keyPassword = "hdrlab123"
+        }
+    }
     buildTypes {
         getByName("release") {
             isMinifyEnabled = true
@@ -22,7 +30,7 @@ android {
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"))
             // Local testing update: preserve the existing APK's signing identity.
             // Use a dedicated release key before distributing through an app store.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("release")
         }
     }
     testOptions { unitTests.isIncludeAndroidResources = true }
