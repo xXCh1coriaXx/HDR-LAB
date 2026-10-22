@@ -44,36 +44,34 @@ final class Diagnostics {
     static DeviceSummary summarize(Context context, JSONObject deviceSnapshot) {
         String modelAndVersion = Build.MANUFACTURER + " " + Build.MODEL + "  ·  Android " + Build.VERSION.RELEASE;
         Display display = null;
-        try { display = context.getDisplay(); }
+        try { display = context != null ? context.getDisplay() : null; }
         catch (Throwable ignored) { /* Fall back for contexts without a display */ }
-        if (display == null) {
+        if (display == null && context != null) {
             try {
                 display = context.getSystemService(DisplayManager.class).getDisplay(Display.DEFAULT_DISPLAY);
             } catch (Throwable ignored) {}
         }
 
         boolean hasHdr = false;
-        String hdrSupport = "Não (Apenas SDR)";
+        String hdrSupport = context != null ? context.getString(R.string.hdr_support_no) : "No (SDR only)";
         boolean isWideGamut = false;
-        String wideGamut = "Normal (sRGB)";
+        String wideGamut = formatGamut(context, false);
         float maxLum = -1f;
-        String peakBrightness = "N/D (Não declarado pelo sistema)";
+        String peakBrightness = context != null ? context.getString(R.string.brightness_not_reported) : "Not reported by system";
 
         if (display != null) {
             isWideGamut = display.isWideColorGamut();
-            wideGamut = isWideGamut ? "Sim (DCI-P3 / BT.2020)" : "Normal (sRGB)";
+            wideGamut = formatGamut(context, isWideGamut);
 
             Display.HdrCapabilities caps = display.getHdrCapabilities();
             if (caps != null && caps.getSupportedHdrTypes() != null && caps.getSupportedHdrTypes().length > 0) {
                 hasHdr = true;
                 List<String> types = new ArrayList<>();
                 for (int t : caps.getSupportedHdrTypes()) types.add(hdrName(t));
-                hdrSupport = "Sim (" + String.join(", ", types) + ")";
+                hdrSupport = formatHdrSupport(context, types);
                 maxLum = caps.getDesiredMaxLuminance();
                 if (maxLum > 0 && Float.isFinite(maxLum)) {
-                    int nits = Math.round(maxLum);
-                    String tag = nits >= 1000 ? " (Brilho Muito Alto)" : nits >= 700 ? " (Brilho Alto)" : " (Brilho Médio)";
-                    peakBrightness = "~" + nits + " nits" + tag;
+                    peakBrightness = formatPeakBrightness(context, Math.round(maxLum));
                 }
             }
         } else if (deviceSnapshot != null && deviceSnapshot.has("display")) {
@@ -84,21 +82,43 @@ final class Diagnostics {
                     hasHdr = true;
                     List<String> types = new ArrayList<>();
                     for (int i = 0; i < advertised.length(); i++) types.add(advertised.optString(i));
-                    hdrSupport = "Sim (" + String.join(", ", types) + ")";
+                    hdrSupport = formatHdrSupport(context, types);
                 }
                 isWideGamut = screen.optBoolean("wideColorGamut", false);
-                wideGamut = isWideGamut ? "Sim (DCI-P3 / BT.2020)" : "Normal (sRGB)";
+                wideGamut = formatGamut(context, isWideGamut);
                 double lum = screen.optDouble("desiredMaxLuminanceNits", -1);
                 if (lum > 0 && Double.isFinite(lum)) {
-                    int nits = (int) Math.round(lum);
-                    String tag = nits >= 1000 ? " (Brilho Muito Alto)" : nits >= 700 ? " (Brilho Alto)" : " (Brilho Médio)";
-                    peakBrightness = "~" + nits + " nits" + tag;
+                    peakBrightness = formatPeakBrightness(context, (int) Math.round(lum));
                     maxLum = (float) lum;
                 }
             }
         }
 
         return new DeviceSummary(modelAndVersion, hdrSupport, hasHdr, wideGamut, isWideGamut, peakBrightness, maxLum);
+    }
+
+    private static String formatGamut(Context context, boolean isWideGamut) {
+        return isWideGamut
+            ? (context != null ? context.getString(R.string.gamut_wide) : "Yes (DCI-P3 / BT.2020)")
+            : (context != null ? context.getString(R.string.gamut_normal) : "Normal (sRGB)");
+    }
+
+    private static String formatHdrSupport(Context context, List<String> types) {
+        String joined = String.join(", ", types);
+        return context != null
+            ? context.getString(R.string.hdr_support_yes, joined)
+            : "Yes (" + joined + ")";
+    }
+
+    private static String formatPeakBrightness(Context context, int nits) {
+        String tag = nits >= 1000
+            ? (context != null ? context.getString(R.string.brightness_tag_very_high) : " (Very High Brightness)")
+            : nits >= 700
+            ? (context != null ? context.getString(R.string.brightness_tag_high) : " (High Brightness)")
+            : (context != null ? context.getString(R.string.brightness_tag_medium) : " (Medium Brightness)");
+        return context != null
+            ? context.getString(R.string.brightness_nits_format, nits, tag)
+            : "~" + nits + " nits" + tag;
     }
 
     static JSONObject device(Context context) throws Exception {

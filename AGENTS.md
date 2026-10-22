@@ -41,7 +41,7 @@
 * **Exact Seeking:** Enforce `player.setSeekParameters(SeekParameters.EXACT)` so transitions between SDR and HDR land on the exact matching frame without long-GOP keyframe drift.
 
 ### C. Tablet Landscape Side-by-Side Layout
-* **Adaptive Cards Container:** An intermediate `LinearLayout` (`cardsContainer`) inside `cardsLayout` holds Card 1 (*Capacidades do Teu Ecrã*) and Card 2 (*Teste Rápido: SDR vs HDR*).
+* **Adaptive Cards Container:** An intermediate `LinearLayout` (`cardsContainer`) inside `cardsLayout` holds Card 1 (*Capacidades do Teu Ecrã* / *Screen Capabilities*) and Card 2 (*Teste Rápido: SDR vs HDR* / *Quick Test: SDR vs HDR*).
 * **Landscape Threshold:** Check `boolean wide = widthDp >= 720 || (widthDp >= 580 && isLandscape);`.
 * **Matched Heights & Baseline Alignment:**
   - In wide/landscape mode: `cardsContainer.setOrientation(HORIZONTAL)`, `cardsContainer.setBaselineAligned(false)`, and child cards use `LinearLayout.LayoutParams(0, MATCH_PARENT, 1f)`.
@@ -65,7 +65,18 @@
 
 ---
 
-## 4. Documentation Architecture
+## 4. Internationalization (i18n)
+
+* **English Codebase Standard:** All Java/Kotlin source code, XML layouts, view IDs, log tags, and comments must strictly be written in standard International English.
+* **Zero Hardcoded UI Strings:** Never embed user-visible string literals directly in Java code or layout XML attributes. Every string must resolve via `@string/...` or `R.string....`.
+* **Resource Separation Catalogs:**
+  - Base / Default Catalog (`res/values/strings.xml`): Primary reference in International English. Serves as the fallback for all non-Portuguese locales worldwide.
+  - Portuguese Catalog (`res/values-pt/strings.xml`): European Portuguese (`pt-PT`) localization for Portuguese device locales.
+* **Automatic System Locale Detection:** Localization is handled automatically via Android's native resource qualifier resolution (`values-pt`) without custom runtime language switching logic.
+
+---
+
+## 5. Documentation Architecture
 
 1. **`README.md` (Accessible User Guide):**
    - Written in clear, accessible, jargon-free English for everyday smartphone/tablet users.
@@ -77,15 +88,14 @@
 
 ---
 
-## 5. Philosophy & Code Quality (YAGNI)
+## 6. Philosophy & Code Quality (YAGNI)
 
 * **No Bloat:** 100% offline with zero network permissions in `AndroidManifest.xml`.
 * **Fast & Lightweight:** APK size stays under 2 MB with R8 optimization and resource shrinking.
 
-
 ---
 
-## 6. AI Agent Operational Standards: Token Efficiency & Autonomous Quality
+## 7. AI Agent Operational Standards: Token Efficiency & Autonomous Quality
 
 All AI coding agents operating on this repository must enforce the following standards:
 

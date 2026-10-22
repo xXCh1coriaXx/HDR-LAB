@@ -80,10 +80,10 @@ public final class MainActivity extends Activity {
     private LinearLayout fullscreenBottomHud;
     private TextView hudTitleLabel;
     private TextView hudTipLabel;
-    private Button btnVerSdr;
-    private Button btnVerHdr;
-    private Button btnReiniciar;
-    private Button btnSair;
+    private Button btnWatchSdr;
+    private Button btnWatchHdr;
+    private Button btnRestart;
+    private Button btnExit;
 
     private boolean fullscreen;
     private String currentMode = "sdr";
@@ -164,11 +164,11 @@ public final class MainActivity extends Activity {
 
         headerSection = new LinearLayout(this);
         headerSection.setOrientation(LinearLayout.VERTICAL);
-        TextView eyebrow = label("DIAGNÓSTICO VISUAL DE ECRÃ", 10, ACCENT);
+        TextView eyebrow = label(getString(R.string.header_eyebrow), 10, ACCENT);
         eyebrow.setLetterSpacing(.14f);
         headerSection.addView(eyebrow);
-        headerSection.addView(label("HDR Lab Light", 32, TEXT));
-        headerSection.addView(label("Verifica a calibração de pretos e capacidade HDR do teu ecrã.", 14, MUTED));
+        headerSection.addView(label(getString(R.string.header_title), 32, TEXT));
+        headerSection.addView(label(getString(R.string.header_subtitle), 14, MUTED));
         cardsLayout.addView(headerSection);
 
         cardsContainer = new LinearLayout(this);
@@ -190,62 +190,56 @@ public final class MainActivity extends Activity {
 
     private void buildDeviceCapabilitiesCard() {
         deviceCapabilitiesCard = card();
-        TextView capTitle = label("Capacidades do Teu Ecrã", 18, TEXT);
+        TextView capTitle = label(getString(R.string.card_capabilities_title), 18, TEXT);
         capTitle.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
         deviceCapabilitiesCard.addView(capTitle);
-        deviceCapabilitiesCard.addView(label("Informações reportadas pelo sistema Android", 12, MUTED));
+        deviceCapabilitiesCard.addView(label(getString(R.string.card_capabilities_subtitle), 12, MUTED));
 
-        capModelLabel = label("A ler dados do sistema…", 14, TEXT);
-        capHdrLabel = label("A verificar…", 14, TEXT);
-        capGamutLabel = label("A verificar…", 14, TEXT);
-        capBrightnessLabel = label("A verificar…", 14, TEXT);
+        capModelLabel = label(getString(R.string.status_reading_system_data), 14, TEXT);
+        capHdrLabel = label(getString(R.string.status_checking), 14, TEXT);
+        capGamutLabel = label(getString(R.string.status_checking), 14, TEXT);
+        capBrightnessLabel = label(getString(R.string.status_checking), 14, TEXT);
 
-        deviceCapabilitiesCard.addView(cardProperty("Modelo e Versão Android:", capModelLabel));
-        deviceCapabilitiesCard.addView(cardProperty("Suporte HDR:", capHdrLabel));
-        deviceCapabilitiesCard.addView(cardProperty("Gama de Cores:", capGamutLabel));
-        deviceCapabilitiesCard.addView(cardProperty("Brilho de Pico Estimado:", capBrightnessLabel));
+        deviceCapabilitiesCard.addView(cardProperty(getString(R.string.prop_device_model), capModelLabel));
+        deviceCapabilitiesCard.addView(cardProperty(getString(R.string.prop_hdr_support), capHdrLabel));
+        deviceCapabilitiesCard.addView(cardProperty(getString(R.string.prop_color_gamut), capGamutLabel));
+        deviceCapabilitiesCard.addView(cardProperty(getString(R.string.prop_peak_brightness), capBrightnessLabel));
 
         View spacer = new View(this);
         deviceCapabilitiesCard.addView(spacer, new LinearLayout.LayoutParams(-1, 0, 1f));
-        btnDetailedReport = button("Ver Relatório Técnico Detalhado", this::showDetailedReport);
+        btnDetailedReport = button(getString(R.string.btn_detailed_report), this::showDetailedReport);
         deviceCapabilitiesCard.addView(btnDetailedReport);
         cardsContainer.addView(deviceCapabilitiesCard);
     }
 
     private void buildQuickTestCard() {
         quickTestCard = card();
-        TextView testTitle = label("Teste Rápido: SDR vs HDR", 18, TEXT);
+        TextView testTitle = label(getString(R.string.card_quick_test_title), 18, TEXT);
         testTitle.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
         quickTestCard.addView(testTitle);
-        quickTestCard.addView(label("Comparação automatizada de 10 segundos em ecrã inteiro", 12, MUTED));
+        quickTestCard.addView(label(getString(R.string.card_quick_test_subtitle), 12, MUTED));
 
         LinearLayout infoBox = new LinearLayout(this);
         infoBox.setOrientation(LinearLayout.VERTICAL);
         infoBox.setPadding(0, dp(10), 0, dp(8));
 
-        TextView howTitle = label("Como funciona o teste:", 13, ACCENT);
+        TextView howTitle = label(getString(R.string.test_how_it_works_title), 13, ACCENT);
         howTitle.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
         infoBox.addView(howTitle);
 
-        TextView howText = label(
-            "• 10 segundos em SDR, com transição automática para HDR em ecrã cheio.\n"
-            + "• O ecrã é colocado com brilho no máximo (100%) durante o teste.", 13, TEXT);
+        TextView howText = label(getString(R.string.test_how_it_works_text), 13, TEXT);
         infoBox.addView(howText);
 
-        TextView whatTitle = label("O que deves observar no ecrã:", 13, ACCENT);
+        TextView whatTitle = label(getString(R.string.test_what_to_look_title), 13, ACCENT);
         whatTitle.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
         infoBox.addView(whatTitle);
 
-        TextView whatText = label(
-            "• Fundo Preto Puro: Em ecrãs OLED, o fundo é preto absoluto (píxeis desligados). "
-            + "Em ecrãs LCD, poderás notar um ligeiro brilho cinzento (backlight glow).\n"
-            + "• 6 Degraus Quase-Preto: Observa as 6 barras de cinzento suave (1%, 2%...). "
-            + "Devem ser percetíveis sem clarear o fundo preto ao redor.", 13, TEXT);
+        TextView whatText = label(getString(R.string.test_what_to_look_text), 13, TEXT);
         infoBox.addView(whatText);
 
         quickTestCard.addView(infoBox);
 
-        btnStartTest = button("▶ Iniciar Teste SDR vs HDR em Ecrã Cheio", this::startAutomatedTest);
+        btnStartTest = button(getString(R.string.btn_start_test), this::startAutomatedTest);
         primaryStyle(btnStartTest);
         quickTestCard.addView(btnStartTest);
 
@@ -283,11 +277,11 @@ public final class MainActivity extends Activity {
         fullscreenTopHud.setBackground(topPill);
         fullscreenTopHud.setPadding(dp(16), dp(10), dp(16), dp(10));
 
-        hudTitleLabel = label("MODO SDR (10s)", 15, ACCENT);
+        hudTitleLabel = label(getString(R.string.hud_title_sdr_countdown, 10), 15, ACCENT);
         hudTitleLabel.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
         hudTitleLabel.setGravity(Gravity.CENTER);
 
-        hudTipLabel = label("Observe o fundo preto e a visibilidade das 6 barras de cinzento.", 12, TEXT);
+        hudTipLabel = label(getString(R.string.hud_tip_sdr_countdown), 12, TEXT);
         hudTipLabel.setGravity(Gravity.CENTER);
 
         fullscreenTopHud.addView(hudTitleLabel);
@@ -309,15 +303,15 @@ public final class MainActivity extends Activity {
         fullscreenBottomHud.setBackground(bottomPill);
         fullscreenBottomHud.setPadding(dp(6), dp(4), dp(6), dp(4));
 
-        btnVerSdr = hudButton("Ver em SDR", this::switchToSdr);
-        btnVerHdr = hudButton("Ver em HDR", () -> switchToHdr(false));
-        btnReiniciar = hudButton("⟲ Reiniciar", this::restartTest);
-        btnSair = hudButton("✕ Sair", this::exitFullscreen);
+        btnWatchSdr = hudButton(getString(R.string.hud_btn_watch_sdr), this::switchToSdr);
+        btnWatchHdr = hudButton(getString(R.string.hud_btn_watch_hdr), () -> switchToHdr(false));
+        btnRestart = hudButton(getString(R.string.hud_btn_restart), this::restartTest);
+        btnExit = hudButton(getString(R.string.hud_btn_exit), this::exitFullscreen);
 
-        fullscreenBottomHud.addView(btnVerSdr);
-        fullscreenBottomHud.addView(btnVerHdr);
-        fullscreenBottomHud.addView(btnReiniciar);
-        fullscreenBottomHud.addView(btnSair);
+        fullscreenBottomHud.addView(btnWatchSdr);
+        fullscreenBottomHud.addView(btnWatchHdr);
+        fullscreenBottomHud.addView(btnRestart);
+        fullscreenBottomHud.addView(btnExit);
 
         FrameLayout.LayoutParams bottomParams = new FrameLayout.LayoutParams(-2, -2, Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL);
         bottomParams.bottomMargin = dp(76);
@@ -476,33 +470,33 @@ public final class MainActivity extends Activity {
     private void updateHudMode(String mode, int countdown) {
         if ("sdr".equals(mode)) {
             if (countdown > 0) {
-                hudTitleLabel.setText("MODO SDR (" + countdown + "s)");
-                hudTipLabel.setText("Observe o fundo preto e a visibilidade das 6 barras de cinzento.");
+                hudTitleLabel.setText(getString(R.string.hud_title_sdr_countdown, countdown));
+                hudTipLabel.setText(getString(R.string.hud_tip_sdr_countdown));
             } else {
-                hudTitleLabel.setText("MODO SDR ATIVADO");
-                hudTipLabel.setText("Modo SDR manual. Observe o fundo preto e as barras.");
+                hudTitleLabel.setText(getString(R.string.hud_title_sdr_active));
+                hudTipLabel.setText(getString(R.string.hud_tip_sdr_active));
             }
         } else {
-            hudTitleLabel.setText("MODO HDR (HDR10 / PQ) ATIVADO");
-            hudTipLabel.setText("O ecrã ativa o modo HDR. O fundo deve manter-se preto puro.");
+            hudTitleLabel.setText(getString(R.string.hud_title_hdr_active));
+            hudTipLabel.setText(getString(R.string.hud_tip_hdr_active));
         }
         updateHudButtons();
     }
 
     private void updateHudButtons() {
         boolean isSdr = "sdr".equals(currentMode);
-        btnVerSdr.setSelected(isSdr);
-        btnVerSdr.setText((isSdr ? "✓ " : "") + "Ver em SDR");
-        btnVerSdr.setTextColor(isSdr ? ACCENT : TEXT);
-        btnVerSdr.setTypeface(Typeface.DEFAULT, isSdr ? Typeface.BOLD : Typeface.NORMAL);
-        btnVerSdr.setBackground(ripple(isSdr ? 0x66252e25 : 0x221b211c, isSdr ? ACCENT : 0x44485546, 14));
+        btnWatchSdr.setSelected(isSdr);
+        btnWatchSdr.setText((isSdr ? "✓ " : "") + getString(R.string.hud_btn_watch_sdr));
+        btnWatchSdr.setTextColor(isSdr ? ACCENT : TEXT);
+        btnWatchSdr.setTypeface(Typeface.DEFAULT, isSdr ? Typeface.BOLD : Typeface.NORMAL);
+        btnWatchSdr.setBackground(ripple(isSdr ? 0x66252e25 : 0x221b211c, isSdr ? ACCENT : 0x44485546, 14));
 
         boolean isHdr = "hdr".equals(currentMode);
-        btnVerHdr.setSelected(isHdr);
-        btnVerHdr.setText((isHdr ? "✓ " : "") + "Ver em HDR");
-        btnVerHdr.setTextColor(isHdr ? ACCENT : TEXT);
-        btnVerHdr.setTypeface(Typeface.DEFAULT, isHdr ? Typeface.BOLD : Typeface.NORMAL);
-        btnVerHdr.setBackground(ripple(isHdr ? 0x66252e25 : 0x221b211c, isHdr ? ACCENT : 0x44485546, 14));
+        btnWatchHdr.setSelected(isHdr);
+        btnWatchHdr.setText((isHdr ? "✓ " : "") + getString(R.string.hud_btn_watch_hdr));
+        btnWatchHdr.setTextColor(isHdr ? ACCENT : TEXT);
+        btnWatchHdr.setTypeface(Typeface.DEFAULT, isHdr ? Typeface.BOLD : Typeface.NORMAL);
+        btnWatchHdr.setBackground(ripple(isHdr ? 0x66252e25 : 0x221b211c, isHdr ? ACCENT : 0x44485546, 14));
     }
 
     private void showFullscreenHud() {
@@ -524,7 +518,7 @@ public final class MainActivity extends Activity {
                     showReportDialog(text, report);
                 });
             } catch (Exception e) {
-                handler.post(() -> Toast.makeText(this, "Erro: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+                handler.post(() -> Toast.makeText(this, getString(R.string.error_dialog, e.getMessage()), Toast.LENGTH_SHORT).show());
             }
         });
     }
@@ -538,10 +532,10 @@ public final class MainActivity extends Activity {
         scroll.addView(body);
 
         new AlertDialog.Builder(this)
-            .setTitle("Relatório Técnico do Dispositivo")
+            .setTitle(getString(R.string.dialog_technical_report_title))
             .setView(scroll)
-            .setPositiveButton("Partilhar", (d, w) -> shareReportJson(report))
-            .setNegativeButton("Fechar", null)
+            .setPositiveButton(getString(R.string.dialog_btn_share), (d, w) -> shareReportJson(report))
+            .setNegativeButton(getString(R.string.dialog_btn_close), null)
             .show();
     }
 
@@ -558,10 +552,10 @@ public final class MainActivity extends Activity {
                 .setType("application/json")
                 .putExtra(Intent.EXTRA_STREAM, uri)
                 .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-            share.setClipData(ClipData.newRawUri("HDR Lab Light report", uri));
-            startActivity(Intent.createChooser(share, "Partilhar Relatório HDR Lab Light"));
+            share.setClipData(ClipData.newRawUri(getString(R.string.share_clip_label), uri));
+            startActivity(Intent.createChooser(share, getString(R.string.share_report_title)));
         } catch (Exception e) {
-            Toast.makeText(this, "Falha ao partilhar: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, getString(R.string.error_share, e.getMessage()), Toast.LENGTH_SHORT).show();
         }
     }
 

@@ -1,5 +1,7 @@
 package dev.hdrlab;
 
+import android.content.res.Configuration;
+import android.content.res.Resources;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
@@ -21,6 +23,7 @@ import org.robolectric.annotation.Config;
 import org.robolectric.annotation.GraphicsMode;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.Locale;
 import static org.junit.Assert.*;
 
 @RunWith(RobolectricTestRunner.class)
@@ -72,7 +75,7 @@ public class LayoutTest {
         assertTrue("HDR label should be non-empty", capHdrLabel.getText().length() > 0);
         assertTrue("Gamut label should be non-empty", capGamutLabel.getText().length() > 0);
         assertTrue("Brightness label should be non-empty", capBrightnessLabel.getText().length() > 0);
-        assertEquals("Ver Relatório Técnico Detalhado", btnDetailedReport.getText().toString());
+        assertEquals(activity.getString(R.string.btn_detailed_report), btnDetailedReport.getText().toString());
     }
 
     @Test public void quickTestCardContainsInstructionsAndStartButton() throws Exception {
@@ -81,12 +84,13 @@ public class LayoutTest {
 
         Button btnStartTest = field("btnStartTest");
         assertNotNull(btnStartTest);
-        assertEquals("▶ Iniciar Teste SDR vs HDR em Ecrã Cheio", btnStartTest.getText().toString());
+        assertEquals(activity.getString(R.string.btn_start_test), btnStartTest.getText().toString());
 
         // Verify instructions text inside card contains key explanation items
-        boolean foundSdrExplanation = false;
-        boolean foundBlackExplanation = false;
-        boolean foundStepsExplanation = false;
+        boolean foundHowExplanation = false;
+        boolean foundWhatExplanation = false;
+        String expectedHow = activity.getString(R.string.test_how_it_works_text);
+        String expectedWhat = activity.getString(R.string.test_what_to_look_text);
 
         for (int i = 0; i < testCard.getChildCount(); i++) {
             View child = testCard.getChildAt(i);
@@ -96,23 +100,19 @@ public class LayoutTest {
                     View inner = box.getChildAt(j);
                     if (inner instanceof TextView) {
                         String text = ((TextView) inner).getText().toString();
-                        if (text.contains("10 segundos em SDR") || text.contains("transição automática para HDR")) {
-                            foundSdrExplanation = true;
+                        if (text.equals(expectedHow)) {
+                            foundHowExplanation = true;
                         }
-                        if (text.contains("Fundo Preto Puro") || text.contains("OLED") || text.contains("LCD")) {
-                            foundBlackExplanation = true;
-                        }
-                        if (text.contains("Degraus Quase-Preto") || text.contains("1%, 2%")) {
-                            foundStepsExplanation = true;
+                        if (text.equals(expectedWhat)) {
+                            foundWhatExplanation = true;
                         }
                     }
                 }
             }
         }
 
-        assertTrue("Should contain 10-second SDR to HDR transition instruction", foundSdrExplanation);
-        assertTrue("Should contain OLED black surround vs LCD glow instruction", foundBlackExplanation);
-        assertTrue("Should contain 6 near-black grey steps instruction", foundStepsExplanation);
+        assertTrue("Should contain how test works instruction", foundHowExplanation);
+        assertTrue("Should contain what to look for instruction", foundWhatExplanation);
     }
 
     @Test public void startTestEntersFullscreenSetsMaxBrightnessAndPlaysSdr() throws Exception {
@@ -141,7 +141,7 @@ public class LayoutTest {
         call("startAutomatedTest");
 
         TextView hudTitleLabel = field("hudTitleLabel");
-        assertTrue(hudTitleLabel.getText().toString().contains("MODO SDR"));
+        assertEquals(activity.getString(R.string.hud_title_sdr_countdown, 10), hudTitleLabel.getText().toString());
 
         Runnable ticker = field("testCountdownTicker");
         assertNotNull(ticker);
@@ -152,6 +152,7 @@ public class LayoutTest {
         }
         String modeAfter9 = field("currentMode");
         assertEquals("sdr", modeAfter9);
+        assertEquals(activity.getString(R.string.hud_title_sdr_countdown, 1), hudTitleLabel.getText().toString());
 
         // Advance 10th tick (triggers transition to HDR)
         ticker.run();
@@ -160,7 +161,7 @@ public class LayoutTest {
 
         boolean isAutomated = field("isAutomatedTest");
         assertFalse("Automated phase ends after 10s transition", isAutomated);
-        assertTrue(hudTitleLabel.getText().toString().contains("MODO HDR (HDR10 / PQ) ATIVADO"));
+        assertEquals(activity.getString(R.string.hud_title_hdr_active), hudTitleLabel.getText().toString());
     }
 
     @Test public void fullscreenHudHasRequiredButtonsWithProperClearanceAndConstraints() throws Exception {
@@ -177,20 +178,20 @@ public class LayoutTest {
         assertTrue("HUD bottom margin must be >= 76dp for PlayerView clearance",
             params.bottomMargin >= expectedClearance);
 
-        Button btnVerSdr = field("btnVerSdr");
-        Button btnVerHdr = field("btnVerHdr");
-        Button btnReiniciar = field("btnReiniciar");
-        Button btnSair = field("btnSair");
+        Button btnWatchSdr = field("btnWatchSdr");
+        Button btnWatchHdr = field("btnWatchHdr");
+        Button btnRestart = field("btnRestart");
+        Button btnExit = field("btnExit");
 
-        assertNotNull(btnVerSdr);
-        assertNotNull(btnVerHdr);
-        assertNotNull(btnReiniciar);
-        assertNotNull(btnSair);
+        assertNotNull(btnWatchSdr);
+        assertNotNull(btnWatchHdr);
+        assertNotNull(btnRestart);
+        assertNotNull(btnExit);
 
         int minH = (int) dpMethod.invoke(activity, 36f);
         int minW = (int) dpMethod.invoke(activity, 44f);
 
-        for (Button b : new Button[] {btnVerSdr, btnVerHdr, btnReiniciar, btnSair}) {
+        for (Button b : new Button[] {btnWatchSdr, btnWatchHdr, btnRestart, btnExit}) {
             assertTrue("Button must enforce singleLine", b.isSingleLine());
             assertTrue("Button minHeight must be >= 36dp", b.getMinHeight() >= minH);
             assertTrue("Button minimumWidth must be >= 44dp", b.getMinimumWidth() >= minW);
@@ -200,29 +201,29 @@ public class LayoutTest {
     @Test public void switchingBetweenSdrAndHdrInHud() throws Exception {
         call("startAutomatedTest");
 
-        Button btnVerSdr = field("btnVerSdr");
-        Button btnVerHdr = field("btnVerHdr");
-        Button btnReiniciar = field("btnReiniciar");
+        Button btnWatchSdr = field("btnWatchSdr");
+        Button btnWatchHdr = field("btnWatchHdr");
+        Button btnRestart = field("btnRestart");
 
         // Initially SDR
         assertEquals("sdr", field("currentMode"));
-        assertTrue(btnVerSdr.isSelected());
-        assertFalse(btnVerHdr.isSelected());
+        assertTrue(btnWatchSdr.isSelected());
+        assertFalse(btnWatchHdr.isSelected());
 
         // Switch to HDR
-        btnVerHdr.performClick();
+        btnWatchHdr.performClick();
         assertEquals("hdr", field("currentMode"));
-        assertTrue(btnVerHdr.isSelected());
-        assertFalse(btnVerSdr.isSelected());
+        assertTrue(btnWatchHdr.isSelected());
+        assertFalse(btnWatchSdr.isSelected());
 
         // Switch back to SDR
-        btnVerSdr.performClick();
+        btnWatchSdr.performClick();
         assertEquals("sdr", field("currentMode"));
-        assertTrue(btnVerSdr.isSelected());
-        assertFalse(btnVerHdr.isSelected());
+        assertTrue(btnWatchSdr.isSelected());
+        assertFalse(btnWatchHdr.isSelected());
 
         // Restart test
-        btnReiniciar.performClick();
+        btnRestart.performClick();
         assertEquals("sdr", field("currentMode"));
         boolean isAutomated = field("isAutomatedTest");
         assertTrue(isAutomated);
@@ -238,8 +239,8 @@ public class LayoutTest {
         assertEquals(1.0f, activity.getWindow().getAttributes().screenBrightness, 0.001f);
         assertTrue((Boolean) field("fullscreen"));
 
-        Button btnSair = field("btnSair");
-        btnSair.performClick();
+        Button btnExit = field("btnExit");
+        btnExit.performClick();
 
         assertFalse((Boolean) field("fullscreen"));
         assertEquals(0.5f, activity.getWindow().getAttributes().screenBrightness, 0.001f);
@@ -374,5 +375,60 @@ public class LayoutTest {
 
         assertEquals("cardsContainer must be VERTICAL in narrow portrait",
             LinearLayout.VERTICAL, cardsContainer.getOrientation());
+    }
+
+    @Test public void localeResolvesEnglishDefaultAndPortuguese() {
+        Configuration configEn = new Configuration(activity.getResources().getConfiguration());
+        configEn.setLocale(Locale.ENGLISH);
+        Resources enRes = activity.createConfigurationContext(configEn).getResources();
+
+        assertEquals("HDR Lab Light", enRes.getString(R.string.app_name));
+        assertEquals("DISPLAY DIAGNOSTICS", enRes.getString(R.string.header_eyebrow));
+        assertEquals("Screen Capabilities", enRes.getString(R.string.card_capabilities_title));
+        assertEquals("Quick Test: SDR vs HDR", enRes.getString(R.string.card_quick_test_title));
+        assertEquals("Device & Android:", enRes.getString(R.string.prop_device_model));
+        assertEquals("HDR Support:", enRes.getString(R.string.prop_hdr_support));
+        assertEquals("Color Gamut:", enRes.getString(R.string.prop_color_gamut));
+        assertEquals("Estimated Peak Brightness:", enRes.getString(R.string.prop_peak_brightness));
+        assertEquals("View Detailed Technical Report", enRes.getString(R.string.btn_detailed_report));
+        assertEquals("▶ Start Fullscreen SDR vs HDR Test", enRes.getString(R.string.btn_start_test));
+        assertEquals("SDR MODE · %1$ds remaining", enRes.getString(R.string.hud_title_sdr_countdown));
+        assertEquals("HDR MODE (HDR10 / PQ) ACTIVE", enRes.getString(R.string.hud_title_hdr_active));
+        assertEquals("Watch SDR", enRes.getString(R.string.hud_btn_watch_sdr));
+        assertEquals("Watch HDR", enRes.getString(R.string.hud_btn_watch_hdr));
+        assertEquals("⟲ Restart", enRes.getString(R.string.hud_btn_restart));
+        assertEquals("✕ Exit", enRes.getString(R.string.hud_btn_exit));
+        assertEquals("Technical Report", enRes.getString(R.string.dialog_technical_report_title));
+        assertEquals("Share Report", enRes.getString(R.string.share_report_title));
+        assertEquals("Reading system data…", enRes.getString(R.string.status_reading_system_data));
+        assertEquals("Checking…", enRes.getString(R.string.status_checking));
+        assertEquals("Not reported by system", enRes.getString(R.string.brightness_not_reported));
+
+        // Portuguese pt-PT
+        Configuration configPt = new Configuration(activity.getResources().getConfiguration());
+        configPt.setLocale(new Locale("pt", "PT"));
+        Resources ptRes = activity.createConfigurationContext(configPt).getResources();
+
+        assertEquals("HDR Lab Light", ptRes.getString(R.string.app_name));
+        assertEquals("DIAGNÓSTICO VISUAL DE ECRÃ", ptRes.getString(R.string.header_eyebrow));
+        assertEquals("Capacidades do Teu Ecrã", ptRes.getString(R.string.card_capabilities_title));
+        assertEquals("Teste Rápido: SDR vs HDR", ptRes.getString(R.string.card_quick_test_title));
+        assertEquals("Modelo e Versão Android:", ptRes.getString(R.string.prop_device_model));
+        assertEquals("Suporte HDR:", ptRes.getString(R.string.prop_hdr_support));
+        assertEquals("Gama de Cores:", ptRes.getString(R.string.prop_color_gamut));
+        assertEquals("Brilho de Pico Estimado:", ptRes.getString(R.string.prop_peak_brightness));
+        assertEquals("Ver Relatório Técnico Detalhado", ptRes.getString(R.string.btn_detailed_report));
+        assertEquals("▶ Iniciar Teste SDR vs HDR em Ecrã Cheio", ptRes.getString(R.string.btn_start_test));
+        assertEquals("MODO SDR · %1$ds restantes", ptRes.getString(R.string.hud_title_sdr_countdown));
+        assertEquals("MODO HDR (HDR10 / PQ) ATIVADO", ptRes.getString(R.string.hud_title_hdr_active));
+        assertEquals("Ver em SDR", ptRes.getString(R.string.hud_btn_watch_sdr));
+        assertEquals("Ver em HDR", ptRes.getString(R.string.hud_btn_watch_hdr));
+        assertEquals("⟲ Reiniciar", ptRes.getString(R.string.hud_btn_restart));
+        assertEquals("✕ Sair", ptRes.getString(R.string.hud_btn_exit));
+        assertEquals("Relatório Técnico do Dispositivo", ptRes.getString(R.string.dialog_technical_report_title));
+        assertEquals("Partilhar Relatório HDR Lab Light", ptRes.getString(R.string.share_report_title));
+        assertEquals("A ler dados do sistema…", ptRes.getString(R.string.status_reading_system_data));
+        assertEquals("A verificar…", ptRes.getString(R.string.status_checking));
+        assertEquals("Não declarado pelo sistema", ptRes.getString(R.string.brightness_not_reported));
     }
 }

@@ -1,5 +1,14 @@
 # HDR Lab — Changelog
 
+## v0.1.2 (Full Bilingual i18n: EN & PT-PT)
+
+- Full bilingual support (International English & Portuguese pt-PT): All UI strings, diagnostic cards, technical report dialogs, and test HUD labels fully localized.
+- Automatic system locale detection: Dynamically selects European Portuguese (`pt-PT`) for Portuguese device locales, defaulting to International English for all other locales.
+- International standard English codebase: Complete separation of UI strings into native Android resource catalogs (`res/values/strings.xml` and `res/values-pt/strings.xml`), standardizing underlying code and layout templates in English.
+- Retained tablet adaptive side-by-side layout & near-black test: Dynamic two-column card arrangement in wide/landscape viewports with matched heights and aligned action buttons, alongside automated 10-second SDR-to-HDR near-black evaluation.
+
+---
+
 ## v0.1.1 (Tablet Adaptive Side-by-Side Layout)
 
 - Adaptive two-card tablet and landscape layout: dynamically positions "Capacidades do Teu Ecrã" and "Teste Rápido: SDR vs HDR" side-by-side in 2 columns on wide screens and tablets in landscape (>= 720dp width or >= 580dp in landscape).

@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- App & Header -->
+    <string name="app_name">HDR Lab Light</string>
+    <string name="header_eyebrow">DIAGNÓSTICO VISUAL DE ECRÃ</string>
+    <string name="header_title">HDR Lab Light</string>
+    <string name="header_subtitle">Verifica a calibração de pretos e capacidade HDR do teu ecrã.</string>
+
+    <!-- Card 1: Screen Capabilities -->
+    <string name="card_capabilities_title">Capacidades do Teu Ecrã</string>
+    <string name="card_capabilities_subtitle">Informações reportadas pelo sistema Android</string>
+    <string name="prop_device_model">Modelo e Versão Android:</string>
+    <string name="prop_hdr_support">Suporte HDR:</string>
+    <string name="prop_color_gamut">Gama de Cores:</string>
+    <string name="prop_peak_brightness">Brilho de Pico Estimado:</string>
+    <string name="btn_detailed_report">Ver Relatório Técnico Detalhado</string>
+
+    <!-- Reading / Status -->
+    <string name="status_reading_system_data">A ler dados do sistema…</string>
+    <string name="status_checking">A verificar…</string>
+
+    <!-- Diagnostics values -->
+    <string name="hdr_support_no">Não (Apenas SDR)</string>
+    <string name="hdr_support_yes">Sim (%1$s)</string>
+    <string name="gamut_normal">Normal (sRGB)</string>
+    <string name="gamut_wide">Sim (DCI-P3 / BT.2020)</string>
+    <string name="brightness_not_reported">Não declarado pelo sistema</string>
+    <string name="brightness_tag_very_high"> (Brilho Muito Alto)</string>
+    <string name="brightness_tag_high"> (Brilho Alto)</string>
+    <string name="brightness_tag_medium"> (Brilho Médio)</string>
+    <string name="brightness_nits_format">~%1$d nits%2$s</string>
+
+    <!-- Card 2: Quick Test -->
+    <string name="card_quick_test_title">Teste Rápido: SDR vs HDR</string>
+    <string name="card_quick_test_subtitle">Comparação automatizada de 10 segundos em ecrã inteiro</string>
+    <string name="test_how_it_works_title">Como funciona o teste:</string>
+    <string name="test_how_it_works_text">• 10 segundos em SDR, com transição automática para HDR em ecrã cheio.\n• O ecrã é colocado com brilho no máximo (100%) durante o teste.</string>
+    <string name="test_what_to_look_title">O que deves observar no ecrã:</string>
+    <string name="test_what_to_look_text">• Fundo Preto Puro: Em ecrãs OLED, o fundo é preto absoluto (píxeis desligados). Em ecrãs LCD, poderás notar um ligeiro brilho cinzento (backlight glow).\n• 6 Degraus Quase-Preto: Observa as 6 barras de cinzento suave (1%, 2%…). Devem ser percetíveis sem clarear o fundo preto ao redor.</string>
+    <string name="btn_start_test">▶ Iniciar Teste SDR vs HDR em Ecrã Cheio</string>
+
+    <!-- Fullscreen HUD -->
+    <string name="hud_title_sdr_countdown">MODO SDR · %1$ds restantes</string>
+    <string name="hud_tip_sdr_countdown">Observe o fundo preto e a visibilidade das 6 barras de cinzento.</string>
+    <string name="hud_title_sdr_active">MODO SDR ATIVADO</string>
+    <string name="hud_tip_sdr_active">Modo SDR manual. Observe o fundo preto e as barras.</string>
+    <string name="hud_title_hdr_active">MODO HDR (HDR10 / PQ) ATIVADO</string>
+    <string name="hud_tip_hdr_active">O ecrã ativa o modo HDR. O fundo deve manter-se preto puro.</string>
+
+    <!-- HUD Control Buttons -->
+    <string name="hud_btn_watch_sdr">Ver em SDR</string>
+    <string name="hud_btn_watch_hdr">Ver em HDR</string>
+    <string name="hud_btn_restart">⟲ Reiniciar</string>
+    <string name="hud_btn_exit">✕ Sair</string>
+
+    <!-- Technical Report & Share Dialogs -->
+    <string name="dialog_technical_report_title">Relatório Técnico do Dispositivo</string>
+    <string name="dialog_btn_share">Partilhar</string>
+    <string name="dialog_btn_close">Fechar</string>
+    <string name="share_report_title">Partilhar Relatório HDR Lab Light</string>
+    <string name="share_clip_label">Relatório HDR Lab Light</string>
+    <string name="error_dialog">Erro: %1$s</string>
+    <string name="error_share">Falha ao partilhar: %1$s</string>
+</resources>

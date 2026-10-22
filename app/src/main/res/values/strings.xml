@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- App & Header -->
+    <string name="app_name">HDR Lab Light</string>
+    <string name="header_eyebrow">DISPLAY DIAGNOSTICS</string>
+    <string name="header_title">HDR Lab Light</string>
+    <string name="header_subtitle">Verify black levels and HDR capability of your display.</string>
+
+    <!-- Card 1: Screen Capabilities -->
+    <string name="card_capabilities_title">Screen Capabilities</string>
+    <string name="card_capabilities_subtitle">Information reported by Android system</string>
+    <string name="prop_device_model">Device &amp; Android:</string>
+    <string name="prop_hdr_support">HDR Support:</string>
+    <string name="prop_color_gamut">Color Gamut:</string>
+    <string name="prop_peak_brightness">Estimated Peak Brightness:</string>
+    <string name="btn_detailed_report">View Detailed Technical Report</string>
+
+    <!-- Reading / Status -->
+    <string name="status_reading_system_data">Reading system data…</string>
+    <string name="status_checking">Checking…</string>
+
+    <!-- Diagnostics values -->
+    <string name="hdr_support_no">No (SDR only)</string>
+    <string name="hdr_support_yes">Yes (%1$s)</string>
+    <string name="gamut_normal">Normal (sRGB)</string>
+    <string name="gamut_wide">Yes (DCI-P3 / BT.2020)</string>
+    <string name="brightness_not_reported">Not reported by system</string>
+    <string name="brightness_tag_very_high"> (Very High Brightness)</string>
+    <string name="brightness_tag_high"> (High Brightness)</string>
+    <string name="brightness_tag_medium"> (Medium Brightness)</string>
+    <string name="brightness_nits_format">~%1$d nits%2$s</string>
+
+    <!-- Card 2: Quick Test -->
+    <string name="card_quick_test_title">Quick Test: SDR vs HDR</string>
+    <string name="card_quick_test_subtitle">Automated 10-second fullscreen comparison</string>
+    <string name="test_how_it_works_title">How the test works:</string>
+    <string name="test_how_it_works_text">• 10 seconds in SDR, with an automatic transition to HDR in fullscreen.\n• Display is set to maximum brightness (100%) during the test.</string>
+    <string name="test_what_to_look_title">What to look for on screen:</string>
+    <string name="test_what_to_look_text">• True Black Background: On OLED displays, the background is pitch black (pixels off). On LCD screens, you may notice a slight grey glow (backlight glow).\n• 6 Near-Black Steps: Watch the 6 gentle grey bars (1%, 2%…). They should be distinguishable without elevating the surrounding black background.</string>
+    <string name="btn_start_test">▶ Start Fullscreen SDR vs HDR Test</string>
+
+    <!-- Fullscreen HUD -->
+    <string name="hud_title_sdr_countdown">SDR MODE · %1$ds remaining</string>
+    <string name="hud_tip_sdr_countdown">Observe the black background and visibility of the 6 grey bars.</string>
+    <string name="hud_title_sdr_active">SDR MODE ACTIVE</string>
+    <string name="hud_tip_sdr_active">Manual SDR mode. Observe the black background and bars.</string>
+    <string name="hud_title_hdr_active">HDR MODE (HDR10 / PQ) ACTIVE</string>
+    <string name="hud_tip_hdr_active">Screen activates HDR mode. Background should remain pure black.</string>
+
+    <!-- HUD Control Buttons -->
+    <string name="hud_btn_watch_sdr">Watch SDR</string>
+    <string name="hud_btn_watch_hdr">Watch HDR</string>
+    <string name="hud_btn_restart">⟲ Restart</string>
+    <string name="hud_btn_exit">✕ Exit</string>
+
+    <!-- Technical Report & Share Dialogs -->
+    <string name="dialog_technical_report_title">Technical Report</string>
+    <string name="dialog_btn_share">Share</string>
+    <string name="dialog_btn_close">Close</string>
+    <string name="share_report_title">Share Report</string>
+    <string name="share_clip_label">HDR Lab Light report</string>
+    <string name="error_dialog">Error: %1$s</string>
+    <string name="error_share">Failed to share: %1$s</string>
+</resources>

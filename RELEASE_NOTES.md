@@ -1,16 +1,18 @@
-# HDR Lab Light v0.1.1
+# HDR Lab Light v0.1.2
 
-## v0.1.1 (Adaptive Side-by-Side Tablet Layout)
+## v0.1.2 (Full Bilingual Support: International English & Portuguese pt-PT)
 
-HDR Lab Light v0.1.1 introduces an adaptive dual-column layout optimized for tablets, foldables, and landscape orientations, ensuring all display diagnostics and test controls fit perfectly in view without vertical scrolling.
+HDR Lab Light v0.1.2 introduces comprehensive bilingual internationalization (i18n), standardizing the application on an International English foundation with full European Portuguese (`pt-PT`) localization, automated system locale detection, and strict separation of UI strings from application logic.
 
-### What's New in v0.1.1
+### What's New in v0.1.2
 
-- **Adaptive Two-Card Tablet & Landscape Layout:**
-  - **Dynamic 2-Column Positioning:** On tablets and wide screens in landscape orientation (viewport width >= 720dp or >= 580dp in landscape), *"Capacidades do Teu Ecrã"* and *"Teste Rápido: SDR vs HDR"* are dynamically arranged side-by-side.
-  - **Equal Height & Aligned Action Buttons:** Both cards stretch to matching heights with weighted spacers pushing bottom action buttons (*"Ver Relatório Técnico Detalhado"* and *"Iniciar Teste SDR vs HDR"*) to an identical baseline.
-  - **Zero Vertical Scrolling:** Fully eliminates vertical scrolling in landscape, ensuring the primary start test button is never clipped or pushed offscreen.
-  - **Fluid Responsive Adaptation:** Automatically collapses back to a clean single-column stacked view on smartphones and portrait orientations without layout stutter.
+- **Full Bilingual Support (EN & PT-PT):**
+  - **Automatic System Locale Detection:** Automatically detects device system language—serving International English by default worldwide and dynamically switching to European Portuguese (`pt-PT`) on Portuguese device locales.
+  - **Android XML Resource Separation:** 100% of user-facing interface text, diagnostic card titles, descriptions, technical dialogs, and test HUD labels are decoupled into native Android resource catalogs (`res/values/strings.xml` and `res/values-pt/strings.xml`).
+  - **International Standard English Codebase:** Standardized layout templates, view IDs, and Java implementation to international English conventions while preserving localized presentation.
+- **Tablet Adaptive Side-by-Side Layout & Near-Black Test:**
+  - **Dynamic Two-Column Layout:** Maintains responsive side-by-side card placement on wide screens and landscape orientations (width >= 720dp or >= 580dp in landscape) with matched heights and aligned action buttons.
+  - **Automated Calibrated Test:** Evaluates display true black and near-black shadow detail tracking via automated 10-second SDR-to-HDR transition on the 6-patch step pattern with exact-frame switching.
 
 ### HDR Lab Light Core Features
 
