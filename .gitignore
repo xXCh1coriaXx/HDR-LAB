@@ -13,6 +13,5 @@ local.properties
 .env.*
 
 # Local machine and agent preferences (NOT tracked in repo)
-AGENTS.md
 *.local.md
 .gemini/
