@@ -5,8 +5,14 @@ local.properties
 *.iml
 
 *.keystore
+!app/hdrlab-release.keystore
 *.jks
 *.apk
 *.aab
 .env
 .env.*
+
+# Local machine and agent preferences (NOT tracked in repo)
+AGENTS.md
+*.local.md
+.gemini/
