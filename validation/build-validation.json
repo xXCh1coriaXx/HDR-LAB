@@ -1,11 +1,11 @@
 {
-  "version": "0.2.0",
+  "version": "0.3.0",
   "buildType": "optimized release, signed with original local testing key",
   "assembleRelease": "passed",
   "lintDebug": "passed (warnings retained in report)",
   "lintRelease": "passed (warnings retained in report)",
   "uiRegressionTests": {
-    "tests": 5,
+    "tests": 7,
     "failures": 0,
     "errors": 0,
     "cases": [
@@ -13,7 +13,9 @@
       "uncreatedCopiesAreDisabledAndBusyStatePreservesSelection",
       "everyComparisonHasAnExplicitAndExclusiveSelectedState",
       "tabletUsesQuarterSidebarAndRestoresPhoneLayoutWithoutReplacingVideo",
-      "tappingSelectedModeDoesNotStartANewPlaybackPipeline"
+      "tappingSelectedModeDoesNotStartANewPlaybackPipeline",
+      "fullscreenHudSyncsWithModeSelectionAndTogglesVariants",
+      "hdrStaticInfoParsesCta861DescriptorCorrectly"
     ]
   },
   "apkSignature": "verified; matches v0.1.0 certificate",

@@ -120,6 +120,8 @@ final class Diagnostics {
                         StringBuilder hex = new StringBuilder();
                         while (copy.hasRemaining()) hex.append(String.format(Locale.US, "%02x", copy.get() & 255));
                         track.put("hdrStaticInfoHex", hex.toString());
+                        JSONObject parsed = parseHdrStaticInfo(bytes);
+                        if (parsed != null) track.put("hdrStaticMetadata", parsed);
                     }
                 }
                 if (mime != null && mime.startsWith("video/")) {
@@ -157,5 +159,51 @@ final class Diagnostics {
                     + (t.has("frame-rate") ? "  ·  " + t.opt("frame-rate") + " fps" : "");
         }
         return "No video track found";
+    }
+
+    static JSONObject parseHdrStaticInfo(ByteBuffer buffer) {
+        if (buffer == null || buffer.remaining() < 24) return null;
+        ByteBuffer copy = buffer.duplicate().order(java.nio.ByteOrder.LITTLE_ENDIAN);
+        try {
+            JSONObject obj = new JSONObject();
+            if (copy.remaining() >= 25) {
+                obj.put("descriptorType", copy.get() & 0xff);
+            }
+            int gx = copy.getShort() & 0xffff;
+            int gy = copy.getShort() & 0xffff;
+            int bx = copy.getShort() & 0xffff;
+            int by = copy.getShort() & 0xffff;
+            int rx = copy.getShort() & 0xffff;
+            int ry = copy.getShort() & 0xffff;
+            int wx = copy.getShort() & 0xffff;
+            int wy = copy.getShort() & 0xffff;
+            int maxLum = copy.getShort() & 0xffff;
+            int minLum = copy.getShort() & 0xffff;
+            int maxCll = copy.getShort() & 0xffff;
+            int maxFall = copy.getShort() & 0xffff;
+
+            JSONObject primaries = new JSONObject();
+            primaries.put("red", new JSONObject().put("x", round4(rx * 0.00002)).put("y", round4(ry * 0.00002)));
+            primaries.put("green", new JSONObject().put("x", round4(gx * 0.00002)).put("y", round4(gy * 0.00002)));
+            primaries.put("blue", new JSONObject().put("x", round4(bx * 0.00002)).put("y", round4(by * 0.00002)));
+            obj.put("displayPrimaries", primaries);
+
+            JSONObject wp = new JSONObject();
+            wp.put("x", round4(wx * 0.00002));
+            wp.put("y", round4(wy * 0.00002));
+            obj.put("whitePoint", wp);
+
+            obj.put("maxMasteringLuminanceNits", maxLum);
+            obj.put("minMasteringLuminanceNits", round4(minLum * 0.0001));
+            obj.put("maxContentLightLevelNits", maxCll);
+            obj.put("maxFrameAverageLightLevelNits", maxFall);
+            return obj;
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
+    private static double round4(double val) {
+        return Math.round(val * 10000.0) / 10000.0;
     }
 }

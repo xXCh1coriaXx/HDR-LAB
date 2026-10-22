@@ -152,4 +152,65 @@ public class LayoutTest {
         viewport(411, 891);
         assertSame(field("page"), ((View) field("testingSection")).getParent());
     }
+
+    @Test public void fullscreenHudSyncsWithModeSelectionAndTogglesVariants() throws Exception {
+        set("source", Uri.parse("file:///test.mp4"));
+        Class<?> variantClass = Class.forName("dev.hdrlab.MainActivity$Variant");
+        Constructor<?> constructor = variantClass.getDeclaredConstructors()[0]; constructor.setAccessible(true);
+        Map<String, Object> variants = field("variants");
+        for (String key : new String[] {"codec", "gpu"})
+            variants.put(key, constructor.newInstance(Uri.parse("file:///" + key + ".mp4"), new File(key), 0L, new JSONObject()));
+        call("refreshButtons");
+
+        Method fullscreenMethod = MainActivity.class.getDeclaredMethod("setFullscreen", boolean.class);
+        fullscreenMethod.setAccessible(true);
+        fullscreenMethod.invoke(activity, true);
+
+        View hud = field("fullscreenHud");
+        assertNotNull(hud);
+        assertEquals(View.VISIBLE, hud.getVisibility());
+
+        Button fsOriginal = field("fsOriginalButton");
+        Button fsCodec = field("fsCodecButton");
+        Button fsGpu = field("fsGpuButton");
+        assertTrue(fsOriginal.isSelected());
+        assertFalse(fsCodec.isSelected());
+        assertFalse(fsGpu.isSelected());
+
+        fsCodec.performClick();
+        assertEquals("codec", field("mode"));
+        assertTrue(fsCodec.isSelected());
+        assertFalse(fsOriginal.isSelected());
+
+        fullscreenMethod.invoke(activity, false);
+        assertEquals(View.GONE, hud.getVisibility());
+    }
+
+    @Test public void hdrStaticInfoParsesCta861DescriptorCorrectly() throws Exception {
+        java.nio.ByteBuffer buf = java.nio.ByteBuffer.allocate(25).order(java.nio.ByteOrder.LITTLE_ENDIAN);
+        buf.put((byte) 0);
+        buf.putShort((short) 8500); buf.putShort((short) 39850);
+        buf.putShort((short) 6550); buf.putShort((short) 2300);
+        buf.putShort((short) 35400); buf.putShort((short) 14600);
+        buf.putShort((short) 15635); buf.putShort((short) 16450);
+        buf.putShort((short) 1000); buf.putShort((short) 1);
+        buf.putShort((short) 1000); buf.putShort((short) 400);
+        buf.flip();
+
+        JSONObject parsed = Diagnostics.parseHdrStaticInfo(buf);
+        assertNotNull(parsed);
+        assertEquals(0, parsed.getInt("descriptorType"));
+        assertEquals(1000, parsed.getInt("maxMasteringLuminanceNits"));
+        assertEquals(0.0001, parsed.getDouble("minMasteringLuminanceNits"), 0.00001);
+        assertEquals(1000, parsed.getInt("maxContentLightLevelNits"));
+        assertEquals(400, parsed.getInt("maxFrameAverageLightLevelNits"));
+
+        JSONObject red = parsed.getJSONObject("displayPrimaries").getJSONObject("red");
+        assertEquals(0.708, red.getDouble("x"), 0.001);
+        assertEquals(0.292, red.getDouble("y"), 0.001);
+
+        JSONObject wp = parsed.getJSONObject("whitePoint");
+        assertEquals(0.3127, wp.getDouble("x"), 0.001);
+        assertEquals(0.329, wp.getDouble("y"), 0.001);
+    }
 }

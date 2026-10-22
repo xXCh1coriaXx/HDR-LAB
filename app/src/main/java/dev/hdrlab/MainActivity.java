@@ -15,6 +15,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.provider.OpenableColumns;
+import android.view.Display;
 import android.view.Gravity;
 import android.view.View;
 import android.view.WindowManager;
@@ -24,6 +25,7 @@ import androidx.media3.common.*;
 import androidx.media3.common.util.UnstableApi;
 import androidx.media3.exoplayer.DefaultRenderersFactory;
 import androidx.media3.exoplayer.ExoPlayer;
+import androidx.media3.exoplayer.SeekParameters;
 import androidx.media3.exoplayer.analytics.AnalyticsListener;
 import androidx.media3.transformer.*;
 import androidx.media3.ui.PlayerView;
@@ -48,6 +50,16 @@ public final class MainActivity extends Activity {
     private int videoWidth = 16, videoHeight = 9;
     private FrameLayout videoFrame;
     private PlayerView playerView;
+    private LinearLayout fullscreenHud;
+    private Button fsOriginalButton, fsCodecButton, fsGpuButton;
+    private Button fsPrevFrameButton, fsNextFrameButton;
+    private Display.HdrSdrRatioListener hdrSdrRatioListener;
+    private final Runnable hideFullscreenHud = () -> {
+        if (fullscreenHud != null && fullscreen) {
+            fullscreenHud.animate().alpha(0f).setDuration(250)
+                .withEndAction(() -> { if (fullscreenHud != null) fullscreenHud.setVisibility(View.GONE); }).start();
+        }
+    };
     private TextView status, formatLabel, capabilityLabel, progressLabel, modeLabel, clipLabel;
     private Button originalButton, codecButton, gpuButton, exportButton, shareVideoButton, cancelButton;
     private EditText notes;
@@ -111,6 +123,18 @@ public final class MainActivity extends Activity {
         String saved = state != null ? state.getString("source")
             : getPreferences(0).getString("source", null);
         if (saved != null) loadSource(Uri.parse(saved), false);
+        if (android.os.Build.VERSION.SDK_INT >= 34) {
+            try {
+                Display display = getDisplay();
+                if (display != null && display.isHdrSdrRatioAvailable()) {
+                    hdrSdrRatioListener = (d) -> {
+                        float ratio = d.getHdrSdrRatio();
+                        record("hdrSdrRatioChanged", "Ratio: " + ratio);
+                    };
+                    display.registerHdrSdrRatioChangedListener(getMainExecutor(), hdrSdrRatioListener);
+                }
+            } catch (Throwable ignored) {}
+        }
     }
 
     private void buildUi() {
@@ -200,7 +224,24 @@ public final class MainActivity extends Activity {
         playerView = (PlayerView) getLayoutInflater().inflate(R.layout.player, videoFrame, false);
         playerView.setKeepContentOnPlayerReset(false);
         videoFrame.addView(playerView, new FrameLayout.LayoutParams(-1, -1));
-        testingSection.addView(button("↗  Fullscreen / dark-room view", () -> setFullscreen(true)));
+        buildFullscreenHud();
+        videoFrame.setOnClickListener(v -> { if (fullscreen) showFullscreenHud(); });
+        playerView.setControllerVisibilityListener((PlayerView.ControllerVisibilityListener) visibility -> {
+            if (visibility == View.VISIBLE && fullscreen) showFullscreenHud();
+        });
+        LinearLayout playControls = new LinearLayout(this);
+        playControls.setOrientation(LinearLayout.HORIZONTAL);
+        Button fsBtn = button("↗  Fullscreen / dark-room view", () -> setFullscreen(true));
+        Button prevFrame = button("◀  Step", () -> stepFrame(-1));
+        Button nextFrame = button("Step  ▶", () -> stepFrame(1));
+        LinearLayout.LayoutParams pFs = new LinearLayout.LayoutParams(0, -2, 3);
+        pFs.setMarginEnd(dp(4));
+        LinearLayout.LayoutParams pStep = new LinearLayout.LayoutParams(0, -2, 2);
+        pStep.setMarginStart(dp(2)); pStep.setMarginEnd(dp(2));
+        playControls.addView(fsBtn, pFs);
+        playControls.addView(prevFrame, pStep);
+        playControls.addView(nextFrame, pStep);
+        testingSection.addView(playControls);
 
         LinearLayout compare = card();
         page.removeView(compare); testingSection.addView(compare);
@@ -365,6 +406,7 @@ public final class MainActivity extends Activity {
     private void ensurePlayer() {
         if (player != null) return;
         player = new ExoPlayer.Builder(this, new DefaultRenderersFactory(this).setEnableDecoderFallback(true)).build();
+        player.setSeekParameters(SeekParameters.EXACT);
         playerView.setPlayer(player);
         player.setRepeatMode(Player.REPEAT_MODE_ONE);
         player.addListener(new Player.Listener() {
@@ -465,13 +507,12 @@ public final class MainActivity extends Activity {
         MediaItem.ClippingConfiguration.Builder clipping = new MediaItem.ClippingConfiguration.Builder().setStartPositionMs(startMs);
         if (endMs != C.TIME_END_OF_SOURCE) clipping.setEndPositionMs(endMs);
         MediaItem item = new MediaItem.Builder().setUri(source).setClippingConfiguration(clipping.build()).build();
-        EditedMediaItem edited = new EditedMediaItem.Builder(item).build();
+        EditedMediaItem edited = new EditedMediaItem.Builder(item).setRemoveAudio(true).build();
         Composition composition = new Composition.Builder(new EditedMediaItemSequence(edited))
             .setHdrMode(method.equals("codec") ? Composition.HDR_MODE_TONE_MAP_HDR_TO_SDR_USING_MEDIACODEC
                 : Composition.HDR_MODE_TONE_MAP_HDR_TO_SDR_USING_OPEN_GL).build();
         long began = android.os.SystemClock.elapsedRealtime();
         transformer = new Transformer.Builder(this).setVideoMimeType(MimeTypes.VIDEO_H264)
-            .setAudioMimeType(MimeTypes.AUDIO_AAC)
             .addListener(new Transformer.Listener() {
                 @Override public void onCompleted(Composition c, ExportResult result) {
                     transformer = null; pendingExport = null; handler.removeCallbacks(progressTick);
@@ -626,8 +667,11 @@ public final class MainActivity extends Activity {
             getWindow().getInsetsController().hide(android.view.WindowInsets.Type.systemBars());
             getWindow().getInsetsController().setSystemBarsBehavior(android.view.WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
             playerView.setControllerShowTimeoutMs(1500); playerView.hideController();
+            showFullscreenHud();
             Toast.makeText(this, "Back to exit · tap for controls", Toast.LENGTH_SHORT).show();
         } else {
+            handler.removeCallbacks(hideFullscreenHud);
+            if (fullscreenHud != null) fullscreenHud.setVisibility(View.GONE);
             root.removeView(videoFrame);
             workspaceLayout.setVisibility(View.VISIBLE);
             testingSection.addView(videoFrame, testingSection.indexOfChild(modeLabel) + 1, new LinearLayout.LayoutParams(-1, dp(240)));
@@ -658,6 +702,14 @@ public final class MainActivity extends Activity {
         modeStyle(originalButton, "Original", "original", source != null);
         modeStyle(codecButton, "SDR · Codec", "codec", variants.containsKey("codec"));
         modeStyle(gpuButton, "SDR · GPU", "gpu", variants.containsKey("gpu"));
+        if (fsOriginalButton != null) {
+            fsOriginalButton.setEnabled(source != null && !busy);
+            fsCodecButton.setEnabled(variants.containsKey("codec") && !busy);
+            fsGpuButton.setEnabled(variants.containsKey("gpu") && !busy);
+            hudModeStyle(fsOriginalButton, "Original", "original", source != null);
+            hudModeStyle(fsCodecButton, "SDR Codec", "codec", variants.containsKey("codec"));
+            hudModeStyle(fsGpuButton, "SDR GPU", "gpu", variants.containsKey("gpu"));
+        }
         exportButton.setEnabled(source != null && !busy);
         exportButton.setAlpha(exportButton.isEnabled() ? 1f : .45f);
         shareVideoButton.setEnabled(variants.containsKey(mode) && !busy);
@@ -684,6 +736,84 @@ public final class MainActivity extends Activity {
         button.setBackground(ripple(selected ? ACCENT : BG, selected ? ACCENT : 0xff485546, 12));
         button.setContentDescription(title + ", " + (selected ? "selected" : available ? "ready to select" : "not created"));
         button.setStateDescription(selected ? "Selected" : available ? "Ready" : "Unavailable");
+    }
+
+    private void buildFullscreenHud() {
+        fullscreenHud = new LinearLayout(this);
+        fullscreenHud.setOrientation(LinearLayout.HORIZONTAL);
+        fullscreenHud.setGravity(Gravity.CENTER);
+        fullscreenHud.setPadding(dp(10), dp(4), dp(10), dp(4));
+        GradientDrawable pill = new GradientDrawable();
+        pill.setColor(0xdd101411);
+        pill.setCornerRadius(dp(20));
+        pill.setStroke(dp(1), 0x55485546);
+        fullscreenHud.setBackground(pill);
+        fullscreenHud.setVisibility(View.GONE);
+
+        fsPrevFrameButton = hudButton("◀", () -> { stepFrame(-1); showFullscreenHud(); });
+        fsOriginalButton = hudButton("Original", () -> { switchMode("original"); showFullscreenHud(); });
+        fsCodecButton = hudButton("SDR Codec", () -> { switchMode("codec"); showFullscreenHud(); });
+        fsGpuButton = hudButton("SDR GPU", () -> { switchMode("gpu"); showFullscreenHud(); });
+        fsNextFrameButton = hudButton("▶", () -> { stepFrame(1); showFullscreenHud(); });
+
+        fullscreenHud.addView(fsPrevFrameButton);
+        fullscreenHud.addView(fsOriginalButton);
+        fullscreenHud.addView(fsCodecButton);
+        fullscreenHud.addView(fsGpuButton);
+        fullscreenHud.addView(fsNextFrameButton);
+
+        FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(-2, -2, Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL);
+        params.bottomMargin = dp(24);
+        videoFrame.addView(fullscreenHud, params);
+    }
+
+    private Button hudButton(String text, Runnable action) {
+        Button b = new Button(this);
+        b.setText(text);
+        b.setAllCaps(false);
+        b.setTextSize(12);
+        b.setTextColor(TEXT);
+        b.setBackgroundTintList(null);
+        b.setGravity(Gravity.CENTER);
+        b.setMinHeight(dp(36));
+        b.setMinimumWidth(dp(36));
+        b.setPadding(dp(8), dp(4), dp(8), dp(4));
+        b.setBackground(ripple(0x33252e25, 0x443b4739, 14));
+        LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(-2, -2);
+        p.setMarginStart(dp(2)); p.setMarginEnd(dp(2));
+        b.setLayoutParams(p);
+        b.setOnClickListener(v -> action.run());
+        return b;
+    }
+
+    private void hudModeStyle(Button button, String title, String key, boolean available) {
+        boolean selected = source != null && mode.equals(key);
+        button.setSelected(selected);
+        button.setText((selected ? "✓ " : "") + title);
+        button.setTextColor(selected ? ACCENT : available ? TEXT : MUTED);
+        button.setTypeface(Typeface.DEFAULT, selected ? Typeface.BOLD : Typeface.NORMAL);
+        button.setAlpha(available || selected ? 1f : .35f);
+        button.setBackground(ripple(selected ? 0x66252e25 : 0x221b211c, selected ? ACCENT : 0x44485546, 14));
+    }
+
+    private void showFullscreenHud() {
+        if (fullscreenHud == null || !fullscreen) return;
+        handler.removeCallbacks(hideFullscreenHud);
+        fullscreenHud.animate().cancel();
+        fullscreenHud.setAlpha(1f);
+        fullscreenHud.setVisibility(View.VISIBLE);
+        handler.postDelayed(hideFullscreenHud, 3500);
+    }
+
+    private void stepFrame(int direction) {
+        if (player == null) return;
+        player.pause();
+        Format format = player.getVideoFormat();
+        float fps = (format != null && format.frameRate > 0) ? format.frameRate : 24f;
+        long delta = Math.max(1, Math.round(1000f / fps));
+        long current = player.getCurrentPosition();
+        long target = Math.max(0, current + direction * delta);
+        player.seekTo(target);
     }
 
     /** Reparent existing views only at a layout breakpoint; retain the player and its decoder. */
@@ -807,6 +937,14 @@ public final class MainActivity extends Activity {
     }
     @Override protected void onStop() {
         started = false;
+        handler.removeCallbacks(hideFullscreenHud);
+        if (android.os.Build.VERSION.SDK_INT >= 34 && hdrSdrRatioListener != null) {
+            try {
+                Display display = getDisplay();
+                if (display != null) display.unregisterHdrSdrRatioChangedListener(hdrSdrRatioListener);
+            } catch (Throwable ignored) {}
+            hdrSdrRatioListener = null;
+        }
         getPreferences(0).edit().putString("notes", notes.getText().toString()).apply();
         if (player != null) {
             lastPosition = player.getCurrentPosition(); resumePlaying = player.getPlayWhenReady();

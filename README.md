@@ -3,6 +3,14 @@
 A native Android diagnostic player focused on raised blacks during HDR playback.
 For Android phones and tablets running Android 12 or newer, including Android 16. HDR playback and tone-mapping support depend on the device and source format.
 
+## Version 0.3.0
+
+- In-dark-room comparison switching: Toggle Original, SDR Codec, and SDR GPU directly inside Fullscreen view with an auto-dimming HUD that preserves human dark adaptation.
+- Exact-frame seeking & frame stepping: Pause and step frame-by-frame (◀ / ▶) on the test bench and in fullscreen. ExoPlayer uses `SeekParameters.EXACT` to lock comparison alignment across long-GOP keyframes.
+- Decoded CTA-861.3 / ST 2086 metadata: Generates structured JSON for mastering display primaries, D65 white point, min/max mastering luminance, MaxCLL, and MaxFALL.
+- Audio-isolated tone mapping: Diagnostic SDR transcoder strips audio streams to ensure complex multichannel audio formats cannot cause false-negative tone-mapping failures.
+- Real-time HDR/SDR headroom logging: Monitors dynamic ratio adjustments on Android 14+ via `Display.registerHdrSdrRatioChangedListener`.
+
 ## Version 0.2.0
 
 - Clear comparison selection: a filled lime button, checkmark, explicit Selected label, and an active-view heading above the video. Uncreated SDR copies are visibly unavailable.
