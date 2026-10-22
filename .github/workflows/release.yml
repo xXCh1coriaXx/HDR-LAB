@@ -1,0 +1,92 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release Tag (e.g. v0.3.0)'
+        required: false
+        default: 'v0.3.0'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build APK and Publish Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'gradle'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Accept Android SDK licenses and install Platform 36
+        run: |
+          yes | sdkmanager --licenses || true
+          sdkmanager "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Grant execute permission to Gradle wrapper
+        run: chmod +x gradlew
+
+      - name: Run Unit Tests and Lint
+        run: ./gradlew testDebugUnitTest lintRelease
+
+      - name: Assemble Optimized Release APK
+        run: ./gradlew assembleRelease
+
+      - name: Package Release Assets
+        id: package
+        run: |
+          TAG="${{ github.ref_name || inputs.tag || 'v0.3.0' }}"
+          VERSION="${TAG#v}"
+          
+          # Locate built APK
+          APK_SRC="app/build/outputs/apk/release/app-release.apk"
+          APK_DEST="HDR-Lab-${TAG}.apk"
+          cp "$APK_SRC" "$APK_DEST"
+          
+          # Generate Source Archive
+          SOURCE_ZIP="HDR-Lab-${TAG}-source.zip"
+          git archive --format=zip --output="$SOURCE_ZIP" HEAD
+          
+          # Generate SHA-256 Checksums
+          CHECKSUMS="HDR-Lab-${TAG}-checksums.txt"
+          sha256sum "$APK_DEST" "$SOURCE_ZIP" > "$CHECKSUMS"
+          
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "apk=$APK_DEST" >> $GITHUB_OUTPUT
+          echo "source=$SOURCE_ZIP" >> $GITHUB_OUTPUT
+          echo "checksums=$CHECKSUMS" >> $GITHUB_OUTPUT
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ steps.package.outputs.tag }}"
+          APK="${{ steps.package.outputs.apk }}"
+          SOURCE="${{ steps.package.outputs.source }}"
+          CHECKSUMS="${{ steps.package.outputs.checksums }}"
+          
+          # If release exists, upload assets; otherwise create it
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" "$APK" "$SOURCE" "$CHECKSUMS" --clobber
+          else
+            gh release create "$TAG" "$APK" "$SOURCE" "$CHECKSUMS" \
+              --title "HDR Lab $TAG" \
+              --notes-file RELEASE_NOTES.md
+          fi
