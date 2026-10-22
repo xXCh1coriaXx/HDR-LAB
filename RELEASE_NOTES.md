@@ -11,7 +11,17 @@ Native Android HDR diagnostics for phones and tablets (Android 12+).
 
 ## Validation
 
+## Validation
+
 Build and lint passed; seven Robolectric regression and metadata unit tests passed. The nine test assets remain byte-identical to v0.1.0/v0.2.0.
+
+## Release assets
+
+- `HDR-Lab-v0.3.0.apk` — installable optimized build (local testing signature).
+- `HDR-Lab-v0.3.0-source.zip` — source project.
+- `HDR-Lab-v0.3.0-checksums.txt` — SHA-256 integrity checksums.
+
+APK SHA-256: `ba071c9b7d083143221c3dd9edc49c585f876e2c870de17ba0a12aefa0d30c9f`.
 
 ---
 

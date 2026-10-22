@@ -24,6 +24,6 @@
   "bundledPatterns": 9,
   "testSignals": "byte-identical to v0.1.0; decoded signal checks passed",
   "apkBytes": 1996578,
-  "sha256": "411a019d03ed19bdbadcc8f111293c2952e405defc9dbf4d08977be01f7303c2",
+  "sha256": "ba071c9b7d083143221c3dd9edc49c585f876e2c870de17ba0a12aefa0d30c9f",
   "physicalDeviceTesting": "UI rendering and behavior tested with Robolectric at API 35. Physical device HDR playback and performance require user verification. No speed or battery improvement percentage measured."
 }
