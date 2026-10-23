@@ -502,7 +502,7 @@ public class LayoutTest {
 
         AtomicBoolean success = new AtomicBoolean(false);
 
-        Future<?> f = ReportSubmitter.submit(report, ReportSubmitter.DEFAULT_ENDPOINT, new ReportSubmitter.Callback() {
+        Future<?> f = ReportSubmitter.submit(report, "mock://test", new ReportSubmitter.Callback() {
             @Override public void onSuccess() {
                 success.set(true);
             }

@@ -16,7 +16,7 @@ import java.util.concurrent.Future;
 public final class ReportSubmitter {
 
     public static final String DEFAULT_ENDPOINT =
-        "https://docs.google.com/forms/d/e/1FAIpQLSd_DEFAULT_FORM_ID/formResponse";
+        "https://script.google.com/macros/s/AKfycbwIv6MKctOKiJI2Cw9gqnhYvwI5Q9d__8-GD9M8rny2XiFjPwTJUgVEnK_Xc6TV7BMcNg/exec";
 
     public interface Callback {
         void onSuccess();

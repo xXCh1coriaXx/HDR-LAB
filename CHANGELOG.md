@@ -1,5 +1,12 @@
 # HDR Lab — Changelog
 
+## v0.1.5.1 (Live Community Webhook Integration)
+
+- Production Webhook Endpoint: Activated live Google Apps Script endpoint in `ReportSubmitter.java`, directing submissions to the central community Google Sheet in real time.
+- Offline Test Suite: Ensured all unit tests run hermetically with isolated mock endpoints.
+
+---
+
 ## v0.1.5 (Community Display Database & Custom OS Detection)
 
 - Community Display Report & Database integration: Introduced an optional, user-prompted survey to submit display calibration evaluations to a crowd-sourced Google Forms / Sheets database (evaluating OLED true black vs. raised black bugs, near-black step visibility, and user notes).

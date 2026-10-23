@@ -8,8 +8,8 @@ android {
         applicationId = "dev.hdrlab.light"
         minSdk = 31
         targetSdk = 36
-        versionCode = 4
-        versionName = "0.1.5"
+        versionCode = 5
+        versionName = "0.1.5.1"
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
