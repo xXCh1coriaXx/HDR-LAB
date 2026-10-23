@@ -1,5 +1,16 @@
 # HDR Lab — Changelog
 
+## v0.2.0 (Cleanup)
+
+- Developer validation script with JDK/SDK discovery, persistent logs, optional decoded video verification, and a release APK budget below 2,000,000 bytes.
+- PR/main CI runs unit tests, lint, release compilation, and pattern checks; verification reports are retained as workflow artifacts.
+- Release workflow validates an existing tag against the Gradle app version and handles manual dispatch safely.
+- Report metadata derives its app version from generated BuildConfig; removed the unused Media3 Transformer dependency.
+- Shorter agent entry point with developer/architecture documentation and consistent text/editor settings.
+- Existing playback, video patterns, and signing identity are retained; signing-key exposure and report-delivery issues remain follow-up work.
+
+---
+
 ## v0.1.8 (Calibrated PQ Near-Black Steps & Session Asset Cache Refresh)
 
 - Calibrated 10-bit PQ Near-Black Steps (`pq_steps.mp4`): Re-encoded HDR10 / SMPTE ST 2084 near-black steps with calibrated code values `[83, 104, 137, 167, 214, 281]` corresponding to `0.01, 0.05, 0.20, 0.50, 1.50, and 5.00` nits on a `64` reference black floor, resolving invisible steps (`< 0.03` nits) on mobile displays.

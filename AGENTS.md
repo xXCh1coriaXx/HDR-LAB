@@ -1,151 +1,31 @@
-# HDR Lab Light — Agent Instructions & Working Preferences
+# HDR Lab Light: agent quick start
 
-> **Branch Context: `main` (`HDR Lab Light`)**  
-> This file defines the architecture, technical constraints, lessons learned, and workflows for all AI coding agents working on **HDR Lab Light** (`dev.hdrlab.light`).
+Academic/research Android app. Read this first, then [DEVELOPMENT](docs/DEVELOPMENT.md) for setup and [ARCHITECTURE](docs/ARCHITECTURE.md) before touching playback, layout, diagnostics or surveys. Detailed lessons live there to keep this entry point small.
 
----
+## Work and verify
 
-## 1. App Identity & Coexistence
+- Start at the repository root with `git status --short` and the relevant diff; preserve unrelated changes. Keep scope narrow. Do not push, tag or publish unless requested. Prefer GitHub Actions for shared compilation/releases.
+- Windows prerequisites: JDK 17, Android Platform 36, Build-Tools 36.0.0. Run `powershell -NoProfile -ExecutionPolicy Bypass -File .\tools\verify.ps1`; add `-Release` for build/manifest/dependency changes and `-Patterns` for asset changes. See DEVELOPMENT for direct commands. Windows Store Python aliases can be nonfunctional; use `-PythonExecutable` for a real runtime when needed.
+- Inspect the exact final diff and run unit tests before claiming a fix. Release compilation is required for build/manifest changes. Report checks actually run and limits; Robolectric cannot verify physical HDR.
+- Use `rg`, targeted reads and compact output. Avoid speculative abstractions, unused helpers and duplicated sources of truth. Simplify without removing existing functionality.
+- Consider rotation, backgrounding, multi-window, detached views, offline failures, OLED/LCD differences and vendor processing. Compare results with the request; report assumptions, low confidence and likely regressions/failure modes.
+- Record new technical lessons immediately here or in the linked guides. Keep this entry point concise.
 
-* **Dedicated Package Identity:** `dev.hdrlab.light` in `app/build.gradle.kts`.
-* **Side-by-Side Installation:** Allows users and developers to install both HDR Lab (the full test bench, `dev.hdrlab`) and HDR Lab Light (`dev.hdrlab.light`) simultaneously on the same Android device without package collision or `INSTALL_FAILED_VERSION_DOWNGRADE` errors.
-* **Dynamic FileProvider Authority:** Manifest uses `${applicationId}.files` and Java code uses `getPackageName() + ".files"` to dynamically resolve `dev.hdrlab.light.files`, preventing `INSTALL_FAILED_CONFLICTING_PROVIDER`.
+## Non-negotiable constraints
 
----
+- Installed package `dev.hdrlab.light`; Java namespace `dev.hdrlab`. FileProvider uses `${applicationId}.files` / `getPackageName() + ".files"` to preserve coexistence with the full app.
+- Preserve signing continuity. Current `app/hdrlab-release.keystore` and hardcoded credentials are exposed in Git; this remains unresolved. Do not copy credentials into new documentation, silently replace/delete the key or use machine debug signing for releases. Key changes need a migration plan.
+- Keep `SurfaceView` (`surface_type="surface_view"`), `SeekParameters.EXACT`, immersive transient system bars, 3-second control dismissal and at least 76 dp bottom HUD clearance. SurfaceView does not prove absence of vendor processing.
+- Preserve fullscreen brightness boost; restore the previous window override on exit, pause, stop and Back. Cancel countdown/HUD callbacks on stop, manual mode changes and fullscreen exit. Known lifecycle/timer gaps remain: see ARCHITECTURE.
+- Preserve responsive two-card sizing, widget ordering, generated RadioButton IDs, `RadioGroup.check(id)` and fallback checked-child traversal documented in ARCHITECTURE.
+- Refresh extracted assets after app updates; do not trust only file existence. Preserve PQ reference codes and decoded pattern values.
+- English source, IDs, comments and log tags. Every UI string uses resources: English `values/strings.xml`, European Portuguese `values-pt/strings.xml`; native Android locale selection, no custom language switch.
+- INTERNET exclusively supports optional user-triggered reports, asynchronously and fail-safe. No unsolicited network work, analytics, ads, crash beacons, accounts or persistent identifiers. Normal testing remains offline.
+- Discover brands/models dynamically, deduplicate names and retain generic ROM fallbacks. OS properties are hints. Declared luminance is not measured luminance.
+- Keep APK below 2,000,000 bytes with R8 and resource shrinking. Do not compromise pattern integrity to save bytes.
 
-## 2. Primary Build & Release Workflow
+## Code and docs map
 
-* **Prefer GitHub Actions for Compilation & Releases:**
-  - Always prefer compiling and publishing releases via GitHub Actions (`.github/workflows/release.yml`).
-  - To release a new version: Bump version in `app/build.gradle.kts`, update `RELEASE_NOTES.md` and `CHANGELOG.md`, commit, tag (`git tag -a vX.Y.Z -m "..."`), and push the tag (`git push origin vX.Y.Z`).
-  - Output APK is formatted as `HDR-Lab-Light-vX.Y.Z.apk`.
-* **Local Build Toolchain (Offline Testing):**
-  - JDK 17: `%LOCALAPPDATA%\Programs\jdk-17\jdk-17.0.20.1+1` (`JAVA_HOME`)
-  - Android SDK: `%LOCALAPPDATA%\Android\Sdk` (`ANDROID_HOME`, `ANDROID_SDK_ROOT`) with Platform 36 and Build-Tools 36.0.0.
-  - Fast unit tests: `.\gradlew.bat testDebugUnitTest`
-  - Local release test: `.\gradlew.bat assembleRelease`
-
----
-
-## 3. Critical Android Lessons Learned & Hard Constraints
-
-### A. APK Signing Key Continuity (CRITICAL)
-* All release builds MUST use the dedicated project release keystore:
-  - Path: `app/hdrlab-release.keystore`
-  - Alias: `hdrlab`
-  - Password: `hdrlab123`
-* Never rely on default machine-specific `debug.keystore`.
-
-### B. Display Pipeline & SurfaceView Integrity
-* **Zero-Shader SurfaceView:** Playback must always use `SurfaceView` (`surface_type="surface_view"` in `player.xml`), never `TextureView`. `SurfaceView` bypasses application shaders and connects directly to the Android Hardware Composer (`HWC`), preserving unaltered HDR presentation and dynamic metadata.
-* **Exact Seeking:** Enforce `player.setSeekParameters(SeekParameters.EXACT)` so transitions between SDR and HDR land on the exact matching frame without long-GOP keyframe drift.
-
-### C. Tablet Landscape Side-by-Side Layout
-* **Adaptive Cards Container:** An intermediate `LinearLayout` (`cardsContainer`) inside `cardsLayout` holds Card 1 (*Screen Capabilities* / *Capacidades do Teu Ecrã*) and Card 2 (*Quick Test: SDR vs HDR* / *Teste Rápido: SDR vs HDR*).
-* **Landscape Threshold:** Check `boolean wide = widthDp >= 720 || (widthDp >= 580 && isLandscape);`.
-* **Matched Heights & Baseline Alignment:**
-  - In wide/landscape mode: `cardsContainer.setOrientation(HORIZONTAL)`, `cardsContainer.setBaselineAligned(false)`, and child cards use `LinearLayout.LayoutParams(0, MATCH_PARENT, 1f)`.
-  - A vertical flexible spacer (`View` with `height=0`, `weight=1f`) above `btnDetailedReport` in Card 1 aligns both cards' primary action buttons along an identical bottom baseline.
-  - In portrait mode: `cardsContainer.setOrientation(VERTICAL)` and child cards collapse cleanly to `(-1, -2)` without layout jitter.
-
-### D. Window Brightness Override & Lifecycle Restoration
-* **Fullscreen Boost:** Setting `screenBrightness = 1.0f` on fullscreen entry ensures the display panel operates at maximum drive for HDR near-black evaluation.
-* **Mandatory Restoration:** Always restore original brightness (`BRIGHTNESS_OVERRIDE_NONE` / `-1.0f`) on fullscreen exit, `onPause()`, `onStop()`, and `onBackPressed()`. Failing to restore traps the device at 100% brightness.
-
-### E. Immersive Mode & Floating Controls Clearance
-* **Immersive Navigation:** Fullscreen playback must use `WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE` and hide system bars.
-* **3-Second Auto-Dismiss:** Tap-to-reveal player controls must auto-hide after 3 seconds of user inactivity.
-* **Bottom Control Clearance:** Floating HUD overlays placed above or inside `PlayerView` must enforce `>= 76dp` `bottomMargin` to avoid intercepting navigation gestures or touch targets.
-
-### F. Automated Transitions & Handler Cleanup
-* Always cancel active `Handler` / `Runnable` callbacks (`testCountdownTicker`, `hideFullscreenHud`) in `onStop()`, when switching modes manually, or when exiting fullscreen.
-
-### G. TextView Layout Ordering (setSingleLine vs setMinHeight)
-* Always set `setSingleLine(true)` before `setMinHeight(...)` and `setMinimumWidth(...)`, and configure custom padding after `setBackground(...)` to prevent drawable attributes from resetting view padding.
-
-### H. Custom OS / ROM Detection & Community Display Survey Flow
-* **Why Custom OS Detection Matters:** Vendor skins (Honor MagicOS, Xiaomi HyperOS/MIUI, Samsung One UI, OnePlus OxygenOS, OPPO ColorOS, etc.) frequently inject proprietary video enhancers, dynamic contrast adjustments, and custom tone mappers that can cause raised blacks or crushed shadow detail compared to standard AOSP Hardware Composer pipelines. Accurately tagging the vendor ROM is vital for crowd-sourced calibration analysis.
-* **Vendor System Property Mapping:** Custom OS flavors are identified by querying system properties (via reflection or build property helpers):
-  - **Honor MagicOS:** `ro.build.version.magic`, `ro.honor.build.version.incremental`
-  - **Xiaomi HyperOS / MIUI:** `ro.mi.os.version.name`, `ro.miui.ui.version.name`
-  - **Samsung One UI:** `ro.build.version.oneui`, `ro.build.version.sep`
-  - **OnePlus OxygenOS:** `ro.oxygen.version`, `ro.build.version.opporom`
-  - **OPPO ColorOS:** `ro.build.version.opporom`
-  - **Google Pixel UI:** `ro.build.flavor`, Google vendor build tags
-  - **Standard AOSP Fallback:** `Build.MANUFACTURER`, `Build.MODEL`, `Build.VERSION.RELEASE`
-* **Survey Submission Flow:**
-  - **Trigger:** Following the 10-second SDR-to-HDR near-black transition test, an optional survey prompt allows the user to report their perceptual observations.
-  - **Payload Structure (10-Column Schema):** Collects SDR baseline black level and visible shadow steps (1% to 6%), HDR transition black level (remained pure black vs. raised black bug vs. normal LCD glow) and visible shadow steps, optional qualitative notes, detected custom OS / ROM, and hardware display specs (reported max nits, supported HDR types).
-  - **Backend Pipeline:** Form-encoded or JSON HTTP POST connects to a serverless Google Apps Script webhook saving individual, immutable JSON report files to a designated Google Drive ingestion bucket (`HDR lab reports`, folder ID `1VEHauaaZFqlIzDBNgHXb0RLlgMnkwoeb`) named `report_YYYY-MM-DD_HH-mm-ss_<device_model>.json`. Eliminates row-locking contention and preserves exact payloads for analysis.
-  - **Asynchronous & Fail-Safe:** All network submissions must execute asynchronously off the main thread (e.g. background worker thread), must never block playback or the UI, and must fail silently or notify non-intrusively without crash risk if offline.
-
-### I. Programmatic RadioButton IDs & RadioGroup State Tracking
-* **Android View ID Assignment:** `new RadioButton(context)` creates views with `View.NO_ID` (`-1`). Calling `radioButton.setChecked(true)` directly on programmatic children does not notify or synchronize `RadioGroup.mCheckedId`. Consequently, `radioGroup.getCheckedRadioButtonId()` evaluates to `-1`, resulting in uncaptured default selections.
-* **Dual-Tier State Synchronization:**
-  1. Always assign dynamic IDs using `rb.setId(View.generateViewId())` and synchronize selection via `radioGroup.check(rb.getId())`.
-  2. Implement a fallback traversal helper (`getCheckedText()`) that inspects both `getCheckedRadioButtonId()` and iterates child views checking `((RadioButton) child).isChecked()`.
-
-### J. Universal Dynamic Brand & Model Auto-Discovery
-* **Zero Hardcoded Brand Lists:** Never hardcode fixed lists of smartphone/tablet brands or restrict detection to specific OEMs.
-* **Dynamic Property Resolution:** Discover hardware dynamically from Android AOSP build properties:
-  - Manufacturer / Brand: `Build.MANUFACTURER`, `Build.BRAND`
-  - Model / Product / Hardware: `Build.MODEL`, `Build.PRODUCT`, `Build.DEVICE`, `Build.BOARD`, `Build.HARDWARE`, `Build.SOC_MODEL` (API 31+)
-* **Clean Formatting & Prefix Deduplication:** Use `Diagnostics.getCleanDeviceName(manufacturer, model)` to capitalize lowercase brands (e.g. `samsung` -> `Samsung`) and prevent duplicate prefixes when OEMs already include the brand in `Build.MODEL` (e.g. `motorola motorola edge 50` -> `Motorola edge 50`).
-* **Universal Custom ROM Fallback:** Check generic OS / ROM properties (`ro.modversion`, `ro.rom.version`) and default cleanly to `Android <version>` for any non-skinned device.
-
-### K. Calibrated PQ Near-Black Steps & Asset Cache Refresh
-* **Perceptual PQ Step Encoding:** Because SMPTE ST 2084 (PQ) is an absolute luminance curve, raw 1-to-32 code increments (`65..96` = `0.00005..0.03` nits) fall below mobile OLED DDIC cutoff thresholds and ambient glass reflections. Always encode `pq_steps.mp4` with calibrated 10-bit limited-range code values `[83, 104, 137, 167, 214, 281]` corresponding to `0.01, 0.05, 0.20, 0.50, 1.50, and 5.00` nits.
-* **Session Asset Cache Refresh:** `getPatternFile()` in `MainActivity.java` must refresh extracted `.mp4` assets into `getFilesDir()/patterns/` once per process session (`extractedPatterns` set) rather than skipping whenever `file.exists()`, ensuring APK updates immediately propagate re-encoded test patterns without requiring users to clear app storage.
-
----
-
-## 4. Internationalization (i18n)
-
-* **English Codebase Standard:** All Java/Kotlin source code, XML layouts, view IDs, log tags, and comments must strictly be written in standard International English.
-* **Zero Hardcoded UI Strings:** Never embed user-visible string literals directly in Java code or layout XML attributes. Every string must resolve via `@string/...` or `R.string....`.
-* **Resource Separation Catalogs:**
-  - Base / Default Catalog (`res/values/strings.xml`): Primary reference in International English. Serves as the fallback for all non-Portuguese locales worldwide.
-  - Portuguese Catalog (`res/values-pt/strings.xml`): European Portuguese (`pt-PT`) localization for Portuguese device locales.
-* **Automatic System Locale Detection:** Localization is handled automatically via Android's native resource qualifier resolution (`values-pt`) without custom runtime language switching logic.
-
----
-
-## 5. Documentation Architecture
-
-1. **`README.md` (Accessible User Guide):**
-   - Written in clear, accessible, jargon-free English for everyday smartphone/tablet users.
-   - Explains the two-card interface, how to spot OLED true black vs LCD glow, and how to read the 6 near-black steps.
-2. **`RELEASE_NOTES.md` (Strict Current-Only Rule):**
-   - Only contains changes for the current release (read directly by GitHub Actions for release body). Never accumulate previous versions here.
-3. **`CHANGELOG.md`:**
-   - Multi-version historical changelog. Prepend new version summaries at the top.
-
----
-
-## 6. Philosophy & Code Quality (YAGNI)
-
-* **Controlled Network Permission & Privacy Guarantee:**
-  - `<uses-permission android:name="android.permission.INTERNET" />` is introduced in `AndroidManifest.xml` **exclusively** for optional, user-triggered community display calibration report submissions (Google Forms / Sheets).
-  - Background network tasks, analytics trackers, advertising IDs, crash beacons, or unsolicited telemetry are strictly prohibited. The app remains completely offline during normal testing, playback, and analysis.
-  - Fully anonymous: zero personal data, account requirements, or persistent device identifiers are collected.
-* **Fast & Lightweight:** APK size stays under 2 MB with R8 optimization and resource shrinking.
-
----
-
-## 7. AI Agent Operational Standards: Token Efficiency & Autonomous Quality
-
-All AI coding agents operating on this repository must enforce the following standards:
-
-### A. Token Reduction & Context Economy
-* **Targeted Operations:** Avoid reading entire massive files when targeted line ranges, grep searches, or symbol lookups suffice.
-* **Compact Command Output:** Filter or limit long command outputs (e.g. `git log -n 5`, selective test runs) to prevent polluting the context window with thousands of redundant tokens.
-* **High-Density Communication:** Eliminate conversational fluff, repetitive throat-clearing, and verbose summaries. Provide direct, structured, information-dense updates to the user.
-* **YAGNI Pass:** Do not introduce speculative abstractions, unused helper utilities, or boilerplate layers that consume tokens and maintenance overhead.
-
-### B. Agent Quality & Rigorous Self-Verification
-* **Proactive Continuous Learning:** Always update `AGENTS.md` immediately whenever a new technical lesson, hardware quirk, layout gotcha, or toolchain constraint is discovered. Never let hard-won lessons vanish across sessions.
-* **Verification Before Proclamation:** Never claim an implementation or bugfix works without verifying it:
-  1. Inspect the exact `git diff`.
-  2. Run unit tests (`.\gradlew.bat testDebugUnitTest`).
-  3. Validate release compilation (`.\gradlew.bat assembleRelease`) whenever build or manifest configurations change.
-* **Failure Mode & Edge Case Anticipation:** Proactively analyze lifecycle events (screen rotation, backgrounding, multi-window, detached views), display hardware limits (OLED vs LCD, custom vendor video enhancers), and gesture clearance before writing code.
+- `app/src/main/java/dev/hdrlab/`: `MainActivity.java` (UI/player/countdown/survey/extraction), `Diagnostics.java` (device/display/ROM), `ReportSubmitter.java` (payload/HTTP).
+- `app/src/test/java/dev/hdrlab/LayoutTest.java`: Robolectric. `tools/`: validation/pattern generation. `.github/workflows/`: automation. `app/build.gradle.kts`: identity/version/signing/dependencies.
+- README is an accessible user guide. RELEASE_NOTES contains only the current release and feeds Actions; prepend history to CHANGELOG. A requested release bumps Gradle version and both docs, then uses an annotated `vX.Y.Z` tag; APK `HDR-Lab-Light-vX.Y.Z.apk`.

@@ -1,0 +1,18 @@
+# Normalize text without rewriting existing files in this change.
+* text=auto
+*.java text eol=lf
+*.kt text eol=lf
+*.kts text eol=lf
+*.xml text eol=lf
+*.md text eol=lf
+*.py text eol=lf
+*.ps1 text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.properties text eol=lf
+gradlew text eol=lf
+*.bat text eol=crlf
+*.mp4 binary
+*.png binary
+*.jar binary
+*.keystore binary

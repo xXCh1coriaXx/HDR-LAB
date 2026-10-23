@@ -527,7 +527,7 @@ public class LayoutTest {
         assertEquals(0.0005f, report.minNits, 0.0001f);
         assertTrue(report.wideColorGamut);
         assertEquals("2800 × 1840 @ 120.00 Hz", report.activeMode);
-        assertEquals("0.1.8", report.appVersion);
+        assertEquals(BuildConfig.VERSION_NAME, report.appVersion);
         assertEquals("Pure absolute black (OLED / Pixels off)", report.sdrBlackLevel);
         assertEquals("All 6 steps visible (Excellent shadow detail)", report.sdrSteps);
         assertEquals("Remained pure black (Flawless HDR presentation)", report.hdrBlackLevel);
@@ -538,7 +538,7 @@ public class LayoutTest {
         // Verify JSON serialization
         JSONObject json = report.toJson();
         assertNotNull(json);
-        assertEquals("0.1.8", json.getString("appVersion"));
+        assertEquals(BuildConfig.VERSION_NAME, json.getString("appVersion"));
         assertEquals("Test OEM Test Model", json.getString("deviceName"));
         assertEquals("Test Model", json.getString("model"));
         assertEquals("Test OEM", json.getString("manufacturer"));

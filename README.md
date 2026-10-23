@@ -1,5 +1,7 @@
 # HDR Lab Light 📱
 
+Developing or reviewing the app? Start with the [development guide](docs/DEVELOPMENT.md) for setup, verification commands and the code map. [AGENTS.md](AGENTS.md) is the concise agent entry point; [architecture notes](docs/ARCHITECTURE.md) preserve hardware lessons and known issues.
+
 > **Instant, privacy-first Android display diagnostic.** Test in 10 seconds if your screen delivers pure OLED blacks or suffers from raised grey blacks in HDR.
 
 <p align="center">
