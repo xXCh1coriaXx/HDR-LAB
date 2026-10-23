@@ -1,18 +1,20 @@
-# HDR Lab Light v0.1.7
+# HDR Lab Light v0.1.8
 
-## v0.1.7 (Event-Sourced JSON Drive Ingestion & Dynamic Device Discovery)
+## v0.1.8 (Calibrated PQ Near-Black Steps & Session Asset Cache Refresh)
 
-HDR Lab Light v0.1.7 replaces direct spreadsheet cell editing with an event-sourced JSON file architecture in Google Drive and introduces 100% dynamic, universal brand and model auto-discovery across all Android devices worldwide.
+HDR Lab Light v0.1.8 re-encodes the HDR10 / PQ near-black test pattern (`pq_steps.mp4`) with calibrated perceptual luminance steps ($0.01\text{ to }5.00\text{ nits}$) and refreshes extracted video assets on app launch so APK updates immediately apply new test patterns.
 
-### What's New in v0.1.7
+### What's New in v0.1.8
 
-- **100% Dynamic Brand & Model Auto-Discovery:**
-  - Zero hardcoded OEM lists or brand dropdowns: automatically detects hardware from `Build.MANUFACTURER`, `Build.BRAND`, `Build.MODEL`, `Build.DEVICE`, `Build.PRODUCT`, and `Build.HARDWARE`.
-  - Smart brand capitalization and prefix deduplication (e.g. `samsung SM-S928B` -> `Samsung SM-S928B`, `motorola motorola edge 50` -> `Motorola edge 50`).
-  - Universal custom ROM detection with generic `ro.modversion` and `ro.rom.version` fallback.
-- **Event-Sourced JSON Google Drive Ingestion:**
-  - Submissions are stored as individual, immutable JSON report files directly in the designated Google Drive folder (`HDR lab reports`).
-  - Eliminates spreadsheet concurrency locks, write collisions, cell formatting glitches, and mobile editing friction.
-  - Generates clean, traceable filenames: `report_YYYY-MM-DD_HH-mm-ss_<DeviceName>.json`.
-- **Enriched Hardware & Display Telemetry:**
-  - Extracts full hardware specs: peak and minimum luminance (nits), wide color gamut (`isWideColorGamut`), display mode & refresh rate (e.g. `3120 × 1440 @ 120.00 Hz`), supported HDR types (`Display.HdrCapabilities`), and SoC model (`Build.SOC_MODEL` on API 31+).
+- **Calibrated 10-bit PQ Near-Black Steps (`pq_steps.mp4`):**
+  - Replaced raw 1-to-32 code value increments (`[65..96]`, which mapped to $0.00005\text{ to }0.03\text{ nits}$ and fell below mobile OLED DDIC cutoffs and ambient reflections) with calibrated 10-bit limited-range SMPTE ST 2084 code values `[83, 104, 137, 167, 214, 281]`:
+    - **Reference Black:** Code Value `64` ($0.00\text{ nits}$)
+    - **Step 1:** Code Value `83` ($0.01\text{ nits}$)
+    - **Step 2:** Code Value `104` ($0.05\text{ nits}$)
+    - **Step 3:** Code Value `137` ($0.20\text{ nits}$)
+    - **Step 4:** Code Value `167` ($0.50\text{ nits}$)
+    - **Step 5:** Code Value `214` ($1.50\text{ nits}$)
+    - **Step 6:** Code Value `281` ($5.00\text{ nits}$)
+  - Verified frame-accurate decoding and HDR10 static metadata (`max-cll=1000,400`, `smpte2084`, `bt2020nc`).
+- **Session Asset Cache Refresh:**
+  - Updated `getPatternFile()` in `MainActivity.java` to refresh extracted `.mp4` assets into `getFilesDir()/patterns/` once per app session (`extractedPatterns`), ensuring in-place APK upgrades immediately replace previously cached video files without requiring users to clear app storage.

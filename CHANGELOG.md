@@ -1,5 +1,12 @@
 # HDR Lab — Changelog
 
+## v0.1.8 (Calibrated PQ Near-Black Steps & Session Asset Cache Refresh)
+
+- Calibrated 10-bit PQ Near-Black Steps (`pq_steps.mp4`): Re-encoded HDR10 / SMPTE ST 2084 near-black steps with calibrated code values `[83, 104, 137, 167, 214, 281]` corresponding to `0.01, 0.05, 0.20, 0.50, 1.50, and 5.00` nits on a `64` reference black floor, resolving invisible steps (`< 0.03` nits) on mobile displays.
+- Session Asset Cache Refresh: Updated `getPatternFile()` in `MainActivity.java` to overwrite cached `.mp4` files in `getFilesDir()/patterns/` once per process session so APK upgrades immediately apply updated test patterns.
+
+---
+
 ## v0.1.7 (Event-Sourced JSON Drive Ingestion & Dynamic Device Discovery)
 
 - Dynamic Brand & Model Auto-Discovery: Hardware identity is discovered dynamically from Android build properties (`Build.MANUFACTURER`, `Build.BRAND`, `Build.MODEL`, `Build.PRODUCT`, `Build.HARDWARE`, `Build.SOC_MODEL`). Eliminated hardcoded brand lists, added dynamic title-casing and prefix deduplication (`Diagnostics.getCleanDeviceName`).

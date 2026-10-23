@@ -59,6 +59,7 @@ public final class MainActivity extends Activity {
 
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final ExecutorService worker = Executors.newSingleThreadExecutor();
+    private final java.util.Set<String> extractedPatterns = new java.util.HashSet<>();
 
     private FrameLayout root;
     private ScrollView workspaceLayout;
@@ -467,12 +468,13 @@ public final class MainActivity extends Activity {
         File dir = new File(getFilesDir(), "patterns");
         if (!dir.exists()) dir.mkdirs();
         File file = new File(dir, name + ".mp4");
-        if (!file.exists()) {
+        if (!file.exists() || !extractedPatterns.contains(name)) {
             try (InputStream in = getAssets().open("patterns/" + name + ".mp4");
-                 OutputStream out = new FileOutputStream(file)) {
+                 OutputStream out = new FileOutputStream(file, false)) {
                 copy(in, out);
+                extractedPatterns.add(name);
             } catch (IOException e) {
-                return null;
+                return file.exists() ? file : null;
             }
         }
         return file;

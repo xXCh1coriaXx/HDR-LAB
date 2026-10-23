@@ -50,7 +50,7 @@ for path in paths:
         elif "window" in path.name:
             assert y[360 * W + 640] == (723 if path.name.startswith("pq") else 940), path.name
         else:
-            levels = [65, 66, 68, 72, 80, 96] if hdr else [68, 72, 80, 96, 128, 192]
+            levels = [83, 104, 137, 167, 214, 281] if path.name.startswith("pq") else [68, 72, 80, 96, 128, 192]
             centers = [y[360 * W + 80 + j * 190 + 85] for j in range(6)]
             assert centers == levels, (path.name, centers, levels)
     results.append({"file": path.name, "transfer": expected_transfer, "range": "limited",

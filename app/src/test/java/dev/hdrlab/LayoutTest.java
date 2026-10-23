@@ -507,7 +507,7 @@ public class LayoutTest {
         ReportSubmitter.CommunityReport report = new ReportSubmitter.CommunityReport(
             "Test Model", "Test OEM", "MagicOS 8.0 (Android 16)", "16",
             36, "SM8650", "qcom", java.util.Arrays.asList("HDR10", "HLG"),
-            1000f, 0.0005f, true, "2800 × 1840 @ 120.00 Hz", "0.1.7",
+            1000f, 0.0005f, true, "2800 × 1840 @ 120.00 Hz", ReportSubmitter.APP_VERSION,
             "Pure absolute black (OLED / Pixels off)", "All 6 steps visible (Excellent shadow detail)",
             "Remained pure black (Flawless HDR presentation)", "All 6 steps visible in HDR (Accurate tone mapping)",
             "Test comments", System.currentTimeMillis()
@@ -527,7 +527,7 @@ public class LayoutTest {
         assertEquals(0.0005f, report.minNits, 0.0001f);
         assertTrue(report.wideColorGamut);
         assertEquals("2800 × 1840 @ 120.00 Hz", report.activeMode);
-        assertEquals("0.1.7", report.appVersion);
+        assertEquals("0.1.8", report.appVersion);
         assertEquals("Pure absolute black (OLED / Pixels off)", report.sdrBlackLevel);
         assertEquals("All 6 steps visible (Excellent shadow detail)", report.sdrSteps);
         assertEquals("Remained pure black (Flawless HDR presentation)", report.hdrBlackLevel);
@@ -538,7 +538,7 @@ public class LayoutTest {
         // Verify JSON serialization
         JSONObject json = report.toJson();
         assertNotNull(json);
-        assertEquals("0.1.7", json.getString("appVersion"));
+        assertEquals("0.1.8", json.getString("appVersion"));
         assertEquals("Test OEM Test Model", json.getString("deviceName"));
         assertEquals("Test Model", json.getString("model"));
         assertEquals("Test OEM", json.getString("manufacturer"));

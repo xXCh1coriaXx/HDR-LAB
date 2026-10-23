@@ -18,7 +18,7 @@ import java.util.concurrent.Future;
 
 public final class ReportSubmitter {
 
-    public static final String APP_VERSION = "0.1.7";
+    public static final String APP_VERSION = "0.1.8";
 
     public static final String DEFAULT_ENDPOINT =
         "https://script.google.com/macros/s/AKfycbzkObCvBOclBat5ZM1np2FuY0BCy0zaXDOP9ueWwaIqH_bUUI8c5_PbqKLHJiMhXTdwuA/exec";

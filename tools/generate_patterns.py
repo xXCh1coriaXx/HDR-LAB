@@ -20,7 +20,8 @@ def frame(ten_bit, kind, transfer):
     black = 64 if ten_bit else 16
     y = array("H" if ten_bit else "B", [black]) * (W * H)
     # Near-black increments in their respective limited-range signal encodings.
-    levels = [68, 72, 80, 96, 128, 192] if sdr else [65, 66, 68, 72, 80, 96]
+    # PQ uses calibrated 10-bit code values corresponding to 0.01, 0.05, 0.20, 0.50, 1.50, and 5.00 nits.
+    levels = [83, 104, 137, 167, 214, 281] if transfer == "pq" else [68, 72, 80, 96, 128, 192]
     if kind == "steps":
         for i, level in enumerate(levels):
             x = 80 + i * 190

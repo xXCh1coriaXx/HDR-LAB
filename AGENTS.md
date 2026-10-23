@@ -93,6 +93,10 @@
 * **Clean Formatting & Prefix Deduplication:** Use `Diagnostics.getCleanDeviceName(manufacturer, model)` to capitalize lowercase brands (e.g. `samsung` -> `Samsung`) and prevent duplicate prefixes when OEMs already include the brand in `Build.MODEL` (e.g. `motorola motorola edge 50` -> `Motorola edge 50`).
 * **Universal Custom ROM Fallback:** Check generic OS / ROM properties (`ro.modversion`, `ro.rom.version`) and default cleanly to `Android <version>` for any non-skinned device.
 
+### K. Calibrated PQ Near-Black Steps & Asset Cache Refresh
+* **Perceptual PQ Step Encoding:** Because SMPTE ST 2084 (PQ) is an absolute luminance curve, raw 1-to-32 code increments (`65..96` = `0.00005..0.03` nits) fall below mobile OLED DDIC cutoff thresholds and ambient glass reflections. Always encode `pq_steps.mp4` with calibrated 10-bit limited-range code values `[83, 104, 137, 167, 214, 281]` corresponding to `0.01, 0.05, 0.20, 0.50, 1.50, and 5.00` nits.
+* **Session Asset Cache Refresh:** `getPatternFile()` in `MainActivity.java` must refresh extracted `.mp4` assets into `getFilesDir()/patterns/` once per process session (`extractedPatterns` set) rather than skipping whenever `file.exists()`, ensuring APK updates immediately propagate re-encoded test patterns without requiring users to clear app storage.
+
 ---
 
 ## 4. Internationalization (i18n)
