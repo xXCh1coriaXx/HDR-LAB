@@ -599,7 +599,7 @@ public final class MainActivity extends Activity {
         RadioButton rb1B = createRadioButton(getString(R.string.dialog_report_q1_opt_b));
         rgSdrBlack.addView(rb1A);
         rgSdrBlack.addView(rb1B);
-        rb1A.setChecked(true);
+        rgSdrBlack.check(rb1A.getId());
         content.addView(rgSdrBlack);
 
         // Question 2: SDR Near-black steps
@@ -618,7 +618,7 @@ public final class MainActivity extends Activity {
         rgSdrSteps.addView(rb2A);
         rgSdrSteps.addView(rb2B);
         rgSdrSteps.addView(rb2C);
-        rb2A.setChecked(true);
+        rgSdrSteps.check(rb2A.getId());
         content.addView(rgSdrSteps);
 
         // Question 3: HDR Black background
@@ -637,7 +637,7 @@ public final class MainActivity extends Activity {
         rgHdrBlack.addView(rb3A);
         rgHdrBlack.addView(rb3B);
         rgHdrBlack.addView(rb3C);
-        rb3A.setChecked(true);
+        rgHdrBlack.check(rb3A.getId());
         content.addView(rgHdrBlack);
 
         // Question 4: HDR Near-black steps
@@ -656,7 +656,7 @@ public final class MainActivity extends Activity {
         rgHdrSteps.addView(rb4A);
         rgHdrSteps.addView(rb4B);
         rgHdrSteps.addView(rb4C);
-        rb4A.setChecked(true);
+        rgHdrSteps.check(rb4A.getId());
         content.addView(rgHdrSteps);
 
         // Question 5: Observations / Notes (optional)
@@ -689,21 +689,10 @@ public final class MainActivity extends Activity {
             .setTitle(getString(R.string.dialog_report_title))
             .setView(scroll)
             .setPositiveButton(getString(R.string.dialog_btn_submit), (dialog, which) -> {
-                int checkedQ1 = rgSdrBlack.getCheckedRadioButtonId();
-                RadioButton selectedQ1 = rgSdrBlack.findViewById(checkedQ1);
-                String sdrBlackLevel = selectedQ1 != null ? selectedQ1.getText().toString() : "";
-
-                int checkedQ2 = rgSdrSteps.getCheckedRadioButtonId();
-                RadioButton selectedQ2 = rgSdrSteps.findViewById(checkedQ2);
-                String sdrSteps = selectedQ2 != null ? selectedQ2.getText().toString() : "";
-
-                int checkedQ3 = rgHdrBlack.getCheckedRadioButtonId();
-                RadioButton selectedQ3 = rgHdrBlack.findViewById(checkedQ3);
-                String hdrBlackLevel = selectedQ3 != null ? selectedQ3.getText().toString() : "";
-
-                int checkedQ4 = rgHdrSteps.getCheckedRadioButtonId();
-                RadioButton selectedQ4 = rgHdrSteps.findViewById(checkedQ4);
-                String hdrSteps = selectedQ4 != null ? selectedQ4.getText().toString() : "";
+                String sdrBlackLevel = getCheckedText(rgSdrBlack);
+                String sdrSteps = getCheckedText(rgSdrSteps);
+                String hdrBlackLevel = getCheckedText(rgHdrBlack);
+                String hdrSteps = getCheckedText(rgHdrSteps);
 
                 String comments = etComments.getText().toString().trim();
                 String nits = (currentSummary != null && currentSummary.peakBrightnessNits > 0)
@@ -726,8 +715,26 @@ public final class MainActivity extends Activity {
             .show();
     }
 
+    private String getCheckedText(RadioGroup group) {
+        if (group == null) return "";
+        int checkedId = group.getCheckedRadioButtonId();
+        if (checkedId != View.NO_ID && checkedId != -1) {
+            RadioButton rb = group.findViewById(checkedId);
+            if (rb != null && rb.getText() != null) return rb.getText().toString();
+        }
+        for (int i = 0; i < group.getChildCount(); i++) {
+            View child = group.getChildAt(i);
+            if (child instanceof RadioButton && ((RadioButton) child).isChecked()) {
+                CharSequence text = ((RadioButton) child).getText();
+                return text != null ? text.toString() : "";
+            }
+        }
+        return "";
+    }
+
     private RadioButton createRadioButton(String text) {
         RadioButton rb = new RadioButton(this);
+        rb.setId(View.generateViewId());
         rb.setText(text);
         rb.setTextColor(TEXT);
         rb.setTextSize(13);

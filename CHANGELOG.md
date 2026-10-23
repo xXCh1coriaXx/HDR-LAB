@@ -1,5 +1,11 @@
 # HDR Lab — Changelog
 
+## v0.1.6.1 (Survey RadioGroup State Tracking Fix)
+
+- Reliable RadioGroup Selection Capture: Fixed an Android programmatic view quirk where default Option A was not serialized when untouched. Added dynamic view IDs (`View.generateViewId()`), `RadioGroup.check(id)`, and fallback checked state verification in `getCheckedText()`.
+
+---
+
 ## v0.1.6 (SDR vs HDR Comparative Community Report & 10-Column Database)
 
 - SDR vs HDR 4-Question Comparison Matrix: Evaluates SDR baseline black levels and shadow step visibility (1% to 6%) alongside HDR10 transition black levels and shadow steps to pinpoint raised blacks and black crush anomalies.

@@ -8,6 +8,8 @@ import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
 import android.widget.TextView;
 import androidx.media3.common.C;
 import androidx.media3.common.ColorInfo;
@@ -482,6 +484,22 @@ public class LayoutTest {
 
         // Cancel dialog
         dialog.dismiss();
+    }
+
+    @Test public void getCheckedTextResolvesDefaultCheckedOption() throws Exception {
+        RadioGroup rg = new RadioGroup(activity);
+        Method createRbMethod = MainActivity.class.getDeclaredMethod("createRadioButton", String.class);
+        createRbMethod.setAccessible(true);
+        RadioButton rb1 = (RadioButton) createRbMethod.invoke(activity, "Option A");
+        RadioButton rb2 = (RadioButton) createRbMethod.invoke(activity, "Option B");
+        rg.addView(rb1);
+        rg.addView(rb2);
+        rg.check(rb1.getId());
+
+        Method getCheckedTextMethod = MainActivity.class.getDeclaredMethod("getCheckedText", RadioGroup.class);
+        getCheckedTextMethod.setAccessible(true);
+        String text = (String) getCheckedTextMethod.invoke(activity, rg);
+        assertEquals("Option A", text);
     }
 
     @Test public void reportSubmitterHandlesMockSubmissionSuccessfully() throws Exception {

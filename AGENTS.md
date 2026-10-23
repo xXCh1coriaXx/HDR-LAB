@@ -79,6 +79,12 @@
   - **Backend Pipeline:** Form-encoded HTTP POST connects to a serverless Google Apps Script webhook appending atomically to a 10-column Google Sheet (`timestamp`, `model`, `os`, `hdr`, `nits`, `sdr_black`, `sdr_steps`, `hdr_black`, `hdr_steps`, `comments`).
   - **Asynchronous & Fail-Safe:** All network submissions must execute asynchronously off the main thread (e.g. background worker thread), must never block playback or the UI, and must fail silently or notify non-intrusively without crash risk if offline.
 
+### I. Programmatic RadioButton IDs & RadioGroup State Tracking
+* **Android View ID Assignment:** `new RadioButton(context)` creates views with `View.NO_ID` (`-1`). Calling `radioButton.setChecked(true)` directly on programmatic children does not notify or synchronize `RadioGroup.mCheckedId`. Consequently, `radioGroup.getCheckedRadioButtonId()` evaluates to `-1`, resulting in uncaptured default selections.
+* **Dual-Tier State Synchronization:**
+  1. Always assign dynamic IDs using `rb.setId(View.generateViewId())` and synchronize selection via `radioGroup.check(rb.getId())`.
+  2. Implement a fallback traversal helper (`getCheckedText()`) that inspects both `getCheckedRadioButtonId()` and iterates child views checking `((RadioButton) child).isChecked()`.
+
 ---
 
 ## 4. Internationalization (i18n)
