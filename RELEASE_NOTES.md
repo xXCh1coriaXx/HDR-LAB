@@ -1,16 +1,18 @@
-# HDR Lab Light v0.1.6.1
+# HDR Lab Light v0.1.7
 
-## v0.1.6.1 (Survey RadioGroup State Tracking Fix)
+## v0.1.7 (Event-Sourced JSON Drive Ingestion & Dynamic Device Discovery)
 
-HDR Lab Light v0.1.6.1 resolves a critical RadioGroup selection capture issue in the community survey dialog, ensuring default options (Option A) are reliably serialized without requiring manual touch taps.
+HDR Lab Light v0.1.7 replaces direct spreadsheet cell editing with an event-sourced JSON file architecture in Google Drive and introduces 100% dynamic, universal brand and model auto-discovery across all Android devices worldwide.
 
-### What's New in v0.1.6.1
+### What's New in v0.1.7
 
-- **Reliable Programmatic RadioGroup Tracking:**
-  - Assigned dynamic view IDs via `View.generateViewId()` to programmatically created survey radio buttons.
-  - Replaced direct `RadioButton.setChecked(true)` with `RadioGroup.check(id)` to update internal `mCheckedId` state across all vendor skins.
-  - Added multi-tier fallback `getCheckedText()` helper verifying both checked ID and active child selection state.
-- **SDR vs HDR 4-Question Comparison Matrix:**
-  - Retains the full comparative SDR (baseline black level and 1%-6% steps) and HDR (raised black bug detection and tone mapping steps) matrix.
-- **10-Column Community Database Integration:**
-  - Direct real-time ingestion to the crowd-sourced Google Sheets database.
+- **100% Dynamic Brand & Model Auto-Discovery:**
+  - Zero hardcoded OEM lists or brand dropdowns: automatically detects hardware from `Build.MANUFACTURER`, `Build.BRAND`, `Build.MODEL`, `Build.DEVICE`, `Build.PRODUCT`, and `Build.HARDWARE`.
+  - Smart brand capitalization and prefix deduplication (e.g. `samsung SM-S928B` -> `Samsung SM-S928B`, `motorola motorola edge 50` -> `Motorola edge 50`).
+  - Universal custom ROM detection with generic `ro.modversion` and `ro.rom.version` fallback.
+- **Event-Sourced JSON Google Drive Ingestion:**
+  - Submissions are stored as individual, immutable JSON report files directly in the designated Google Drive folder (`HDR lab reports`).
+  - Eliminates spreadsheet concurrency locks, write collisions, cell formatting glitches, and mobile editing friction.
+  - Generates clean, traceable filenames: `report_YYYY-MM-DD_HH-mm-ss_<DeviceName>.json`.
+- **Enriched Hardware & Display Telemetry:**
+  - Extracts full hardware specs: peak and minimum luminance (nits), wide color gamut (`isWideColorGamut`), display mode & refresh rate (e.g. `3120 × 1440 @ 120.00 Hz`), supported HDR types (`Display.HdrCapabilities`), and SoC model (`Build.SOC_MODEL` on API 31+).

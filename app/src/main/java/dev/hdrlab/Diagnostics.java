@@ -44,6 +44,36 @@ final class Diagnostics {
         }
     }
 
+    static String capitalize(String str) {
+        if (str == null || str.isEmpty()) return "";
+        str = str.trim();
+        if (str.isEmpty()) return "";
+        char first = str.charAt(0);
+        if (Character.isUpperCase(first)) return str;
+        return Character.toUpperCase(first) + str.substring(1);
+    }
+
+    static String getCleanDeviceName() {
+        return getCleanDeviceName(Build.MANUFACTURER, Build.MODEL);
+    }
+
+    static String getCleanDeviceName(String manufacturer, String model) {
+        if (manufacturer == null) manufacturer = "";
+        if (model == null) model = "";
+        manufacturer = manufacturer.trim();
+        model = model.trim();
+
+        if (manufacturer.isEmpty()) return capitalize(model);
+        if (model.isEmpty()) return capitalize(manufacturer);
+
+        String capManufacturer = capitalize(manufacturer);
+        // If model already begins with the manufacturer name, avoid redundant prefix
+        if (model.toLowerCase(Locale.US).startsWith(manufacturer.toLowerCase(Locale.US))) {
+            return capitalize(model);
+        }
+        return capManufacturer + " " + model;
+    }
+
     static String detectOsInfo() {
         return detectOsInfo(Diagnostics::getSystemProperty, Build.MANUFACTURER, Build.VERSION.RELEASE);
     }
@@ -154,7 +184,17 @@ final class Diagnostics {
             return formatOsWithAndroid(os, androidRelease);
         }
 
-        // 10. Fallback: "Android " + Build.VERSION.RELEASE
+        // 10. Generic Custom ROM / OS Properties (e.g. LineageOS, GrapheneOS, etc.)
+        String modVersion = getter.get("ro.modversion");
+        if (modVersion != null && !modVersion.isEmpty()) {
+            return formatOsWithAndroid(modVersion, androidRelease);
+        }
+        String romVersion = getter.get("ro.rom.version");
+        if (romVersion != null && !romVersion.isEmpty()) {
+            return formatOsWithAndroid(romVersion, androidRelease);
+        }
+
+        // 11. Fallback: "Android " + Build.VERSION.RELEASE
         return "Android " + androidRelease;
     }
 
@@ -174,16 +214,28 @@ final class Diagnostics {
         final boolean isWideGamut;
         final String peakBrightness;
         final float peakBrightnessNits;
+        final float minLuminanceNits;
+        final List<String> hdrTypes;
+        final String activeMode;
 
         DeviceSummary(String modelAndVersion, String hdrSupport, boolean hasHdr,
                       String wideGamut, boolean isWideGamut,
                       String peakBrightness, float peakBrightnessNits) {
-            this(modelAndVersion, detectOsInfo(), hdrSupport, hasHdr, wideGamut, isWideGamut, peakBrightness, peakBrightnessNits);
+            this(modelAndVersion, detectOsInfo(), hdrSupport, hasHdr, wideGamut, isWideGamut,
+                 peakBrightness, peakBrightnessNits, -1f, java.util.Collections.emptyList(), "");
         }
 
         DeviceSummary(String modelAndVersion, String osInfo, String hdrSupport, boolean hasHdr,
                       String wideGamut, boolean isWideGamut,
                       String peakBrightness, float peakBrightnessNits) {
+            this(modelAndVersion, osInfo, hdrSupport, hasHdr, wideGamut, isWideGamut,
+                 peakBrightness, peakBrightnessNits, -1f, java.util.Collections.emptyList(), "");
+        }
+
+        DeviceSummary(String modelAndVersion, String osInfo, String hdrSupport, boolean hasHdr,
+                      String wideGamut, boolean isWideGamut,
+                      String peakBrightness, float peakBrightnessNits,
+                      float minLuminanceNits, List<String> hdrTypes, String activeMode) {
             this.modelAndVersion = modelAndVersion;
             this.osInfo = osInfo;
             this.hdrSupport = hdrSupport;
@@ -192,12 +244,15 @@ final class Diagnostics {
             this.isWideGamut = isWideGamut;
             this.peakBrightness = peakBrightness;
             this.peakBrightnessNits = peakBrightnessNits;
+            this.minLuminanceNits = minLuminanceNits;
+            this.hdrTypes = hdrTypes != null ? java.util.Collections.unmodifiableList(new ArrayList<>(hdrTypes)) : java.util.Collections.emptyList();
+            this.activeMode = activeMode != null ? activeMode : "";
         }
     }
 
     static DeviceSummary summarize(Context context, JSONObject deviceSnapshot) {
         String osInfo = detectOsInfo();
-        String modelAndVersion = Build.MANUFACTURER + " " + Build.MODEL + "  ·  " + osInfo;
+        String modelAndVersion = getCleanDeviceName(Build.MANUFACTURER, Build.MODEL) + "  ·  " + osInfo;
         Display display = null;
         try { display = context != null ? context.getDisplay() : null; }
         catch (Throwable ignored) { /* Fall back for contexts without a display */ }
@@ -213,6 +268,9 @@ final class Diagnostics {
         String wideGamut = formatGamut(context, false);
         float maxLum = -1f;
         String peakBrightness = context != null ? context.getString(R.string.brightness_not_reported) : "Not reported by system";
+        float minLum = -1f;
+        String activeMode = "";
+        List<String> hdrTypes = new ArrayList<>();
 
         if (display != null) {
             isWideGamut = display.isWideColorGamut();
@@ -221,13 +279,18 @@ final class Diagnostics {
             Display.HdrCapabilities caps = display.getHdrCapabilities();
             if (caps != null && caps.getSupportedHdrTypes() != null && caps.getSupportedHdrTypes().length > 0) {
                 hasHdr = true;
-                List<String> types = new ArrayList<>();
-                for (int t : caps.getSupportedHdrTypes()) types.add(hdrName(t));
-                hdrSupport = formatHdrSupport(context, types);
+                for (int t : caps.getSupportedHdrTypes()) hdrTypes.add(hdrName(t));
+                hdrSupport = formatHdrSupport(context, hdrTypes);
                 maxLum = caps.getDesiredMaxLuminance();
                 if (maxLum > 0 && Float.isFinite(maxLum)) {
                     peakBrightness = formatPeakBrightness(context, Math.round(maxLum));
                 }
+                minLum = caps.getDesiredMinLuminance();
+            }
+            Display.Mode active = display.getMode();
+            if (active != null) {
+                activeMode = active.getPhysicalWidth() + " × " + active.getPhysicalHeight()
+                    + " @ " + String.format(Locale.US, "%.2f Hz", active.getRefreshRate());
             }
         } else if (deviceSnapshot != null && deviceSnapshot.has("display")) {
             JSONObject screen = deviceSnapshot.optJSONObject("display");
@@ -235,9 +298,8 @@ final class Diagnostics {
                 JSONArray advertised = screen.optJSONArray("advertisedHdrTypes");
                 if (advertised != null && advertised.length() > 0) {
                     hasHdr = true;
-                    List<String> types = new ArrayList<>();
-                    for (int i = 0; i < advertised.length(); i++) types.add(advertised.optString(i));
-                    hdrSupport = formatHdrSupport(context, types);
+                    for (int i = 0; i < advertised.length(); i++) hdrTypes.add(advertised.optString(i));
+                    hdrSupport = formatHdrSupport(context, hdrTypes);
                 }
                 isWideGamut = screen.optBoolean("wideColorGamut", false);
                 wideGamut = formatGamut(context, isWideGamut);
@@ -246,10 +308,15 @@ final class Diagnostics {
                     peakBrightness = formatPeakBrightness(context, (int) Math.round(lum));
                     maxLum = (float) lum;
                 }
+                double min = screen.optDouble("desiredMinLuminanceNits", -1);
+                if (min >= 0 && Double.isFinite(min)) {
+                    minLum = (float) min;
+                }
+                activeMode = screen.optString("activeMode", "");
             }
         }
 
-        return new DeviceSummary(modelAndVersion, osInfo, hdrSupport, hasHdr, wideGamut, isWideGamut, peakBrightness, maxLum);
+        return new DeviceSummary(modelAndVersion, osInfo, hdrSupport, hasHdr, wideGamut, isWideGamut, peakBrightness, maxLum, minLum, hdrTypes, activeMode);
     }
 
     private static String formatGamut(Context context, boolean isWideGamut) {
@@ -278,12 +345,22 @@ final class Diagnostics {
 
     static JSONObject device(Context context) throws Exception {
         JSONObject root = new JSONObject();
-        root.put("manufacturer", Build.MANUFACTURER);
-        root.put("model", Build.MODEL);
+        String cleanDevice = getCleanDeviceName(Build.MANUFACTURER, Build.MODEL);
+        root.put("deviceName", cleanDevice);
+        root.put("manufacturer", Build.MANUFACTURER != null ? Build.MANUFACTURER : "");
+        root.put("brand", Build.BRAND != null ? Build.BRAND : "");
+        root.put("model", Build.MODEL != null ? Build.MODEL : "");
+        root.put("product", Build.PRODUCT != null ? Build.PRODUCT : "");
+        root.put("device", Build.DEVICE != null ? Build.DEVICE : "");
+        root.put("board", Build.BOARD != null ? Build.BOARD : "");
+        root.put("hardware", Build.HARDWARE != null ? Build.HARDWARE : "");
+        if (Build.VERSION.SDK_INT >= 31) {
+            root.put("socModel", Build.SOC_MODEL != null ? Build.SOC_MODEL : "");
+        }
         root.put("os", detectOsInfo());
-        root.put("android", Build.VERSION.RELEASE);
+        root.put("android", Build.VERSION.RELEASE != null ? Build.VERSION.RELEASE : "");
         root.put("sdk", Build.VERSION.SDK_INT);
-        root.put("build", Build.DISPLAY);
+        root.put("build", Build.DISPLAY != null ? Build.DISPLAY : "");
         Display display = null;
         try { display = context.getDisplay(); }
         catch (UnsupportedOperationException ignored) { /* Fall back for contexts without a display. */ }

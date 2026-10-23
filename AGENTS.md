@@ -76,7 +76,7 @@
 * **Survey Submission Flow:**
   - **Trigger:** Following the 10-second SDR-to-HDR near-black transition test, an optional survey prompt allows the user to report their perceptual observations.
   - **Payload Structure (10-Column Schema):** Collects SDR baseline black level and visible shadow steps (1% to 6%), HDR transition black level (remained pure black vs. raised black bug vs. normal LCD glow) and visible shadow steps, optional qualitative notes, detected custom OS / ROM, and hardware display specs (reported max nits, supported HDR types).
-  - **Backend Pipeline:** Form-encoded HTTP POST connects to a serverless Google Apps Script webhook appending atomically to a 10-column Google Sheet (`timestamp`, `model`, `os`, `hdr`, `nits`, `sdr_black`, `sdr_steps`, `hdr_black`, `hdr_steps`, `comments`).
+  - **Backend Pipeline:** Form-encoded or JSON HTTP POST connects to a serverless Google Apps Script webhook saving individual, immutable JSON report files to a designated Google Drive ingestion bucket (`HDR lab reports`, folder ID `1VEHauaaZFqlIzDBNgHXb0RLlgMnkwoeb`) named `report_YYYY-MM-DD_HH-mm-ss_<device_model>.json`. Eliminates row-locking contention and preserves exact payloads for analysis.
   - **Asynchronous & Fail-Safe:** All network submissions must execute asynchronously off the main thread (e.g. background worker thread), must never block playback or the UI, and must fail silently or notify non-intrusively without crash risk if offline.
 
 ### I. Programmatic RadioButton IDs & RadioGroup State Tracking
@@ -84,6 +84,14 @@
 * **Dual-Tier State Synchronization:**
   1. Always assign dynamic IDs using `rb.setId(View.generateViewId())` and synchronize selection via `radioGroup.check(rb.getId())`.
   2. Implement a fallback traversal helper (`getCheckedText()`) that inspects both `getCheckedRadioButtonId()` and iterates child views checking `((RadioButton) child).isChecked()`.
+
+### J. Universal Dynamic Brand & Model Auto-Discovery
+* **Zero Hardcoded Brand Lists:** Never hardcode fixed lists of smartphone/tablet brands or restrict detection to specific OEMs.
+* **Dynamic Property Resolution:** Discover hardware dynamically from Android AOSP build properties:
+  - Manufacturer / Brand: `Build.MANUFACTURER`, `Build.BRAND`
+  - Model / Product / Hardware: `Build.MODEL`, `Build.PRODUCT`, `Build.DEVICE`, `Build.BOARD`, `Build.HARDWARE`, `Build.SOC_MODEL` (API 31+)
+* **Clean Formatting & Prefix Deduplication:** Use `Diagnostics.getCleanDeviceName(manufacturer, model)` to capitalize lowercase brands (e.g. `samsung` -> `Samsung`) and prevent duplicate prefixes when OEMs already include the brand in `Build.MODEL` (e.g. `motorola motorola edge 50` -> `Motorola edge 50`).
+* **Universal Custom ROM Fallback:** Check generic OS / ROM properties (`ro.modversion`, `ro.rom.version`) and default cleanly to `Android <version>` for any non-skinned device.
 
 ---
 

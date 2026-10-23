@@ -14,6 +14,7 @@ import android.widget.TextView;
 import androidx.media3.common.C;
 import androidx.media3.common.ColorInfo;
 import androidx.media3.ui.PlayerView;
+import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.After;
 import org.junit.Before;
@@ -504,22 +505,70 @@ public class LayoutTest {
 
     @Test public void reportSubmitterHandlesMockSubmissionSuccessfully() throws Exception {
         ReportSubmitter.CommunityReport report = new ReportSubmitter.CommunityReport(
-            "Test Model", "MagicOS 8.0 (Android 16)", "HDR10", "1000",
+            "Test Model", "Test OEM", "MagicOS 8.0 (Android 16)", "16",
+            36, "SM8650", "qcom", java.util.Arrays.asList("HDR10", "HLG"),
+            1000f, 0.0005f, true, "2800 × 1840 @ 120.00 Hz", "0.1.7",
             "Pure absolute black (OLED / Pixels off)", "All 6 steps visible (Excellent shadow detail)",
             "Remained pure black (Flawless HDR presentation)", "All 6 steps visible in HDR (Accurate tone mapping)",
             "Test comments", System.currentTimeMillis()
         );
 
         assertEquals("Test Model", report.model);
+        assertEquals("Test OEM", report.manufacturer);
         assertEquals("MagicOS 8.0 (Android 16)", report.os);
-        assertEquals("HDR10", report.hdr);
-        assertEquals("1000", report.nits);
+        assertEquals("16", report.androidRelease);
+        assertEquals(36, report.sdkInt);
+        assertEquals("SM8650", report.socModel);
+        assertEquals("qcom", report.hardware);
+        assertEquals(2, report.hdrTypes.size());
+        assertEquals("HDR10", report.hdrTypes.get(0));
+        assertEquals("HLG", report.hdrTypes.get(1));
+        assertEquals(1000f, report.peakNits, 0.01f);
+        assertEquals(0.0005f, report.minNits, 0.0001f);
+        assertTrue(report.wideColorGamut);
+        assertEquals("2800 × 1840 @ 120.00 Hz", report.activeMode);
+        assertEquals("0.1.7", report.appVersion);
         assertEquals("Pure absolute black (OLED / Pixels off)", report.sdrBlackLevel);
         assertEquals("All 6 steps visible (Excellent shadow detail)", report.sdrSteps);
         assertEquals("Remained pure black (Flawless HDR presentation)", report.hdrBlackLevel);
         assertEquals("All 6 steps visible in HDR (Accurate tone mapping)", report.hdrSteps);
         assertEquals("Test comments", report.comments);
         assertTrue(report.timestamp > 0);
+
+        // Verify JSON serialization
+        JSONObject json = report.toJson();
+        assertNotNull(json);
+        assertEquals("0.1.7", json.getString("appVersion"));
+        assertEquals("Test OEM Test Model", json.getString("deviceName"));
+        assertEquals("Test Model", json.getString("model"));
+        assertEquals("Test OEM", json.getString("manufacturer"));
+        assertEquals("MagicOS 8.0 (Android 16)", json.getString("os"));
+        assertEquals("16", json.getString("androidRelease"));
+        assertEquals(36, json.getInt("sdkInt"));
+        assertEquals("SM8650", json.getString("socModel"));
+        assertEquals("qcom", json.getString("hardware"));
+        JSONArray types = json.getJSONArray("hdrTypes");
+        assertEquals(2, types.length());
+        assertEquals("HDR10", types.getString(0));
+        assertEquals("HLG", types.getString(1));
+        assertEquals(1000.0, json.getDouble("peakNits"), 0.01);
+        assertEquals(0.0005, json.getDouble("minNits"), 0.0001);
+        assertTrue(json.getBoolean("wideColorGamut"));
+        assertEquals("2800 × 1840 @ 120.00 Hz", json.getString("activeMode"));
+        assertEquals("Pure absolute black (OLED / Pixels off)", json.getString("sdrBlackLevel"));
+        assertEquals("All 6 steps visible (Excellent shadow detail)", json.getString("sdrSteps"));
+        assertEquals("Remained pure black (Flawless HDR presentation)", json.getString("hdrBlackLevel"));
+        assertEquals("All 6 steps visible in HDR (Accurate tone mapping)", json.getString("hdrSteps"));
+        assertEquals("Test comments", json.getString("comments"));
+        assertEquals(report.timestamp, json.getLong("timestamp"));
+
+        // Verify legacy aliases
+        assertEquals("HDR10, HLG", json.getString("hdr"));
+        assertEquals("1000", json.getString("nits"));
+        assertEquals("Pure absolute black (OLED / Pixels off)", json.getString("sdr_black"));
+        assertEquals("All 6 steps visible (Excellent shadow detail)", json.getString("sdr_steps"));
+        assertEquals("Remained pure black (Flawless HDR presentation)", json.getString("hdr_black"));
+        assertEquals("All 6 steps visible in HDR (Accurate tone mapping)", json.getString("hdr_steps"));
 
         AtomicBoolean success = new AtomicBoolean(false);
 
@@ -534,6 +583,42 @@ public class LayoutTest {
         f.get(3, TimeUnit.SECONDS);
         ShadowLooper.runUiThreadTasksIncludingDelayedTasks();
         assertTrue("Mock/Default endpoint should succeed", success.get());
+    }
+
+    @Test public void reportSubmitterSerializesNullLuminanceGracefully() throws Exception {
+        ReportSubmitter.CommunityReport report = new ReportSubmitter.CommunityReport(
+            "Model", "OEM", "Android 15", "15",
+            35, "", "", null,
+            -1f, -1f, false, "", "0.1.7",
+            "Option A", "Option B", "Option C", "Option D", "", 0L
+        );
+        JSONObject json = report.toJson();
+        assertTrue("Unreported peakNits should serialize as JSON null", json.isNull("peakNits"));
+        assertTrue("Unreported minNits should serialize as JSON null", json.isNull("minNits"));
+        assertEquals(0, json.getJSONArray("hdrTypes").length());
+        assertFalse(json.getBoolean("wideColorGamut"));
+        assertEquals("None", json.getString("hdr"));
+        assertEquals("Not reported", json.getString("nits"));
+    }
+
+    @Test public void diagnosticsDeviceSnapshotIncludesHardwareAndSoc() throws Exception {
+        JSONObject snapshot = Diagnostics.device(activity);
+        assertNotNull(snapshot);
+        assertTrue(snapshot.has("hardware"));
+        assertTrue(snapshot.has("deviceName"));
+        assertTrue(snapshot.has("brand"));
+        if (android.os.Build.VERSION.SDK_INT >= 31) {
+            assertTrue(snapshot.has("socModel"));
+        }
+    }
+
+    @Test public void cleanDeviceNameDeduplicatesAndCapitalizes() {
+        assertEquals("Samsung SM-S928B", Diagnostics.getCleanDeviceName("samsung", "SM-S928B"));
+        assertEquals("Motorola edge 50 pro", Diagnostics.getCleanDeviceName("motorola", "motorola edge 50 pro"));
+        assertEquals("Google Pixel 9 Pro", Diagnostics.getCleanDeviceName("google", "Pixel 9 Pro"));
+        assertEquals("HONOR ROD2-W09", Diagnostics.getCleanDeviceName("HONOR", "ROD2-W09"));
+        assertEquals("Tablet", Diagnostics.getCleanDeviceName("", "tablet"));
+        assertEquals("Sony", Diagnostics.getCleanDeviceName("sony", ""));
     }
 
     @Test public void localeResolvesEnglishDefaultAndPortuguese() {

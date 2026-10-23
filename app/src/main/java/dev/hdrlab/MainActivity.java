@@ -38,6 +38,7 @@ import androidx.media3.exoplayer.DefaultRenderersFactory;
 import androidx.media3.exoplayer.ExoPlayer;
 import androidx.media3.exoplayer.SeekParameters;
 import androidx.media3.ui.PlayerView;
+import org.json.JSONArray;
 import org.json.JSONObject;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -46,6 +47,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -695,11 +697,71 @@ public final class MainActivity extends Activity {
                 String hdrSteps = getCheckedText(rgHdrSteps);
 
                 String comments = etComments.getText().toString().trim();
-                String nits = (currentSummary != null && currentSummary.peakBrightnessNits > 0)
-                    ? String.valueOf(Math.round(currentSummary.peakBrightnessNits)) : "Not reported";
+
+                List<String> hdrTypes = (currentSummary != null && currentSummary.hdrTypes != null && !currentSummary.hdrTypes.isEmpty())
+                    ? currentSummary.hdrTypes
+                    : Collections.emptyList();
+                float peakNits = (currentSummary != null) ? currentSummary.peakBrightnessNits : -1f;
+                float minNits = (currentSummary != null) ? currentSummary.minLuminanceNits : -1f;
+                boolean wideGamut = (currentSummary != null) && currentSummary.isWideGamut;
+                String activeMode = (currentSummary != null && currentSummary.activeMode != null)
+                    ? currentSummary.activeMode : "";
+                String socModel = Build.VERSION.SDK_INT >= 31 && Build.SOC_MODEL != null ? Build.SOC_MODEL : "";
+
+                // If background device snapshot has additional display mode or luminance info, fallback to it
+                if (deviceSnapshot != null && deviceSnapshot.has("display")) {
+                    JSONObject screen = deviceSnapshot.optJSONObject("display");
+                    if (screen != null) {
+                        if (hdrTypes.isEmpty()) {
+                            JSONArray arr = screen.optJSONArray("advertisedHdrTypes");
+                            if (arr != null && arr.length() > 0) {
+                                List<String> list = new ArrayList<>();
+                                for (int i = 0; i < arr.length(); i++) list.add(arr.optString(i));
+                                hdrTypes = list;
+                            }
+                        }
+                        if (minNits < 0) {
+                            double min = screen.optDouble("desiredMinLuminanceNits", -1);
+                            if (min >= 0 && Double.isFinite(min)) minNits = (float) min;
+                        }
+                        if (peakNits <= 0) {
+                            double lum = screen.optDouble("desiredMaxLuminanceNits", -1);
+                            if (lum > 0 && Double.isFinite(lum)) peakNits = (float) lum;
+                        }
+                        if (activeMode.isEmpty()) {
+                            activeMode = screen.optString("activeMode", "");
+                        }
+                    }
+                }
+
+                String cleanDevice = Diagnostics.getCleanDeviceName(Build.MANUFACTURER, Build.MODEL);
+                String brand = Build.BRAND != null ? Build.BRAND : "";
+                String product = Build.PRODUCT != null ? Build.PRODUCT : "";
+                String hardware = Build.HARDWARE != null ? Build.HARDWARE : "";
 
                 ReportSubmitter.CommunityReport report = new ReportSubmitter.CommunityReport(
-                    model, os, hdr, nits, sdrBlackLevel, sdrSteps, hdrBlackLevel, hdrSteps, comments, System.currentTimeMillis()
+                    cleanDevice,
+                    Build.MODEL != null ? Build.MODEL : "",
+                    Build.MANUFACTURER != null ? Build.MANUFACTURER : "",
+                    brand,
+                    product,
+                    hardware,
+                    socModel,
+                    os,
+                    Build.VERSION.RELEASE != null ? Build.VERSION.RELEASE : "",
+                    Build.VERSION.SDK_INT,
+                    hdrTypes,
+                    peakNits,
+                    minNits,
+                    wideGamut,
+                    activeMode,
+                    ReportSubmitter.APP_VERSION,
+                    sdrBlackLevel,
+                    sdrSteps,
+                    hdrBlackLevel,
+                    hdrSteps,
+                    comments,
+                    System.currentTimeMillis()
                 );
 
                 ReportSubmitter.submit(report, ReportSubmitter.DEFAULT_ENDPOINT, new ReportSubmitter.Callback() {

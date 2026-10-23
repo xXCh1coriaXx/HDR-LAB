@@ -1,5 +1,13 @@
 # HDR Lab — Changelog
 
+## v0.1.7 (Event-Sourced JSON Drive Ingestion & Dynamic Device Discovery)
+
+- Dynamic Brand & Model Auto-Discovery: Hardware identity is discovered dynamically from Android build properties (`Build.MANUFACTURER`, `Build.BRAND`, `Build.MODEL`, `Build.PRODUCT`, `Build.HARDWARE`, `Build.SOC_MODEL`). Eliminated hardcoded brand lists, added dynamic title-casing and prefix deduplication (`Diagnostics.getCleanDeviceName`).
+- Event-Sourced JSON Google Drive Pipeline: Direct HTTP POST of `application/json` payloads directly creating individual immutable `.json` report files inside Google Drive folder `HDR lab reports` (`1VEHauaaZFqlIzDBNgHXb0RLlgMnkwoeb`).
+- Enriched Diagnostics Telemetry: Captures peak/min luminance, wide color gamut, resolution and refresh rate, SoC model, and supported HDR formats alongside perceptual comparative survey results.
+
+---
+
 ## v0.1.6.1 (Survey RadioGroup State Tracking Fix)
 
 - Reliable RadioGroup Selection Capture: Fixed an Android programmatic view quirk where default Option A was not serialized when untouched. Added dynamic view IDs (`View.generateViewId()`), `RadioGroup.check(id)`, and fallback checked state verification in `getCheckedText()`.
