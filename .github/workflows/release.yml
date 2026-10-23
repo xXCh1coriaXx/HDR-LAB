@@ -80,10 +80,21 @@ jobs:
           CHECKSUMS="${{ steps.package.outputs.checksums }}"
           
           # If release exists, upload assets; otherwise create it
+          # Determine if this should be flagged as a pre-release
+          PRERELEASE_FLAG=""
+          if [[ "$TAG" == *"-"* ]] || [[ "$TAG" == v0.* ]]; then
+            PRERELEASE_FLAG="--prerelease"
+          fi
+
+          # If release exists, upload assets; otherwise create it
           if gh release view "$TAG" >/dev/null 2>&1; then
             gh release upload "$TAG" "$APK" "$SOURCE" "$CHECKSUMS" --clobber
+            if [ -n "$PRERELEASE_FLAG" ]; then
+              gh release edit "$TAG" $PRERELEASE_FLAG
+            fi
           else
             gh release create "$TAG" "$APK" "$SOURCE" "$CHECKSUMS" \
               --title "HDR Lab Light $TAG" \
-              --notes-file RELEASE_NOTES.md
+              --notes-file RELEASE_NOTES.md \
+              $PRERELEASE_FLAG
           fi
