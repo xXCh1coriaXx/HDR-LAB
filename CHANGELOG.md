@@ -1,5 +1,15 @@
 # HDR Lab — Changelog
 
+## v0.1.5 (Community Display Database & Custom OS Detection)
+
+- Community Display Report & Database integration: Introduced an optional, user-prompted survey to submit display calibration evaluations to a crowd-sourced Google Forms / Sheets database (evaluating OLED true black vs. raised black bugs, near-black step visibility, and user notes).
+- Automated Custom OS / ROM detection: Automatically identifies custom Android vendor skins and versions (Honor MagicOS, Xiaomi HyperOS/MIUI, Samsung One UI, OnePlus OxygenOS, OPPO ColorOS, Google Pixel UI, etc.) by reading vendor build properties.
+- Anonymous, privacy-first telemetry: Collects solely display hardware capabilities, ROM identifiers, and user perceptual ratings without personal data or persistent tracking identifiers.
+- Controlled network permission: Added `<uses-permission android:name="android.permission.INTERNET" />` scoped strictly to optional, user-initiated survey form dispatch.
+- Retained core HDR Lab Light features: Preserved adaptive side-by-side tablet layout, 10-second SDR-to-HDR near-black step test, zero-shader SurfaceView HWC bypass, and full bilingual i18n (EN / PT-PT).
+
+---
+
 ## v0.1.2 (Full Bilingual i18n: EN & PT-PT)
 
 - Full bilingual support (International English & Portuguese pt-PT): All UI strings, diagnostic cards, technical report dialogs, and test HUD labels fully localized.

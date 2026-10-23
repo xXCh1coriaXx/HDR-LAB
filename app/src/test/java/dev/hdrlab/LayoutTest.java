@@ -1,5 +1,6 @@
 package dev.hdrlab;
 
+import android.app.AlertDialog;
 import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.view.View;
@@ -21,9 +22,16 @@ import org.robolectric.RobolectricTestRunner;
 import org.robolectric.android.controller.ActivityController;
 import org.robolectric.annotation.Config;
 import org.robolectric.annotation.GraphicsMode;
+import org.robolectric.shadows.ShadowAlertDialog;
+import org.robolectric.shadows.ShadowLooper;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import static org.junit.Assert.*;
 
 @RunWith(RobolectricTestRunner.class)
@@ -377,6 +385,136 @@ public class LayoutTest {
             LinearLayout.VERTICAL, cardsContainer.getOrientation());
     }
 
+    @Test public void detectOsInfoIdentifiesAllVendorCustomRomsAndFallback() {
+        // 1. Honor MagicOS
+        Map<String, String> honorProps = new HashMap<>();
+        honorProps.put("ro.build.version.magic", "8.0");
+        assertEquals("MagicOS 8.0 (Android 16)",
+            Diagnostics.detectOsInfo(honorProps::get, "HONOR", "16"));
+
+        // 2. Xiaomi HyperOS
+        Map<String, String> hyperProps = new HashMap<>();
+        hyperProps.put("ro.mi.os.version.name", "1.0.2");
+        assertEquals("HyperOS 1.0.2 (Android 14)",
+            Diagnostics.detectOsInfo(hyperProps::get, "Xiaomi", "14"));
+
+        // 3. Xiaomi MIUI
+        Map<String, String> miuiProps = new HashMap<>();
+        miuiProps.put("ro.miui.ui.version.name", "14.0");
+        assertEquals("MIUI 14.0 (Android 13)",
+            Diagnostics.detectOsInfo(miuiProps::get, "POCO", "13"));
+
+        // 4. Samsung One UI (numeric ro.build.version.oneui)
+        Map<String, String> oneUiProps = new HashMap<>();
+        oneUiProps.put("ro.build.version.oneui", "60100");
+        assertEquals("One UI 6.1 (Android 14)",
+            Diagnostics.detectOsInfo(oneUiProps::get, "Samsung", "14"));
+
+        // 5. Samsung One UI (SEM_PLATFORM_INT)
+        Map<String, String> semProps = new HashMap<>();
+        semProps.put("SEM_PLATFORM_INT", "150100");
+        assertEquals("One UI 6.1 (Android 14)",
+            Diagnostics.detectOsInfo(semProps::get, "samsung", "14"));
+
+        // 6. OnePlus OxygenOS
+        Map<String, String> oxygenProps = new HashMap<>();
+        oxygenProps.put("ro.oxygen.version", "14.0");
+        assertEquals("OxygenOS 14.0 (Android 14)",
+            Diagnostics.detectOsInfo(oxygenProps::get, "OnePlus", "14"));
+
+        // 7. OPPO ColorOS
+        Map<String, String> oppoProps = new HashMap<>();
+        oppoProps.put("ro.build.version.opporom", "14.0");
+        assertEquals("ColorOS 14.0 (Android 14)",
+            Diagnostics.detectOsInfo(oppoProps::get, "OPPO", "14"));
+
+        // 8. Realme UI
+        Map<String, String> realmeProps = new HashMap<>();
+        realmeProps.put("ro.build.version.realmeui", "5.0");
+        assertEquals("Realme UI 5.0 (Android 14)",
+            Diagnostics.detectOsInfo(realmeProps::get, "Realme", "14"));
+
+        // 9. Vivo OriginOS / Funtouch
+        Map<String, String> vivoProps = new HashMap<>();
+        vivoProps.put("ro.vivo.os.version", "4.0");
+        assertEquals("OriginOS / Funtouch OS 4.0 (Android 14)",
+            Diagnostics.detectOsInfo(vivoProps::get, "vivo", "14"));
+
+        // 10. Google Pixel UI
+        assertEquals("Pixel UI (Android 15)",
+            Diagnostics.detectOsInfo(k -> null, "Google", "15"));
+
+        // 11. Nothing OS
+        Map<String, String> nothingProps = new HashMap<>();
+        nothingProps.put("ro.nothing.version", "2.5");
+        assertEquals("Nothing OS 2.5 (Android 14)",
+            Diagnostics.detectOsInfo(nothingProps::get, "Nothing", "14"));
+
+        // 12. Fallback generic Android
+        assertEquals("Android 14",
+            Diagnostics.detectOsInfo(k -> null, "Motorola", "14"));
+
+        // 13. Production no-arg detectOsInfo runs without throwing
+        String osInfo = Diagnostics.detectOsInfo();
+        assertNotNull(osInfo);
+        assertTrue(osInfo.length() > 0);
+    }
+
+    @Test public void communityReportButtonExistsAndOpensSurveyDialog() throws Exception {
+        LinearLayout testCard = field("quickTestCard");
+        assertNotNull("quickTestCard must exist", testCard);
+
+        Button btnCommunityReport = field("btnCommunityReport");
+        assertNotNull("btnCommunityReport must exist", btnCommunityReport);
+        assertEquals(activity.getString(R.string.btn_community_report), btnCommunityReport.getText().toString());
+        assertTrue("Button should be single line", btnCommunityReport.isSingleLine());
+
+        Method dpMethod = MainActivity.class.getDeclaredMethod("dp", float.class);
+        dpMethod.setAccessible(true);
+        int minH = (int) dpMethod.invoke(activity, 48f);
+        assertTrue("Button minHeight should be >= 48dp", btnCommunityReport.getMinHeight() >= minH);
+
+        // Click button and verify AlertDialog is displayed
+        btnCommunityReport.performClick();
+        AlertDialog dialog = (AlertDialog) ShadowAlertDialog.getLatestDialog();
+        assertNotNull("Survey dialog should be shown after clicking report button", dialog);
+        assertTrue("Dialog must be showing", dialog.isShowing());
+
+        // Cancel dialog
+        dialog.dismiss();
+    }
+
+    @Test public void reportSubmitterHandlesMockSubmissionSuccessfully() throws Exception {
+        ReportSubmitter.CommunityReport report = new ReportSubmitter.CommunityReport(
+            "Test Model", "MagicOS 8.0 (Android 16)", "HDR10", "1000",
+            "Pure absolute black (OLED / No glow)", "All 6 steps visible (Excellent)",
+            "Test comments", System.currentTimeMillis()
+        );
+
+        assertEquals("Test Model", report.model);
+        assertEquals("MagicOS 8.0 (Android 16)", report.os);
+        assertEquals("HDR10", report.hdr);
+        assertEquals("1000", report.nits);
+        assertEquals("Pure absolute black (OLED / No glow)", report.blackLevel);
+        assertEquals("All 6 steps visible (Excellent)", report.stepsVisible);
+        assertEquals("Test comments", report.comments);
+        assertTrue(report.timestamp > 0);
+
+        AtomicBoolean success = new AtomicBoolean(false);
+
+        Future<?> f = ReportSubmitter.submit(report, ReportSubmitter.DEFAULT_ENDPOINT, new ReportSubmitter.Callback() {
+            @Override public void onSuccess() {
+                success.set(true);
+            }
+            @Override public void onError(String message) {}
+        });
+
+        assertNotNull(f);
+        f.get(3, TimeUnit.SECONDS);
+        ShadowLooper.runUiThreadTasksIncludingDelayedTasks();
+        assertTrue("Mock/Default endpoint should succeed", success.get());
+    }
+
     @Test public void localeResolvesEnglishDefaultAndPortuguese() {
         Configuration configEn = new Configuration(activity.getResources().getConfiguration());
         configEn.setLocale(Locale.ENGLISH);
@@ -392,6 +530,7 @@ public class LayoutTest {
         assertEquals("Estimated Peak Brightness:", enRes.getString(R.string.prop_peak_brightness));
         assertEquals("View Detailed Technical Report", enRes.getString(R.string.btn_detailed_report));
         assertEquals("▶ Start Fullscreen SDR vs HDR Test", enRes.getString(R.string.btn_start_test));
+        assertEquals("📋 Submit Community Report", enRes.getString(R.string.btn_community_report));
         assertEquals("SDR MODE · %1$ds remaining", enRes.getString(R.string.hud_title_sdr_countdown));
         assertEquals("HDR MODE (HDR10 / PQ) ACTIVE", enRes.getString(R.string.hud_title_hdr_active));
         assertEquals("Watch SDR", enRes.getString(R.string.hud_btn_watch_sdr));
@@ -403,6 +542,21 @@ public class LayoutTest {
         assertEquals("Reading system data…", enRes.getString(R.string.status_reading_system_data));
         assertEquals("Checking…", enRes.getString(R.string.status_checking));
         assertEquals("Not reported by system", enRes.getString(R.string.brightness_not_reported));
+
+        assertEquals("Community Display Report", enRes.getString(R.string.dialog_report_title));
+        assertEquals("DETECTED DISPLAY SPECIFICATIONS", enRes.getString(R.string.dialog_report_specs_header));
+        assertEquals("1. Black Background Level:", enRes.getString(R.string.dialog_report_q1_title));
+        assertEquals("Pure absolute black (OLED / No glow)", enRes.getString(R.string.dialog_report_q1_opt_a));
+        assertEquals("Subtle normal grey glow (Standard LCD)", enRes.getString(R.string.dialog_report_q1_opt_b));
+        assertEquals("Evident glowing grey / Raised blacks bug", enRes.getString(R.string.dialog_report_q1_opt_c));
+        assertEquals("2. Near-Black Steps Distinguishable:", enRes.getString(R.string.dialog_report_q2_title));
+        assertEquals("All 6 steps visible (Excellent)", enRes.getString(R.string.dialog_report_q2_opt_a));
+        assertEquals("4 to 5 steps visible", enRes.getString(R.string.dialog_report_q2_opt_b));
+        assertEquals("Less than 4 steps (Black crush / crushed shadows)", enRes.getString(R.string.dialog_report_q2_opt_c));
+        assertEquals("3. Observations / Notes (optional):", enRes.getString(R.string.dialog_report_q3_title));
+        assertEquals("Cancel", enRes.getString(R.string.dialog_btn_cancel));
+        assertEquals("Submit", enRes.getString(R.string.dialog_btn_submit));
+        assertEquals("✅ Report submitted successfully! Thank you.", enRes.getString(R.string.report_submit_success));
 
         // Portuguese pt-PT
         Configuration configPt = new Configuration(activity.getResources().getConfiguration());
@@ -419,6 +573,7 @@ public class LayoutTest {
         assertEquals("Brilho de Pico Estimado:", ptRes.getString(R.string.prop_peak_brightness));
         assertEquals("Ver Relatório Técnico Detalhado", ptRes.getString(R.string.btn_detailed_report));
         assertEquals("▶ Iniciar Teste SDR vs HDR em Ecrã Cheio", ptRes.getString(R.string.btn_start_test));
+        assertEquals("📋 Submeter Relatório Comunitário", ptRes.getString(R.string.btn_community_report));
         assertEquals("MODO SDR · %1$ds restantes", ptRes.getString(R.string.hud_title_sdr_countdown));
         assertEquals("MODO HDR (HDR10 / PQ) ATIVADO", ptRes.getString(R.string.hud_title_hdr_active));
         assertEquals("Ver em SDR", ptRes.getString(R.string.hud_btn_watch_sdr));
@@ -430,5 +585,20 @@ public class LayoutTest {
         assertEquals("A ler dados do sistema…", ptRes.getString(R.string.status_reading_system_data));
         assertEquals("A verificar…", ptRes.getString(R.string.status_checking));
         assertEquals("Não declarado pelo sistema", ptRes.getString(R.string.brightness_not_reported));
+
+        assertEquals("Relatório Comunitário de Ecrã", ptRes.getString(R.string.dialog_report_title));
+        assertEquals("ESPECIFICAÇÕES DETETADAS DO ECRÃ", ptRes.getString(R.string.dialog_report_specs_header));
+        assertEquals("1. Nível de Fundo Preto:", ptRes.getString(R.string.dialog_report_q1_title));
+        assertEquals("Preto puro absoluto (OLED / Sem glow)", ptRes.getString(R.string.dialog_report_q1_opt_a));
+        assertEquals("Ligeiro brilho cinzento normal (LCD padrão)", ptRes.getString(R.string.dialog_report_q1_opt_b));
+        assertEquals("Cinzento brilhante evidente / Erro de pretos elevados", ptRes.getString(R.string.dialog_report_q1_opt_c));
+        assertEquals("2. Degraus Quase-Preto Percetíveis:", ptRes.getString(R.string.dialog_report_q2_title));
+        assertEquals("Todos os 6 degraus visíveis (Excelente)", ptRes.getString(R.string.dialog_report_q2_opt_a));
+        assertEquals("4 a 5 degraus visíveis", ptRes.getString(R.string.dialog_report_q2_opt_b));
+        assertEquals("Menos de 4 degraus (Black crush / sombras esmagadas)", ptRes.getString(R.string.dialog_report_q2_opt_c));
+        assertEquals("3. Observações / Notas (opcional):", ptRes.getString(R.string.dialog_report_q3_title));
+        assertEquals("Cancelar", ptRes.getString(R.string.dialog_btn_cancel));
+        assertEquals("Submeter", ptRes.getString(R.string.dialog_btn_submit));
+        assertEquals("✅ Relatório enviado com sucesso! Obrigado pela contribuição.", ptRes.getString(R.string.report_submit_success));
     }
 }

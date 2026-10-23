@@ -38,6 +38,7 @@
     <string name="test_what_to_look_title">What to look for on screen:</string>
     <string name="test_what_to_look_text">• True Black Background: On OLED displays, the background is pitch black (pixels off). On LCD screens, you may notice a slight grey glow (backlight glow).\n• 6 Near-Black Steps: Watch the 6 gentle grey bars (1%, 2%…). They should be distinguishable without elevating the surrounding black background.</string>
     <string name="btn_start_test">▶ Start Fullscreen SDR vs HDR Test</string>
+    <string name="btn_community_report">📋 Submit Community Report</string>
 
     <!-- Fullscreen HUD -->
     <string name="hud_title_sdr_countdown">SDR MODE · %1$ds remaining</string>
@@ -61,4 +62,26 @@
     <string name="share_clip_label">HDR Lab Light report</string>
     <string name="error_dialog">Error: %1$s</string>
     <string name="error_share">Failed to share: %1$s</string>
+
+    <!-- Community Report Dialog & Submissions -->
+    <string name="dialog_report_title">Community Display Report</string>
+    <string name="dialog_report_specs_header">DETECTED DISPLAY SPECIFICATIONS</string>
+    <string name="dialog_report_spec_device">Device: %1$s</string>
+    <string name="dialog_report_spec_os">OS: %1$s</string>
+    <string name="dialog_report_spec_hdr">HDR: %1$s</string>
+    <string name="dialog_report_spec_peak">Peak: %1$s</string>
+    <string name="dialog_report_q1_title">1. Black Background Level:</string>
+    <string name="dialog_report_q1_opt_a">Pure absolute black (OLED / No glow)</string>
+    <string name="dialog_report_q1_opt_b">Subtle normal grey glow (Standard LCD)</string>
+    <string name="dialog_report_q1_opt_c">Evident glowing grey / Raised blacks bug</string>
+    <string name="dialog_report_q2_title">2. Near-Black Steps Distinguishable:</string>
+    <string name="dialog_report_q2_opt_a">All 6 steps visible (Excellent)</string>
+    <string name="dialog_report_q2_opt_b">4 to 5 steps visible</string>
+    <string name="dialog_report_q2_opt_c">Less than 4 steps (Black crush / crushed shadows)</string>
+    <string name="dialog_report_q3_title">3. Observations / Notes (optional):</string>
+    <string name="dialog_report_q3_hint">e.g. ambient lighting, screen mode…</string>
+    <string name="dialog_btn_cancel">Cancel</string>
+    <string name="dialog_btn_submit">Submit</string>
+    <string name="report_submit_success">✅ Report submitted successfully! Thank you.</string>
+    <string name="report_submit_error">❌ Failed to submit report: %1$s</string>
 </resources>

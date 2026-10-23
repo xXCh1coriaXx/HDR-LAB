@@ -19,8 +19,155 @@ import java.util.Locale;
 /** Reports declarations from Android APIs; these are not panel measurements. */
 final class Diagnostics {
 
+    @FunctionalInterface
+    interface PropertyGetter {
+        String get(String key);
+    }
+
+    static String getSystemProperty(String key) {
+        if ("SEM_PLATFORM_INT".equals(key)) {
+            try {
+                java.lang.reflect.Field f = Build.VERSION.class.getField("SEM_PLATFORM_INT");
+                int sem = f.getInt(null);
+                return sem > 0 ? String.valueOf(sem) : null;
+            } catch (Throwable ignored) {
+                return null;
+            }
+        }
+        try {
+            Class<?> sp = Class.forName("android.os.SystemProperties");
+            java.lang.reflect.Method get = sp.getMethod("get", String.class);
+            String val = (String) get.invoke(null, key);
+            return (val != null && !val.trim().isEmpty()) ? val.trim() : null;
+        } catch (Throwable ignored) {
+            return null;
+        }
+    }
+
+    static String detectOsInfo() {
+        return detectOsInfo(Diagnostics::getSystemProperty, Build.MANUFACTURER, Build.VERSION.RELEASE);
+    }
+
+    static String detectOsInfo(PropertyGetter getter, String manufacturer, String androidRelease) {
+        if (getter == null) getter = k -> null;
+        if (manufacturer == null) manufacturer = "";
+        if (androidRelease == null) androidRelease = "";
+
+        // 1. Honor: ro.build.version.magic -> "MagicOS X.X"
+        String magic = getter.get("ro.build.version.magic");
+        if (magic != null && !magic.isEmpty()) {
+            String os = magic.toLowerCase(Locale.US).contains("magicos") ? magic : "MagicOS " + magic;
+            return formatOsWithAndroid(os, androidRelease);
+        }
+
+        // 2. Xiaomi/Redmi/POCO: ro.mi.os.version.name -> "HyperOS X.X", or ro.miui.ui.version.name -> "MIUI X.X"
+        String hyperOs = getter.get("ro.mi.os.version.name");
+        if (hyperOs != null && !hyperOs.isEmpty()) {
+            String os = hyperOs.toLowerCase(Locale.US).contains("hyperos") ? hyperOs : "HyperOS " + hyperOs;
+            return formatOsWithAndroid(os, androidRelease);
+        }
+        String miui = getter.get("ro.miui.ui.version.name");
+        if (miui != null && !miui.isEmpty()) {
+            String os = miui.toLowerCase(Locale.US).contains("miui") ? miui : "MIUI " + miui;
+            return formatOsWithAndroid(os, androidRelease);
+        }
+
+        // 3. Samsung: ro.build.version.oneui or SEM_PLATFORM_INT -> "One UI X.X"
+        String oneUi = getter.get("ro.build.version.oneui");
+        if (oneUi == null || oneUi.isEmpty()) {
+            oneUi = getter.get("ro.build.version.sep");
+        }
+        String semStr = getter.get("SEM_PLATFORM_INT");
+        if ((oneUi != null && !oneUi.isEmpty()) || (semStr != null && !semStr.isEmpty()) || "samsung".equalsIgnoreCase(manufacturer)) {
+            String parsedVersion = null;
+            if (oneUi != null && !oneUi.isEmpty()) {
+                if (oneUi.matches("\\d{4,6}")) {
+                    try {
+                        int v = Integer.parseInt(oneUi);
+                        int major = v / 10000;
+                        int minor = (v % 10000) / 100;
+                        parsedVersion = major + "." + minor;
+                    } catch (NumberFormatException ignored) {}
+                } else if (oneUi.toLowerCase(Locale.US).contains("one ui")) {
+                    return formatOsWithAndroid(oneUi, androidRelease);
+                } else {
+                    parsedVersion = oneUi;
+                }
+            }
+            if (parsedVersion == null && semStr != null && !semStr.isEmpty()) {
+                try {
+                    int sem = Integer.parseInt(semStr);
+                    int oneUiVal = sem - 90000;
+                    if (oneUiVal > 0) {
+                        int major = oneUiVal / 10000;
+                        int minor = (oneUiVal % 10000) / 100;
+                        parsedVersion = major + "." + minor;
+                    }
+                } catch (NumberFormatException ignored) {}
+            }
+            if (parsedVersion != null) {
+                return formatOsWithAndroid("One UI " + parsedVersion, androidRelease);
+            } else if ("samsung".equalsIgnoreCase(manufacturer)) {
+                return formatOsWithAndroid("One UI", androidRelease);
+            }
+        }
+
+        // 4. OnePlus: ro.oxygen.version -> "OxygenOS X.X"
+        String oxygen = getter.get("ro.oxygen.version");
+        if (oxygen != null && !oxygen.isEmpty()) {
+            String os = oxygen.toLowerCase(Locale.US).contains("oxygenos") ? oxygen : "OxygenOS " + oxygen;
+            return formatOsWithAndroid(os, androidRelease);
+        }
+
+        // 5. OPPO: ro.build.version.opporom -> "ColorOS X.X"
+        String oppo = getter.get("ro.build.version.opporom");
+        if (oppo != null && !oppo.isEmpty()) {
+            String os = oppo.toLowerCase(Locale.US).contains("coloros") ? oppo : "ColorOS " + oppo;
+            return formatOsWithAndroid(os, androidRelease);
+        }
+
+        // 6. Realme: ro.build.version.realmeui -> "Realme UI X.X"
+        String realme = getter.get("ro.build.version.realmeui");
+        if (realme != null && !realme.isEmpty()) {
+            String os = realme.toLowerCase(Locale.US).contains("realme ui") ? realme : "Realme UI " + realme;
+            return formatOsWithAndroid(os, androidRelease);
+        }
+
+        // 7. Vivo: ro.vivo.os.version -> "OriginOS / Funtouch OS X.X"
+        String vivo = getter.get("ro.vivo.os.version");
+        if (vivo != null && !vivo.isEmpty()) {
+            String lower = vivo.toLowerCase(Locale.US);
+            String os = (lower.contains("origin") || lower.contains("funtouch"))
+                ? vivo : "OriginOS / Funtouch OS " + vivo;
+            return formatOsWithAndroid(os, androidRelease);
+        }
+
+        // 8. Google: Build.MANUFACTURER equals "Google" -> "Pixel UI"
+        if ("Google".equalsIgnoreCase(manufacturer)) {
+            return formatOsWithAndroid("Pixel UI", androidRelease);
+        }
+
+        // 9. Nothing: ro.nothing.version -> "Nothing OS X.X"
+        String nothing = getter.get("ro.nothing.version");
+        if (nothing != null && !nothing.isEmpty()) {
+            String os = nothing.toLowerCase(Locale.US).contains("nothing os") ? nothing : "Nothing OS " + nothing;
+            return formatOsWithAndroid(os, androidRelease);
+        }
+
+        // 10. Fallback: "Android " + Build.VERSION.RELEASE
+        return "Android " + androidRelease;
+    }
+
+    private static String formatOsWithAndroid(String customOs, String androidRelease) {
+        if (androidRelease != null && !androidRelease.isEmpty()) {
+            return customOs + " (Android " + androidRelease + ")";
+        }
+        return customOs;
+    }
+
     static final class DeviceSummary {
         final String modelAndVersion;
+        final String osInfo;
         final String hdrSupport;
         final boolean hasHdr;
         final String wideGamut;
@@ -31,7 +178,14 @@ final class Diagnostics {
         DeviceSummary(String modelAndVersion, String hdrSupport, boolean hasHdr,
                       String wideGamut, boolean isWideGamut,
                       String peakBrightness, float peakBrightnessNits) {
+            this(modelAndVersion, detectOsInfo(), hdrSupport, hasHdr, wideGamut, isWideGamut, peakBrightness, peakBrightnessNits);
+        }
+
+        DeviceSummary(String modelAndVersion, String osInfo, String hdrSupport, boolean hasHdr,
+                      String wideGamut, boolean isWideGamut,
+                      String peakBrightness, float peakBrightnessNits) {
             this.modelAndVersion = modelAndVersion;
+            this.osInfo = osInfo;
             this.hdrSupport = hdrSupport;
             this.hasHdr = hasHdr;
             this.wideGamut = wideGamut;
@@ -42,7 +196,8 @@ final class Diagnostics {
     }
 
     static DeviceSummary summarize(Context context, JSONObject deviceSnapshot) {
-        String modelAndVersion = Build.MANUFACTURER + " " + Build.MODEL + "  ·  Android " + Build.VERSION.RELEASE;
+        String osInfo = detectOsInfo();
+        String modelAndVersion = Build.MANUFACTURER + " " + Build.MODEL + "  ·  " + osInfo;
         Display display = null;
         try { display = context != null ? context.getDisplay() : null; }
         catch (Throwable ignored) { /* Fall back for contexts without a display */ }
@@ -94,7 +249,7 @@ final class Diagnostics {
             }
         }
 
-        return new DeviceSummary(modelAndVersion, hdrSupport, hasHdr, wideGamut, isWideGamut, peakBrightness, maxLum);
+        return new DeviceSummary(modelAndVersion, osInfo, hdrSupport, hasHdr, wideGamut, isWideGamut, peakBrightness, maxLum);
     }
 
     private static String formatGamut(Context context, boolean isWideGamut) {
@@ -125,6 +280,7 @@ final class Diagnostics {
         JSONObject root = new JSONObject();
         root.put("manufacturer", Build.MANUFACTURER);
         root.put("model", Build.MODEL);
+        root.put("os", detectOsInfo());
         root.put("android", Build.VERSION.RELEASE);
         root.put("sdk", Build.VERSION.SDK_INT);
         root.put("build", Build.DISPLAY);

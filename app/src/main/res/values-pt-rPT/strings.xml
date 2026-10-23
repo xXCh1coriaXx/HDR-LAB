@@ -38,6 +38,7 @@
     <string name="test_what_to_look_title">O que deves observar no ecrã:</string>
     <string name="test_what_to_look_text">• Fundo Preto Puro: Em ecrãs OLED, o fundo é preto absoluto (píxeis desligados). Em ecrãs LCD, poderás notar um ligeiro brilho cinzento (backlight glow).\n• 6 Degraus Quase-Preto: Observa as 6 barras de cinzento suave (1%, 2%…). Devem ser percetíveis sem clarear o fundo preto ao redor.</string>
     <string name="btn_start_test">▶ Iniciar Teste SDR vs HDR em Ecrã Cheio</string>
+    <string name="btn_community_report">📋 Submeter Relatório Comunitário</string>
 
     <!-- Fullscreen HUD -->
     <string name="hud_title_sdr_countdown">MODO SDR · %1$ds restantes</string>
@@ -61,4 +62,26 @@
     <string name="share_clip_label">Relatório HDR Lab Light</string>
     <string name="error_dialog">Erro: %1$s</string>
     <string name="error_share">Falha ao partilhar: %1$s</string>
+
+    <!-- Community Report Dialog & Submissions -->
+    <string name="dialog_report_title">Relatório Comunitário de Ecrã</string>
+    <string name="dialog_report_specs_header">ESPECIFICAÇÕES DETETADAS DO ECRÃ</string>
+    <string name="dialog_report_spec_device">Dispositivo: %1$s</string>
+    <string name="dialog_report_spec_os">SO: %1$s</string>
+    <string name="dialog_report_spec_hdr">HDR: %1$s</string>
+    <string name="dialog_report_spec_peak">Pico: %1$s</string>
+    <string name="dialog_report_q1_title">1. Nível de Fundo Preto:</string>
+    <string name="dialog_report_q1_opt_a">Preto puro absoluto (OLED / Sem glow)</string>
+    <string name="dialog_report_q1_opt_b">Ligeiro brilho cinzento normal (LCD padrão)</string>
+    <string name="dialog_report_q1_opt_c">Cinzento brilhante evidente / Erro de pretos elevados</string>
+    <string name="dialog_report_q2_title">2. Degraus Quase-Preto Percetíveis:</string>
+    <string name="dialog_report_q2_opt_a">Todos os 6 degraus visíveis (Excelente)</string>
+    <string name="dialog_report_q2_opt_b">4 a 5 degraus visíveis</string>
+    <string name="dialog_report_q2_opt_c">Menos de 4 degraus (Black crush / sombras esmagadas)</string>
+    <string name="dialog_report_q3_title">3. Observações / Notas (opcional):</string>
+    <string name="dialog_report_q3_hint">ex.: iluminação ambiente, modo de ecrã…</string>
+    <string name="dialog_btn_cancel">Cancelar</string>
+    <string name="dialog_btn_submit">Submeter</string>
+    <string name="report_submit_success">✅ Relatório enviado com sucesso! Obrigado pela contribuição.</string>
+    <string name="report_submit_error">❌ Falha ao enviar relatório: %1$s</string>
 </resources>

@@ -63,6 +63,22 @@
 ### G. TextView Layout Ordering (setSingleLine vs setMinHeight)
 * Always set `setSingleLine(true)` before `setMinHeight(...)` and `setMinimumWidth(...)`, and configure custom padding after `setBackground(...)` to prevent drawable attributes from resetting view padding.
 
+### H. Custom OS / ROM Detection & Community Display Survey Flow
+* **Why Custom OS Detection Matters:** Vendor skins (Honor MagicOS, Xiaomi HyperOS/MIUI, Samsung One UI, OnePlus OxygenOS, OPPO ColorOS, etc.) frequently inject proprietary video enhancers, dynamic contrast adjustments, and custom tone mappers that can cause raised blacks or crushed shadow detail compared to standard AOSP Hardware Composer pipelines. Accurately tagging the vendor ROM is vital for crowd-sourced calibration analysis.
+* **Vendor System Property Mapping:** Custom OS flavors are identified by querying system properties (via reflection or build property helpers):
+  - **Honor MagicOS:** `ro.build.version.magic`, `ro.honor.build.version.incremental`
+  - **Xiaomi HyperOS / MIUI:** `ro.mi.os.version.name`, `ro.miui.ui.version.name`
+  - **Samsung One UI:** `ro.build.version.oneui`, `ro.build.version.sep`
+  - **OnePlus OxygenOS:** `ro.oxygen.version`, `ro.build.version.opporom`
+  - **OPPO ColorOS:** `ro.build.version.opporom`
+  - **Google Pixel UI:** `ro.build.flavor`, Google vendor build tags
+  - **Standard AOSP Fallback:** `Build.MANUFACTURER`, `Build.MODEL`, `Build.VERSION.RELEASE`
+* **Survey Submission Flow:**
+  - **Trigger:** Following the 10-second SDR-to-HDR near-black transition test, an optional survey prompt allows the user to report their perceptual observations.
+  - **Payload Structure:** Collects perceived black level (OLED true black zero-emittance vs raised black bug / LCD glow), 6-patch step tracking (visibility of 1% and 2% patches), optional qualitative notes, detected custom OS / ROM, and hardware display specs (reported max nits, supported HDR types).
+  - **Backend Pipeline:** Form submission connects to a public, privacy-focused crowd-sourced Google Forms / Sheets backend.
+  - **Asynchronous & Fail-Safe:** All network submissions must execute asynchronously off the main thread (e.g. background worker thread), must never block playback or the UI, and must fail silently or notify non-intrusively without crash risk if offline.
+
 ---
 
 ## 4. Internationalization (i18n)
@@ -90,7 +106,10 @@
 
 ## 6. Philosophy & Code Quality (YAGNI)
 
-* **No Bloat:** 100% offline with zero network permissions in `AndroidManifest.xml`.
+* **Controlled Network Permission & Privacy Guarantee:**
+  - `<uses-permission android:name="android.permission.INTERNET" />` is introduced in `AndroidManifest.xml` **exclusively** for optional, user-triggered community display calibration report submissions (Google Forms / Sheets).
+  - Background network tasks, analytics trackers, advertising IDs, crash beacons, or unsolicited telemetry are strictly prohibited. The app remains completely offline during normal testing, playback, and analysis.
+  - Fully anonymous: zero personal data, account requirements, or persistent device identifiers are collected.
 * **Fast & Lightweight:** APK size stays under 2 MB with R8 optimization and resource shrinking.
 
 ---

@@ -20,8 +20,11 @@ import android.view.WindowInsets;
 import android.view.WindowInsetsController;
 import android.view.WindowManager;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
 import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -71,6 +74,7 @@ public final class MainActivity extends Activity {
     private TextView capBrightnessLabel;
     private Button btnDetailedReport;
     private Button btnStartTest;
+    private Button btnCommunityReport;
 
     private PlayerView playerView;
     private ExoPlayer player;
@@ -91,6 +95,7 @@ public final class MainActivity extends Activity {
     private int testSecondsElapsed;
     private float originalBrightness = -1f;
     private JSONObject deviceSnapshot;
+    private Diagnostics.DeviceSummary currentSummary;
 
     private final Runnable hideFullscreenHud = () -> {
         if (fullscreenHud != null && fullscreen) {
@@ -243,6 +248,9 @@ public final class MainActivity extends Activity {
         primaryStyle(btnStartTest);
         quickTestCard.addView(btnStartTest);
 
+        btnCommunityReport = button(getString(R.string.btn_community_report), this::showCommunityReportSurvey);
+        quickTestCard.addView(btnCommunityReport);
+
         cardsContainer.addView(quickTestCard);
     }
 
@@ -348,6 +356,7 @@ public final class MainActivity extends Activity {
 
     private void updateCapabilitiesUi(Diagnostics.DeviceSummary summary) {
         if (summary == null) return;
+        currentSummary = summary;
         capModelLabel.setText(summary.modelAndVersion);
         capHdrLabel.setText(summary.hdrSupport);
         capGamutLabel.setText(summary.wideGamut);
@@ -537,6 +546,152 @@ public final class MainActivity extends Activity {
             .setPositiveButton(getString(R.string.dialog_btn_share), (d, w) -> shareReportJson(report))
             .setNegativeButton(getString(R.string.dialog_btn_close), null)
             .show();
+    }
+
+    private void showCommunityReportSurvey() {
+        ScrollView scroll = new ScrollView(this);
+        LinearLayout content = new LinearLayout(this);
+        content.setOrientation(LinearLayout.VERTICAL);
+        content.setPadding(dp(20), dp(16), dp(20), dp(16));
+        scroll.addView(content);
+
+        // Specs Summary Header
+        TextView specsHeader = label(getString(R.string.dialog_report_specs_header), 11, ACCENT);
+        specsHeader.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        specsHeader.setLetterSpacing(0.08f);
+        content.addView(specsHeader);
+
+        LinearLayout specsBox = new LinearLayout(this);
+        specsBox.setOrientation(LinearLayout.VERTICAL);
+        GradientDrawable boxBg = new GradientDrawable();
+        boxBg.setColor(0xdd101411);
+        boxBg.setCornerRadius(dp(8));
+        boxBg.setStroke(dp(1), 0x55485546);
+        specsBox.setBackground(boxBg);
+        specsBox.setPadding(dp(12), dp(8), dp(12), dp(8));
+        LinearLayout.LayoutParams boxParams = new LinearLayout.LayoutParams(-1, -2);
+        boxParams.topMargin = dp(4);
+        boxParams.bottomMargin = dp(14);
+        specsBox.setLayoutParams(boxParams);
+
+        String model = Build.MANUFACTURER + " " + Build.MODEL;
+        String os = (currentSummary != null && currentSummary.osInfo != null)
+            ? currentSummary.osInfo : Diagnostics.detectOsInfo();
+        String hdr = (currentSummary != null && currentSummary.hdrSupport != null)
+            ? currentSummary.hdrSupport : getString(R.string.status_checking);
+        String peak = (currentSummary != null && currentSummary.peakBrightness != null)
+            ? currentSummary.peakBrightness : getString(R.string.status_checking);
+
+        specsBox.addView(label(getString(R.string.dialog_report_spec_device, model), 12, TEXT));
+        specsBox.addView(label(getString(R.string.dialog_report_spec_os, os), 12, TEXT));
+        specsBox.addView(label(getString(R.string.dialog_report_spec_hdr, hdr), 12, TEXT));
+        specsBox.addView(label(getString(R.string.dialog_report_spec_peak, peak), 12, TEXT));
+        content.addView(specsBox);
+
+        // Question 1: Black background level
+        TextView q1Title = label(getString(R.string.dialog_report_q1_title), 13, ACCENT);
+        q1Title.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        content.addView(q1Title);
+
+        RadioGroup rgBlackLevel = new RadioGroup(this);
+        rgBlackLevel.setOrientation(RadioGroup.VERTICAL);
+        RadioButton rb1A = createRadioButton(getString(R.string.dialog_report_q1_opt_a));
+        RadioButton rb1B = createRadioButton(getString(R.string.dialog_report_q1_opt_b));
+        RadioButton rb1C = createRadioButton(getString(R.string.dialog_report_q1_opt_c));
+        rgBlackLevel.addView(rb1A);
+        rgBlackLevel.addView(rb1B);
+        rgBlackLevel.addView(rb1C);
+        rb1A.setChecked(true);
+        content.addView(rgBlackLevel);
+
+        // Question 2: Near-black steps distinguishable
+        TextView q2Title = label(getString(R.string.dialog_report_q2_title), 13, ACCENT);
+        q2Title.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        LinearLayout.LayoutParams q2Params = new LinearLayout.LayoutParams(-1, -2);
+        q2Params.topMargin = dp(12);
+        q2Title.setLayoutParams(q2Params);
+        content.addView(q2Title);
+
+        RadioGroup rgSteps = new RadioGroup(this);
+        rgSteps.setOrientation(RadioGroup.VERTICAL);
+        RadioButton rb2A = createRadioButton(getString(R.string.dialog_report_q2_opt_a));
+        RadioButton rb2B = createRadioButton(getString(R.string.dialog_report_q2_opt_b));
+        RadioButton rb2C = createRadioButton(getString(R.string.dialog_report_q2_opt_c));
+        rgSteps.addView(rb2A);
+        rgSteps.addView(rb2B);
+        rgSteps.addView(rb2C);
+        rb2A.setChecked(true);
+        content.addView(rgSteps);
+
+        // Question 3: Observations / Notes (optional)
+        TextView q3Title = label(getString(R.string.dialog_report_q3_title), 13, ACCENT);
+        q3Title.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        LinearLayout.LayoutParams q3Params = new LinearLayout.LayoutParams(-1, -2);
+        q3Params.topMargin = dp(12);
+        q3Title.setLayoutParams(q3Params);
+        content.addView(q3Title);
+
+        EditText etComments = new EditText(this);
+        etComments.setHint(getString(R.string.dialog_report_q3_hint));
+        etComments.setHintTextColor(0x88a7b2a5);
+        etComments.setTextColor(TEXT);
+        etComments.setTextSize(13);
+        etComments.setMinLines(2);
+        etComments.setMaxLines(4);
+        GradientDrawable etBg = new GradientDrawable();
+        etBg.setColor(0x33101411);
+        etBg.setCornerRadius(dp(8));
+        etBg.setStroke(dp(1), 0x55485546);
+        etComments.setBackground(etBg);
+        etComments.setPadding(dp(12), dp(8), dp(12), dp(8));
+        LinearLayout.LayoutParams etParams = new LinearLayout.LayoutParams(-1, -2);
+        etParams.topMargin = dp(4);
+        etComments.setLayoutParams(etParams);
+        content.addView(etComments);
+
+        new AlertDialog.Builder(this)
+            .setTitle(getString(R.string.dialog_report_title))
+            .setView(scroll)
+            .setPositiveButton(getString(R.string.dialog_btn_submit), (dialog, which) -> {
+                int checkedQ1 = rgBlackLevel.getCheckedRadioButtonId();
+                RadioButton selectedQ1 = rgBlackLevel.findViewById(checkedQ1);
+                String blackLevel = selectedQ1 != null ? selectedQ1.getText().toString() : "";
+
+                int checkedQ2 = rgSteps.getCheckedRadioButtonId();
+                RadioButton selectedQ2 = rgSteps.findViewById(checkedQ2);
+                String stepsVisible = selectedQ2 != null ? selectedQ2.getText().toString() : "";
+
+                String comments = etComments.getText().toString().trim();
+                String nits = (currentSummary != null && currentSummary.peakBrightnessNits > 0)
+                    ? String.valueOf(Math.round(currentSummary.peakBrightnessNits)) : "Not reported";
+
+                ReportSubmitter.CommunityReport report = new ReportSubmitter.CommunityReport(
+                    model, os, hdr, nits, blackLevel, stepsVisible, comments, System.currentTimeMillis()
+                );
+
+                ReportSubmitter.submit(report, ReportSubmitter.DEFAULT_ENDPOINT, new ReportSubmitter.Callback() {
+                    @Override public void onSuccess() {
+                        Toast.makeText(MainActivity.this, getString(R.string.report_submit_success), Toast.LENGTH_LONG).show();
+                    }
+                    @Override public void onError(String message) {
+                        Toast.makeText(MainActivity.this, getString(R.string.report_submit_error, message), Toast.LENGTH_LONG).show();
+                    }
+                });
+            })
+            .setNegativeButton(getString(R.string.dialog_btn_cancel), null)
+            .show();
+    }
+
+    private RadioButton createRadioButton(String text) {
+        RadioButton rb = new RadioButton(this);
+        rb.setText(text);
+        rb.setTextColor(TEXT);
+        rb.setTextSize(13);
+        rb.setPadding(dp(6), dp(6), dp(6), dp(6));
+        if (Build.VERSION.SDK_INT >= 21) {
+            rb.setButtonTintList(ColorStateList.valueOf(ACCENT));
+        }
+        return rb;
     }
 
     private void shareReportJson(JSONObject report) {
