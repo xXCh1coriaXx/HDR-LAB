@@ -487,7 +487,8 @@ public class LayoutTest {
     @Test public void reportSubmitterHandlesMockSubmissionSuccessfully() throws Exception {
         ReportSubmitter.CommunityReport report = new ReportSubmitter.CommunityReport(
             "Test Model", "MagicOS 8.0 (Android 16)", "HDR10", "1000",
-            "Pure absolute black (OLED / No glow)", "All 6 steps visible (Excellent)",
+            "Pure absolute black (OLED / Pixels off)", "All 6 steps visible (Excellent shadow detail)",
+            "Remained pure black (Flawless HDR presentation)", "All 6 steps visible in HDR (Accurate tone mapping)",
             "Test comments", System.currentTimeMillis()
         );
 
@@ -495,8 +496,10 @@ public class LayoutTest {
         assertEquals("MagicOS 8.0 (Android 16)", report.os);
         assertEquals("HDR10", report.hdr);
         assertEquals("1000", report.nits);
-        assertEquals("Pure absolute black (OLED / No glow)", report.blackLevel);
-        assertEquals("All 6 steps visible (Excellent)", report.stepsVisible);
+        assertEquals("Pure absolute black (OLED / Pixels off)", report.sdrBlackLevel);
+        assertEquals("All 6 steps visible (Excellent shadow detail)", report.sdrSteps);
+        assertEquals("Remained pure black (Flawless HDR presentation)", report.hdrBlackLevel);
+        assertEquals("All 6 steps visible in HDR (Accurate tone mapping)", report.hdrSteps);
         assertEquals("Test comments", report.comments);
         assertTrue(report.timestamp > 0);
 
@@ -545,15 +548,22 @@ public class LayoutTest {
 
         assertEquals("Community Display Report", enRes.getString(R.string.dialog_report_title));
         assertEquals("DETECTED DISPLAY SPECIFICATIONS", enRes.getString(R.string.dialog_report_specs_header));
-        assertEquals("1. Black Background Level:", enRes.getString(R.string.dialog_report_q1_title));
-        assertEquals("Pure absolute black (OLED / No glow)", enRes.getString(R.string.dialog_report_q1_opt_a));
+        assertEquals("1. SDR Black Background Level (First 10s):", enRes.getString(R.string.dialog_report_q1_title));
+        assertEquals("Pure absolute black (OLED / Pixels off)", enRes.getString(R.string.dialog_report_q1_opt_a));
         assertEquals("Subtle normal grey glow (Standard LCD)", enRes.getString(R.string.dialog_report_q1_opt_b));
-        assertEquals("Evident glowing grey / Raised blacks bug", enRes.getString(R.string.dialog_report_q1_opt_c));
-        assertEquals("2. Near-Black Steps Distinguishable:", enRes.getString(R.string.dialog_report_q2_title));
-        assertEquals("All 6 steps visible (Excellent)", enRes.getString(R.string.dialog_report_q2_opt_a));
+        assertEquals("2. SDR Near-Black Steps (1% to 6%):", enRes.getString(R.string.dialog_report_q2_title));
+        assertEquals("All 6 steps visible (Excellent shadow detail)", enRes.getString(R.string.dialog_report_q2_opt_a));
         assertEquals("4 to 5 steps visible", enRes.getString(R.string.dialog_report_q2_opt_b));
         assertEquals("Less than 4 steps (Black crush / crushed shadows)", enRes.getString(R.string.dialog_report_q2_opt_c));
-        assertEquals("3. Observations / Notes (optional):", enRes.getString(R.string.dialog_report_q3_title));
+        assertEquals("3. HDR Black Background (After transition at 10s):", enRes.getString(R.string.dialog_report_q3_title));
+        assertEquals("Remained pure black (Flawless HDR presentation)", enRes.getString(R.string.dialog_report_q3_opt_a));
+        assertEquals("Elevated / Glowed grey (Raised blacks bug in HDR)", enRes.getString(R.string.dialog_report_q3_opt_b));
+        assertEquals("Subtle normal grey glow (Unchanged LCD)", enRes.getString(R.string.dialog_report_q3_opt_c));
+        assertEquals("4. HDR Near-Black Steps (1% to 6%):", enRes.getString(R.string.dialog_report_q4_title));
+        assertEquals("All 6 steps visible in HDR (Accurate tone mapping)", enRes.getString(R.string.dialog_report_q4_opt_a));
+        assertEquals("4 to 5 steps visible in HDR", enRes.getString(R.string.dialog_report_q4_opt_b));
+        assertEquals("Less than 4 steps in HDR (HDR crushed shadows)", enRes.getString(R.string.dialog_report_q4_opt_c));
+        assertEquals("5. Observations / Notes (optional):", enRes.getString(R.string.dialog_report_q5_title));
         assertEquals("Cancel", enRes.getString(R.string.dialog_btn_cancel));
         assertEquals("Submit", enRes.getString(R.string.dialog_btn_submit));
         assertEquals("✅ Report submitted successfully! Thank you.", enRes.getString(R.string.report_submit_success));
@@ -588,15 +598,22 @@ public class LayoutTest {
 
         assertEquals("Relatório Comunitário de Ecrã", ptRes.getString(R.string.dialog_report_title));
         assertEquals("ESPECIFICAÇÕES DETETADAS DO ECRÃ", ptRes.getString(R.string.dialog_report_specs_header));
-        assertEquals("1. Nível de Fundo Preto:", ptRes.getString(R.string.dialog_report_q1_title));
-        assertEquals("Preto puro absoluto (OLED / Sem glow)", ptRes.getString(R.string.dialog_report_q1_opt_a));
+        assertEquals("1. Nível de Fundo Preto SDR (Primeiros 10s):", ptRes.getString(R.string.dialog_report_q1_title));
+        assertEquals("Preto puro absoluto (OLED / Píxeis desligados)", ptRes.getString(R.string.dialog_report_q1_opt_a));
         assertEquals("Ligeiro brilho cinzento normal (LCD padrão)", ptRes.getString(R.string.dialog_report_q1_opt_b));
-        assertEquals("Cinzento brilhante evidente / Erro de pretos elevados", ptRes.getString(R.string.dialog_report_q1_opt_c));
-        assertEquals("2. Degraus Quase-Preto Percetíveis:", ptRes.getString(R.string.dialog_report_q2_title));
-        assertEquals("Todos os 6 degraus visíveis (Excelente)", ptRes.getString(R.string.dialog_report_q2_opt_a));
+        assertEquals("2. Degraus Quase-Preto SDR (1% a 6%):", ptRes.getString(R.string.dialog_report_q2_title));
+        assertEquals("Todos os 6 degraus visíveis (Excelente detalhe)", ptRes.getString(R.string.dialog_report_q2_opt_a));
         assertEquals("4 a 5 degraus visíveis", ptRes.getString(R.string.dialog_report_q2_opt_b));
         assertEquals("Menos de 4 degraus (Black crush / sombras esmagadas)", ptRes.getString(R.string.dialog_report_q2_opt_c));
-        assertEquals("3. Observações / Notas (opcional):", ptRes.getString(R.string.dialog_report_q3_title));
+        assertEquals("3. Fundo Preto HDR (Após transição aos 10s):", ptRes.getString(R.string.dialog_report_q3_title));
+        assertEquals("Manteve-se preto puro (Calibração HDR perfeita)", ptRes.getString(R.string.dialog_report_q3_opt_a));
+        assertEquals("Acendeu a cinzento / brilhante (Bug de pretos elevados em HDR)", ptRes.getString(R.string.dialog_report_q3_opt_b));
+        assertEquals("Ligeiro brilho cinzento normal (LCD inalterado)", ptRes.getString(R.string.dialog_report_q3_opt_c));
+        assertEquals("4. Degraus Quase-Preto HDR (1% a 6%):", ptRes.getString(R.string.dialog_report_q4_title));
+        assertEquals("Todos os 6 degraus visíveis em HDR (Tone mapping preciso)", ptRes.getString(R.string.dialog_report_q4_opt_a));
+        assertEquals("4 a 5 degraus visíveis em HDR", ptRes.getString(R.string.dialog_report_q4_opt_b));
+        assertEquals("Menos de 4 degraus em HDR (Sombras esmagadas em HDR)", ptRes.getString(R.string.dialog_report_q4_opt_c));
+        assertEquals("5. Observações / Notas (opcional):", ptRes.getString(R.string.dialog_report_q5_title));
         assertEquals("Cancelar", ptRes.getString(R.string.dialog_btn_cancel));
         assertEquals("Submeter", ptRes.getString(R.string.dialog_btn_submit));
         assertEquals("✅ Relatório enviado com sucesso! Obrigado pela contribuição.", ptRes.getString(R.string.report_submit_success));

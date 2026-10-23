@@ -588,23 +588,21 @@ public final class MainActivity extends Activity {
         specsBox.addView(label(getString(R.string.dialog_report_spec_peak, peak), 12, TEXT));
         content.addView(specsBox);
 
-        // Question 1: Black background level
+        // Question 1: SDR Black background level
         TextView q1Title = label(getString(R.string.dialog_report_q1_title), 13, ACCENT);
         q1Title.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
         content.addView(q1Title);
 
-        RadioGroup rgBlackLevel = new RadioGroup(this);
-        rgBlackLevel.setOrientation(RadioGroup.VERTICAL);
+        RadioGroup rgSdrBlack = new RadioGroup(this);
+        rgSdrBlack.setOrientation(RadioGroup.VERTICAL);
         RadioButton rb1A = createRadioButton(getString(R.string.dialog_report_q1_opt_a));
         RadioButton rb1B = createRadioButton(getString(R.string.dialog_report_q1_opt_b));
-        RadioButton rb1C = createRadioButton(getString(R.string.dialog_report_q1_opt_c));
-        rgBlackLevel.addView(rb1A);
-        rgBlackLevel.addView(rb1B);
-        rgBlackLevel.addView(rb1C);
+        rgSdrBlack.addView(rb1A);
+        rgSdrBlack.addView(rb1B);
         rb1A.setChecked(true);
-        content.addView(rgBlackLevel);
+        content.addView(rgSdrBlack);
 
-        // Question 2: Near-black steps distinguishable
+        // Question 2: SDR Near-black steps
         TextView q2Title = label(getString(R.string.dialog_report_q2_title), 13, ACCENT);
         q2Title.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
         LinearLayout.LayoutParams q2Params = new LinearLayout.LayoutParams(-1, -2);
@@ -612,18 +610,18 @@ public final class MainActivity extends Activity {
         q2Title.setLayoutParams(q2Params);
         content.addView(q2Title);
 
-        RadioGroup rgSteps = new RadioGroup(this);
-        rgSteps.setOrientation(RadioGroup.VERTICAL);
+        RadioGroup rgSdrSteps = new RadioGroup(this);
+        rgSdrSteps.setOrientation(RadioGroup.VERTICAL);
         RadioButton rb2A = createRadioButton(getString(R.string.dialog_report_q2_opt_a));
         RadioButton rb2B = createRadioButton(getString(R.string.dialog_report_q2_opt_b));
         RadioButton rb2C = createRadioButton(getString(R.string.dialog_report_q2_opt_c));
-        rgSteps.addView(rb2A);
-        rgSteps.addView(rb2B);
-        rgSteps.addView(rb2C);
+        rgSdrSteps.addView(rb2A);
+        rgSdrSteps.addView(rb2B);
+        rgSdrSteps.addView(rb2C);
         rb2A.setChecked(true);
-        content.addView(rgSteps);
+        content.addView(rgSdrSteps);
 
-        // Question 3: Observations / Notes (optional)
+        // Question 3: HDR Black background
         TextView q3Title = label(getString(R.string.dialog_report_q3_title), 13, ACCENT);
         q3Title.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
         LinearLayout.LayoutParams q3Params = new LinearLayout.LayoutParams(-1, -2);
@@ -631,8 +629,46 @@ public final class MainActivity extends Activity {
         q3Title.setLayoutParams(q3Params);
         content.addView(q3Title);
 
+        RadioGroup rgHdrBlack = new RadioGroup(this);
+        rgHdrBlack.setOrientation(RadioGroup.VERTICAL);
+        RadioButton rb3A = createRadioButton(getString(R.string.dialog_report_q3_opt_a));
+        RadioButton rb3B = createRadioButton(getString(R.string.dialog_report_q3_opt_b));
+        RadioButton rb3C = createRadioButton(getString(R.string.dialog_report_q3_opt_c));
+        rgHdrBlack.addView(rb3A);
+        rgHdrBlack.addView(rb3B);
+        rgHdrBlack.addView(rb3C);
+        rb3A.setChecked(true);
+        content.addView(rgHdrBlack);
+
+        // Question 4: HDR Near-black steps
+        TextView q4Title = label(getString(R.string.dialog_report_q4_title), 13, ACCENT);
+        q4Title.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        LinearLayout.LayoutParams q4Params = new LinearLayout.LayoutParams(-1, -2);
+        q4Params.topMargin = dp(12);
+        q4Title.setLayoutParams(q4Params);
+        content.addView(q4Title);
+
+        RadioGroup rgHdrSteps = new RadioGroup(this);
+        rgHdrSteps.setOrientation(RadioGroup.VERTICAL);
+        RadioButton rb4A = createRadioButton(getString(R.string.dialog_report_q4_opt_a));
+        RadioButton rb4B = createRadioButton(getString(R.string.dialog_report_q4_opt_b));
+        RadioButton rb4C = createRadioButton(getString(R.string.dialog_report_q4_opt_c));
+        rgHdrSteps.addView(rb4A);
+        rgHdrSteps.addView(rb4B);
+        rgHdrSteps.addView(rb4C);
+        rb4A.setChecked(true);
+        content.addView(rgHdrSteps);
+
+        // Question 5: Observations / Notes (optional)
+        TextView q5Title = label(getString(R.string.dialog_report_q5_title), 13, ACCENT);
+        q5Title.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        LinearLayout.LayoutParams q5Params = new LinearLayout.LayoutParams(-1, -2);
+        q5Params.topMargin = dp(12);
+        q5Title.setLayoutParams(q5Params);
+        content.addView(q5Title);
+
         EditText etComments = new EditText(this);
-        etComments.setHint(getString(R.string.dialog_report_q3_hint));
+        etComments.setHint(getString(R.string.dialog_report_q5_hint));
         etComments.setHintTextColor(0x88a7b2a5);
         etComments.setTextColor(TEXT);
         etComments.setTextSize(13);
@@ -653,20 +689,28 @@ public final class MainActivity extends Activity {
             .setTitle(getString(R.string.dialog_report_title))
             .setView(scroll)
             .setPositiveButton(getString(R.string.dialog_btn_submit), (dialog, which) -> {
-                int checkedQ1 = rgBlackLevel.getCheckedRadioButtonId();
-                RadioButton selectedQ1 = rgBlackLevel.findViewById(checkedQ1);
-                String blackLevel = selectedQ1 != null ? selectedQ1.getText().toString() : "";
+                int checkedQ1 = rgSdrBlack.getCheckedRadioButtonId();
+                RadioButton selectedQ1 = rgSdrBlack.findViewById(checkedQ1);
+                String sdrBlackLevel = selectedQ1 != null ? selectedQ1.getText().toString() : "";
 
-                int checkedQ2 = rgSteps.getCheckedRadioButtonId();
-                RadioButton selectedQ2 = rgSteps.findViewById(checkedQ2);
-                String stepsVisible = selectedQ2 != null ? selectedQ2.getText().toString() : "";
+                int checkedQ2 = rgSdrSteps.getCheckedRadioButtonId();
+                RadioButton selectedQ2 = rgSdrSteps.findViewById(checkedQ2);
+                String sdrSteps = selectedQ2 != null ? selectedQ2.getText().toString() : "";
+
+                int checkedQ3 = rgHdrBlack.getCheckedRadioButtonId();
+                RadioButton selectedQ3 = rgHdrBlack.findViewById(checkedQ3);
+                String hdrBlackLevel = selectedQ3 != null ? selectedQ3.getText().toString() : "";
+
+                int checkedQ4 = rgHdrSteps.getCheckedRadioButtonId();
+                RadioButton selectedQ4 = rgHdrSteps.findViewById(checkedQ4);
+                String hdrSteps = selectedQ4 != null ? selectedQ4.getText().toString() : "";
 
                 String comments = etComments.getText().toString().trim();
                 String nits = (currentSummary != null && currentSummary.peakBrightnessNits > 0)
                     ? String.valueOf(Math.round(currentSummary.peakBrightnessNits)) : "Not reported";
 
                 ReportSubmitter.CommunityReport report = new ReportSubmitter.CommunityReport(
-                    model, os, hdr, nits, blackLevel, stepsVisible, comments, System.currentTimeMillis()
+                    model, os, hdr, nits, sdrBlackLevel, sdrSteps, hdrBlackLevel, hdrSteps, comments, System.currentTimeMillis()
                 );
 
                 ReportSubmitter.submit(report, ReportSubmitter.DEFAULT_ENDPOINT, new ReportSubmitter.Callback() {

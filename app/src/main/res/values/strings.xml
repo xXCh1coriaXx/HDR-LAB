@@ -70,16 +70,26 @@
     <string name="dialog_report_spec_os">OS: %1$s</string>
     <string name="dialog_report_spec_hdr">HDR: %1$s</string>
     <string name="dialog_report_spec_peak">Peak: %1$s</string>
-    <string name="dialog_report_q1_title">1. Black Background Level:</string>
-    <string name="dialog_report_q1_opt_a">Pure absolute black (OLED / No glow)</string>
+    <!-- Section 1: SDR (First 10s) -->
+    <string name="dialog_report_q1_title">1. SDR Black Background Level (First 10s):</string>
+    <string name="dialog_report_q1_opt_a">Pure absolute black (OLED / Pixels off)</string>
     <string name="dialog_report_q1_opt_b">Subtle normal grey glow (Standard LCD)</string>
-    <string name="dialog_report_q1_opt_c">Evident glowing grey / Raised blacks bug</string>
-    <string name="dialog_report_q2_title">2. Near-Black Steps Distinguishable:</string>
-    <string name="dialog_report_q2_opt_a">All 6 steps visible (Excellent)</string>
+    <string name="dialog_report_q2_title" formatted="false">2. SDR Near-Black Steps (1% to 6%):</string>
+    <string name="dialog_report_q2_opt_a">All 6 steps visible (Excellent shadow detail)</string>
     <string name="dialog_report_q2_opt_b">4 to 5 steps visible</string>
     <string name="dialog_report_q2_opt_c">Less than 4 steps (Black crush / crushed shadows)</string>
-    <string name="dialog_report_q3_title">3. Observations / Notes (optional):</string>
-    <string name="dialog_report_q3_hint">e.g. ambient lighting, screen mode…</string>
+    <!-- Section 2: HDR (After transition at 10s) -->
+    <string name="dialog_report_q3_title">3. HDR Black Background (After transition at 10s):</string>
+    <string name="dialog_report_q3_opt_a">Remained pure black (Flawless HDR presentation)</string>
+    <string name="dialog_report_q3_opt_b">Elevated / Glowed grey (Raised blacks bug in HDR)</string>
+    <string name="dialog_report_q3_opt_c">Subtle normal grey glow (Unchanged LCD)</string>
+    <string name="dialog_report_q4_title" formatted="false">4. HDR Near-Black Steps (1% to 6%):</string>
+    <string name="dialog_report_q4_opt_a">All 6 steps visible in HDR (Accurate tone mapping)</string>
+    <string name="dialog_report_q4_opt_b">4 to 5 steps visible in HDR</string>
+    <string name="dialog_report_q4_opt_c">Less than 4 steps in HDR (HDR crushed shadows)</string>
+    <!-- Section 3: Notes -->
+    <string name="dialog_report_q5_title">5. Observations / Notes (optional):</string>
+    <string name="dialog_report_q5_hint">e.g. ambient lighting, screen mode…</string>
     <string name="dialog_btn_cancel">Cancel</string>
     <string name="dialog_btn_submit">Submit</string>
     <string name="report_submit_success">✅ Report submitted successfully! Thank you.</string>

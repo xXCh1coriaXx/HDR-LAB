@@ -28,19 +28,25 @@ public final class ReportSubmitter {
         public final String os;
         public final String hdr;
         public final String nits;
-        public final String blackLevel;
-        public final String stepsVisible;
+        public final String sdrBlackLevel;
+        public final String sdrSteps;
+        public final String hdrBlackLevel;
+        public final String hdrSteps;
         public final String comments;
         public final long timestamp;
 
         public CommunityReport(String model, String os, String hdr, String nits,
-                               String blackLevel, String stepsVisible, String comments, long timestamp) {
+                               String sdrBlackLevel, String sdrSteps,
+                               String hdrBlackLevel, String hdrSteps,
+                               String comments, long timestamp) {
             this.model = model != null ? model : "";
             this.os = os != null ? os : "";
             this.hdr = hdr != null ? hdr : "";
             this.nits = nits != null ? nits : "";
-            this.blackLevel = blackLevel != null ? blackLevel : "";
-            this.stepsVisible = stepsVisible != null ? stepsVisible : "";
+            this.sdrBlackLevel = sdrBlackLevel != null ? sdrBlackLevel : "";
+            this.sdrSteps = sdrSteps != null ? sdrSteps : "";
+            this.hdrBlackLevel = hdrBlackLevel != null ? hdrBlackLevel : "";
+            this.hdrSteps = hdrSteps != null ? hdrSteps : "";
             this.comments = comments != null ? comments : "";
             this.timestamp = timestamp > 0 ? timestamp : System.currentTimeMillis();
         }
@@ -68,8 +74,12 @@ public final class ReportSubmitter {
                 params.put("os", report.os);
                 params.put("hdr", report.hdr);
                 params.put("nits", report.nits);
-                params.put("black_level", report.blackLevel);
-                params.put("steps_visible", report.stepsVisible);
+                params.put("sdr_black", report.sdrBlackLevel);
+                params.put("sdr_steps", report.sdrSteps);
+                params.put("hdr_black", report.hdrBlackLevel);
+                params.put("hdr_steps", report.hdrSteps);
+                params.put("black_level", report.hdrBlackLevel);
+                params.put("steps_visible", report.hdrSteps);
                 params.put("comments", report.comments);
                 params.put("timestamp", String.valueOf(report.timestamp));
 
@@ -93,7 +103,7 @@ public final class ReportSubmitter {
                 conn.setDoOutput(true);
                 conn.setInstanceFollowRedirects(false);
                 conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
-                conn.setRequestProperty("User-Agent", "HDR-Lab-Light/0.1.5 (Android)");
+                conn.setRequestProperty("User-Agent", "HDR-Lab-Light/0.1.6 (Android)");
                 conn.setFixedLengthStreamingMode(postBytes.length);
 
                 try (OutputStream os = conn.getOutputStream()) {

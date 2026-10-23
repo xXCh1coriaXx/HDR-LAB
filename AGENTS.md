@@ -41,7 +41,7 @@
 * **Exact Seeking:** Enforce `player.setSeekParameters(SeekParameters.EXACT)` so transitions between SDR and HDR land on the exact matching frame without long-GOP keyframe drift.
 
 ### C. Tablet Landscape Side-by-Side Layout
-* **Adaptive Cards Container:** An intermediate `LinearLayout` (`cardsContainer`) inside `cardsLayout` holds Card 1 (*Capacidades do Teu Ecrã* / *Screen Capabilities*) and Card 2 (*Teste Rápido: SDR vs HDR* / *Quick Test: SDR vs HDR*).
+* **Adaptive Cards Container:** An intermediate `LinearLayout` (`cardsContainer`) inside `cardsLayout` holds Card 1 (*Screen Capabilities* / *Capacidades do Teu Ecrã*) and Card 2 (*Quick Test: SDR vs HDR* / *Teste Rápido: SDR vs HDR*).
 * **Landscape Threshold:** Check `boolean wide = widthDp >= 720 || (widthDp >= 580 && isLandscape);`.
 * **Matched Heights & Baseline Alignment:**
   - In wide/landscape mode: `cardsContainer.setOrientation(HORIZONTAL)`, `cardsContainer.setBaselineAligned(false)`, and child cards use `LinearLayout.LayoutParams(0, MATCH_PARENT, 1f)`.
@@ -75,8 +75,8 @@
   - **Standard AOSP Fallback:** `Build.MANUFACTURER`, `Build.MODEL`, `Build.VERSION.RELEASE`
 * **Survey Submission Flow:**
   - **Trigger:** Following the 10-second SDR-to-HDR near-black transition test, an optional survey prompt allows the user to report their perceptual observations.
-  - **Payload Structure:** Collects perceived black level (OLED true black zero-emittance vs raised black bug / LCD glow), 6-patch step tracking (visibility of 1% and 2% patches), optional qualitative notes, detected custom OS / ROM, and hardware display specs (reported max nits, supported HDR types).
-  - **Backend Pipeline:** Form submission connects to a public, privacy-focused crowd-sourced Google Forms / Sheets backend.
+  - **Payload Structure (10-Column Schema):** Collects SDR baseline black level and visible shadow steps (1% to 6%), HDR transition black level (remained pure black vs. raised black bug vs. normal LCD glow) and visible shadow steps, optional qualitative notes, detected custom OS / ROM, and hardware display specs (reported max nits, supported HDR types).
+  - **Backend Pipeline:** Form-encoded HTTP POST connects to a serverless Google Apps Script webhook appending atomically to a 10-column Google Sheet (`timestamp`, `model`, `os`, `hdr`, `nits`, `sdr_black`, `sdr_steps`, `hdr_black`, `hdr_steps`, `comments`).
   - **Asynchronous & Fail-Safe:** All network submissions must execute asynchronously off the main thread (e.g. background worker thread), must never block playback or the UI, and must fail silently or notify non-intrusively without crash risk if offline.
 
 ---

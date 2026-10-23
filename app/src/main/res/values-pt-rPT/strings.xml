@@ -70,16 +70,26 @@
     <string name="dialog_report_spec_os">SO: %1$s</string>
     <string name="dialog_report_spec_hdr">HDR: %1$s</string>
     <string name="dialog_report_spec_peak">Pico: %1$s</string>
-    <string name="dialog_report_q1_title">1. Nível de Fundo Preto:</string>
-    <string name="dialog_report_q1_opt_a">Preto puro absoluto (OLED / Sem glow)</string>
+    <!-- Secção 1: SDR (Primeiros 10s) -->
+    <string name="dialog_report_q1_title">1. Nível de Fundo Preto SDR (Primeiros 10s):</string>
+    <string name="dialog_report_q1_opt_a">Preto puro absoluto (OLED / Píxeis desligados)</string>
     <string name="dialog_report_q1_opt_b">Ligeiro brilho cinzento normal (LCD padrão)</string>
-    <string name="dialog_report_q1_opt_c">Cinzento brilhante evidente / Erro de pretos elevados</string>
-    <string name="dialog_report_q2_title">2. Degraus Quase-Preto Percetíveis:</string>
-    <string name="dialog_report_q2_opt_a">Todos os 6 degraus visíveis (Excelente)</string>
+    <string name="dialog_report_q2_title" formatted="false">2. Degraus Quase-Preto SDR (1% a 6%):</string>
+    <string name="dialog_report_q2_opt_a">Todos os 6 degraus visíveis (Excelente detalhe)</string>
     <string name="dialog_report_q2_opt_b">4 a 5 degraus visíveis</string>
     <string name="dialog_report_q2_opt_c">Menos de 4 degraus (Black crush / sombras esmagadas)</string>
-    <string name="dialog_report_q3_title">3. Observações / Notas (opcional):</string>
-    <string name="dialog_report_q3_hint">ex.: iluminação ambiente, modo de ecrã…</string>
+    <!-- Secção 2: HDR (Após transição aos 10s) -->
+    <string name="dialog_report_q3_title">3. Fundo Preto HDR (Após transição aos 10s):</string>
+    <string name="dialog_report_q3_opt_a">Manteve-se preto puro (Calibração HDR perfeita)</string>
+    <string name="dialog_report_q3_opt_b">Acendeu a cinzento / brilhante (Bug de pretos elevados em HDR)</string>
+    <string name="dialog_report_q3_opt_c">Ligeiro brilho cinzento normal (LCD inalterado)</string>
+    <string name="dialog_report_q4_title" formatted="false">4. Degraus Quase-Preto HDR (1% a 6%):</string>
+    <string name="dialog_report_q4_opt_a">Todos os 6 degraus visíveis em HDR (Tone mapping preciso)</string>
+    <string name="dialog_report_q4_opt_b">4 a 5 degraus visíveis em HDR</string>
+    <string name="dialog_report_q4_opt_c">Menos de 4 degraus em HDR (Sombras esmagadas em HDR)</string>
+    <!-- Secção 3: Notas -->
+    <string name="dialog_report_q5_title">5. Observações / Notas (opcional):</string>
+    <string name="dialog_report_q5_hint">ex.: iluminação ambiente, modo de ecrã…</string>
     <string name="dialog_btn_cancel">Cancelar</string>
     <string name="dialog_btn_submit">Submeter</string>
     <string name="report_submit_success">✅ Relatório enviado com sucesso! Obrigado pela contribuição.</string>

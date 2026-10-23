@@ -42,10 +42,11 @@
 
 ## 📋 Community Display Database
 
-After running the test, tap **"Submit Display Report"** to optionally share your observations:
-* Automatically tags your device model, custom ROM (MagicOS, HyperOS, One UI...), and hardware specs.
-* Records whether your screen exhibited true black or raised blacks.
-* Helps build a crowd-sourced Android display calibration database!
+After running the test, tap **"Submit Community Report"** to optionally share your observations:
+* Automatically detects and tags your device model, custom ROM (MagicOS, HyperOS, One UI, OxygenOS...), and hardware display specs.
+* Evaluates SDR baseline vs. HDR transition black level and shadow step visibility.
+* Directly appends your anonymous report to our open, crowd-sourced 10-column community database.
+* Zero personal data, zero accounts, and 100% privacy guaranteed.
 
 ---
 

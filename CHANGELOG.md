@@ -1,5 +1,15 @@
 # HDR Lab — Changelog
 
+## v0.1.6 (SDR vs HDR Comparative Community Report & 10-Column Database)
+
+- SDR vs HDR 4-Question Comparison Matrix: Evaluates SDR baseline black levels and shadow step visibility (1% to 6%) alongside HDR10 transition black levels and shadow steps to pinpoint raised blacks and black crush anomalies.
+- 10-Column Live Community Database: Upgraded community database schema and Google Apps Script webhook to record 10 structured fields (Timestamp, Device Model, Operating System, HDR Capabilities, Peak Brightness, SDR Black Level, SDR Visible Steps, HDR Black Level, HDR Visible Steps, and User Notes).
+- Backward-Compatible Parameter Ingestion: Webhook gracefully accepts both comparative keys (`sdr_black`, `sdr_steps`, `hdr_black`, `hdr_steps`) and legacy aliases (`black_level`, `steps_visible`).
+- Automated Custom OS & ROM Detection: Real-time detection of vendor skins (Honor MagicOS, Xiaomi HyperOS/MIUI, Samsung One UI, OnePlus OxygenOS, OPPO ColorOS, Google Pixel UI, etc.).
+- Retained Core Engine & Tablet Layout: Preserved zero-shader SurfaceView bypass directly to Android Hardware Composer (HWC), exact-seeking 10-second SDR-to-HDR transition, responsive side-by-side tablet cards, and full bilingual localization (EN / PT-PT).
+
+---
+
 ## v0.1.5.1 (Live Community Webhook Integration)
 
 - Production Webhook Endpoint: Activated live Google Apps Script endpoint in `ReportSubmitter.java`, directing submissions to the central community Google Sheet in real time.
