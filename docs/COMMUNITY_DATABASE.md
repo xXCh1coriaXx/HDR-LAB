@@ -90,10 +90,10 @@ function doPost(e) {
       data.os || "",
       data.hdr || "",
       data.nits || "",
-      data.sdr_black || data.black_level || "",
-      data.sdr_steps || data.steps_visible || "",
-      data.hdr_black || "",
-      data.hdr_steps || "",
+      data.sdr_black || "",
+      data.sdr_steps || "",
+      data.hdr_black || data.black_level || "",
+      data.hdr_steps || data.steps_visible || "",
       data.comments || ""
     ]);
     
