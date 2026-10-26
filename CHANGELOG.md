@@ -1,5 +1,18 @@
 # HDR Lab — Changelog
 
+## v0.3.0-beta.1 (OLED Tester Suite Preview)
+
+- Renamed app to **OLED Tester** across English and European Portuguese (`values-pt` / `values-pt-rPT`) catalogs while preserving `dev.hdrlab.light` package identity and signing continuity.
+- Added the **OLED Test Suite** (`OledTestView` & `MainActivity`):
+  - Black-to-dark motion smear test (`#050505`–`#202020` on `#000000`, 100–2000 px/s horizontal/vertical, `Choreographer` frame callbacks, live FPS/dropped-frame counter, and in-test brightness slider).
+  - Near-black step ladder (`0.5%`–`10.0%`) with dual-pipeline comparison (native Canvas vs. Media3 `SurfaceView` SDR/PQ/HLG reference step videos).
+  - Near-black uniformity / DSE slides (`1%`–`15%` static and `60` px/s optokinetic horizontal pan).
+  - Floating black and ABL/APL white window suite (`1%`–`100%` display area).
+- Extended `Diagnostics` and `ReportSubmitter` with physical refresh rate, supported display modes, fullscreen highest-refresh mode selection (`preferredDisplayModeId`), and optional OLED survey fields (`oledBlackCrush`, `oledSmear`, `oledUniformity`, `oledFloatingBlack`).
+- Restored window brightness and display mode overrides on `onPause()` as well as exit/stop, cancelled the automated countdown on manual HDR switches, and removed the hard 2 MB APK size cap.
+
+---
+
 ## v0.2.0 (Cleanup)
 
 - Developer validation script with JDK/SDK discovery, persistent logs, optional decoded video verification, and a release APK budget below 2,000,000 bytes.

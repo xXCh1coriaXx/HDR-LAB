@@ -129,7 +129,7 @@ jobs:
           else
             gh release create "$TAG" "$APK" "$SOURCE" "$CHECKSUMS" \
               --verify-tag \
-              --title "HDR Lab Light $TAG" \
+              --title "OLED Tester $TAG" \
               --notes-file RELEASE_NOTES.md \
               "${PRERELEASE_FLAGS[@]}"
           fi
