@@ -1,5 +1,15 @@
 # HDR Lab — Changelog
 
+## v0.3.0-beta.2 (OLED Tester Suite Preview 2)
+
+- Added **Universal Fullscreen Brightness Slider** across all video and canvas test suites (`1%`–`100%` `SeekBar`).
+- Added **Subpixel Burn-In & Aging Suite** (`OledTestView.MODE_BURNIN`) with 9 full-field slides (R, G, B, White, 50% Mid Gray, 20% Dark Gray, Cyan, Magenta, Yellow).
+- Added **SDR vs. HDR Mode Toggle** (`btnOledHdr`) supporting window color mode switching (`ActivityInfo.COLOR_MODE_HDR` and API 35 `setDesiredHdrHeadroom`) and automatic video stream switching between SDR and HDR10/PQ.
+- Added optional community survey field for subpixel burn-in / image retention (`oledBurnIn`).
+- Full English and European Portuguese (`values-pt` / `values-pt-rPT`) coverage and comprehensive Robolectric unit tests.
+
+---
+
 ## v0.3.0-beta.1 (OLED Tester Suite Preview)
 
 - Renamed app to **OLED Tester** across English and European Portuguese (`values-pt` / `values-pt-rPT`) catalogs while preserving `dev.hdrlab.light` package identity and signing continuity.
