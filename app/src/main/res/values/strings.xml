@@ -88,7 +88,7 @@
     <string name="dialog_report_q4_opt_b">4 to 5 steps visible in HDR</string>
     <string name="dialog_report_q4_opt_c">Less than 4 steps in HDR (HDR crushed shadows)</string>
     <!-- Section 3: Notes -->
-    <string name="dialog_report_q5_title">9. Observations / Notes (optional):</string>
+    <string name="dialog_report_q5_title">10. Observations / Notes (optional):</string>
     <string name="dialog_report_q5_hint">e.g. ambient lighting, screen mode…</string>
     <string name="dialog_btn_cancel">Cancel</string>
     <string name="dialog_btn_submit">Submit</string>
@@ -97,16 +97,19 @@
 
     <!-- Card 3: OLED Test Suite -->
     <string name="card_oled_title">OLED Test Suite</string>
-    <string name="card_oled_subtitle">Fullscreen patterns for smearing, black crush, uniformity and ABL</string>
+    <string name="card_oled_subtitle">Fullscreen patterns for smearing, black crush, uniformity, ABL and burn-in</string>
     <string name="oled_caveat">Visual observations only: patterns use signal levels, not measured luminance. Vendor processing, brightness and ambient light affect results.</string>
     <string name="btn_oled_smear">Black-to-Dark Smear (Motion)</string>
     <string name="btn_oled_ladder">Near-Black Ladder &amp; Black Crush</string>
     <string name="btn_oled_dse">Near-Black Uniformity / DSE</string>
     <string name="btn_oled_apl">ABL / APL Windows &amp; Floating Black</string>
+    <string name="btn_oled_burnin">Subpixel Burn-In &amp; Aging Check</string>
 
     <!-- OLED Fullscreen HUD -->
     <string name="hud_btn_prev">◀ Prev</string>
     <string name="hud_btn_next">Next ▶</string>
+    <string name="hud_btn_oled_sdr">Mode: SDR</string>
+    <string name="hud_btn_oled_hdr">Mode: HDR</string>
     <string name="oled_brightness">Brightness</string>
     <string name="oled_dir_horizontal">horizontal</string>
     <string name="oled_dir_vertical">vertical</string>
@@ -122,6 +125,17 @@
     <string name="oled_tip_dse">Look for vertical bands, blotches or mottling. The slow pan helps reveal fixed panel non-uniformity.</string>
     <string name="oled_title_apl">ABL / APL · %1$.0f%% window</string>
     <string name="oled_tip_apl">Does the black surround stay off? Does the white box dim as the window grows?</string>
+    <string name="oled_title_burnin">BURN-IN · %1$s</string>
+    <string name="oled_tip_burnin">Check for status bar or keyboard ghosting, color tinting, or weakened blue subpixels.</string>
+    <string name="oled_burnin_red">Pure Red (R Subpixel)</string>
+    <string name="oled_burnin_green">Pure Green (G Subpixel)</string>
+    <string name="oled_burnin_blue">Pure Blue (B Subpixel)</string>
+    <string name="oled_burnin_white">Pure White (Full Array)</string>
+    <string name="oled_burnin_gray50" formatted="false">50% Mid Gray</string>
+    <string name="oled_burnin_gray20" formatted="false">20% Dark Gray</string>
+    <string name="oled_burnin_cyan">Cyan (G + B Subpixels)</string>
+    <string name="oled_burnin_magenta">Magenta (R + B Subpixels)</string>
+    <string name="oled_burnin_yellow">Yellow (R + G Subpixels)</string>
     <string name="oled_ladder_label">%1$d · %2$.1f%%</string>
     <string name="oled_stats_format">%1$.1f fps · %2$d dropped · %3$.0f Hz</string>
     <string name="oled_video_sdr" translatable="false">SDR</string>
@@ -148,4 +162,8 @@
     <string name="dialog_report_float_title">8. Floating Black Under Bright Window:</string>
     <string name="dialog_report_float_true">True black (pixels off)</string>
     <string name="dialog_report_float_glow">Visible glow around the window</string>
+    <string name="dialog_report_burnin_title">9. Subpixel Burn-In / Image Retention:</string>
+    <string name="dialog_report_burnin_clean">Clean (no ghosting)</string>
+    <string name="dialog_report_burnin_retention">Minor temporary image retention</string>
+    <string name="dialog_report_burnin_burnin">Permanent subpixel burn-in / tint</string>
 </resources>

@@ -14,13 +14,18 @@ import android.view.View;
  * OS colour pipeline, panel gamma and vendor processing still apply.
  */
 final class OledTestView extends View implements Choreographer.FrameCallback {
-    static final int MODE_SMEAR = 0, MODE_LADDER = 1, MODE_DSE = 2, MODE_APL = 3;
+    static final int MODE_SMEAR = 0, MODE_LADDER = 1, MODE_DSE = 2, MODE_APL = 3, MODE_BURNIN = 4;
 
     static final int[] SMEAR_CODES = {0x05, 0x08, 0x0F, 0x18, 0x20};
     static final int[] SMEAR_SPEEDS = {100, 250, 500, 1000, 2000};
     static final float[] LADDER_PERCENT = {0.5f, 1f, 2f, 3f, 4f, 5f, 7.5f, 10f};
     static final float[] DSE_PERCENT = {1f, 2f, 3f, 5f, 10f, 15f};
     static final float[] APL_PERCENT = {1f, 2f, 5f, 10f, 25f, 50f, 100f};
+    static final int[] BURNIN_COLORS = {
+        0xFFFF0000, 0xFF00FF00, 0xFF0000FF,
+        0xFFFFFFFF, 0xFF808080, 0xFF333333,
+        0xFF00FFFF, 0xFFFF00FF, 0xFFFFFF00
+    };
     private static final float DSE_PAN_SPEED = 60f;
     private static final int DSE_STRIPE_PERIOD = 128, DSE_STRIPE_WIDTH = 32;
 
@@ -50,6 +55,7 @@ final class OledTestView extends View implements Choreographer.FrameCallback {
             case MODE_SMEAR: return SMEAR_SPEEDS.length * 2;
             case MODE_DSE: return DSE_PERCENT.length * 2;
             case MODE_APL: return APL_PERCENT.length;
+            case MODE_BURNIN: return BURNIN_COLORS.length;
             default: return 1;
         }
     }
@@ -64,6 +70,7 @@ final class OledTestView extends View implements Choreographer.FrameCallback {
     float dsePercent() { return DSE_PERCENT[variant % DSE_PERCENT.length]; }
     boolean dsePan() { return variant >= DSE_PERCENT.length; }
     float aplPercent() { return APL_PERCENT[variant % APL_PERCENT.length]; }
+    int burnInColor() { return BURNIN_COLORS[variant % BURNIN_COLORS.length]; }
 
     void setPattern(int mode, int variant) {
         stop();
@@ -151,6 +158,7 @@ final class OledTestView extends View implements Choreographer.FrameCallback {
             case MODE_LADDER: drawLadder(canvas, w, h); break;
             case MODE_DSE: drawDse(canvas, w, h); break;
             case MODE_APL: drawApl(canvas, w, h); break;
+            case MODE_BURNIN: canvas.drawColor(burnInColor()); break;
         }
         if (running && !statsText.isEmpty()) {
             canvas.drawText(statsText, text.getTextSize(), h - text.getTextSize() * 2, text);

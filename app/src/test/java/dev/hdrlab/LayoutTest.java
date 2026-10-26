@@ -666,17 +666,19 @@ public class LayoutTest {
         assertEquals("All 6 steps visible in HDR (Accurate tone mapping)", enRes.getString(R.string.dialog_report_q4_opt_a));
         assertEquals("4 to 5 steps visible in HDR", enRes.getString(R.string.dialog_report_q4_opt_b));
         assertEquals("Less than 4 steps in HDR (HDR crushed shadows)", enRes.getString(R.string.dialog_report_q4_opt_c));
-        assertEquals("9. Observations / Notes (optional):", enRes.getString(R.string.dialog_report_q5_title));
+        assertEquals("10. Observations / Notes (optional):", enRes.getString(R.string.dialog_report_q5_title));
         assertEquals("OLED Test Suite", enRes.getString(R.string.card_oled_title));
         assertEquals("Black-to-Dark Smear (Motion)", enRes.getString(R.string.btn_oled_smear));
         assertEquals("Near-Black Ladder & Black Crush", enRes.getString(R.string.btn_oled_ladder));
         assertEquals("Near-Black Uniformity / DSE", enRes.getString(R.string.btn_oled_dse));
         assertEquals("ABL / APL Windows & Floating Black", enRes.getString(R.string.btn_oled_apl));
+        assertEquals("Subpixel Burn-In & Aging Check", enRes.getString(R.string.btn_oled_burnin));
         assertEquals("OLED TEST SUITE (OPTIONAL)", enRes.getString(R.string.dialog_report_oled_header));
         assertEquals("5. Black Crush Threshold (Near-Black Ladder):", enRes.getString(R.string.dialog_report_crush_title));
         assertEquals("6. OLED Purple Smear (Motion):", enRes.getString(R.string.dialog_report_smear_title));
         assertEquals("7. Near-Black Uniformity / DSE:", enRes.getString(R.string.dialog_report_dse_title));
         assertEquals("8. Floating Black Under Bright Window:", enRes.getString(R.string.dialog_report_float_title));
+        assertEquals("9. Subpixel Burn-In / Image Retention:", enRes.getString(R.string.dialog_report_burnin_title));
         assertEquals("Cancel", enRes.getString(R.string.dialog_btn_cancel));
         assertEquals("Submit", enRes.getString(R.string.dialog_btn_submit));
         assertEquals("✅ Report submitted successfully! Thank you.", enRes.getString(R.string.report_submit_success));
@@ -726,17 +728,19 @@ public class LayoutTest {
         assertEquals("Todos os 6 degraus visíveis em HDR (Tone mapping preciso)", ptRes.getString(R.string.dialog_report_q4_opt_a));
         assertEquals("4 a 5 degraus visíveis em HDR", ptRes.getString(R.string.dialog_report_q4_opt_b));
         assertEquals("Menos de 4 degraus em HDR (Sombras esmagadas em HDR)", ptRes.getString(R.string.dialog_report_q4_opt_c));
-        assertEquals("9. Observações / Notas (opcional):", ptRes.getString(R.string.dialog_report_q5_title));
+        assertEquals("10. Observações / Notas (opcional):", ptRes.getString(R.string.dialog_report_q5_title));
         assertEquals("Bateria de Testes OLED", ptRes.getString(R.string.card_oled_title));
         assertEquals("Arrastamento Preto-Escuro (Movimento)", ptRes.getString(R.string.btn_oled_smear));
         assertEquals("Escada Quase-Preto e Black Crush", ptRes.getString(R.string.btn_oled_ladder));
         assertEquals("Uniformidade Quase-Preto / DSE", ptRes.getString(R.string.btn_oled_dse));
         assertEquals("Janelas ABL / APL e Preto Flutuante", ptRes.getString(R.string.btn_oled_apl));
+        assertEquals("Verificação de Burn-In e Subpíxeis", ptRes.getString(R.string.btn_oled_burnin));
         assertEquals("BATERIA DE TESTES OLED (OPCIONAL)", ptRes.getString(R.string.dialog_report_oled_header));
         assertEquals("5. Limiar de Black Crush (Escada Quase-Preto):", ptRes.getString(R.string.dialog_report_crush_title));
         assertEquals("6. Arrastamento Roxo OLED (Movimento):", ptRes.getString(R.string.dialog_report_smear_title));
         assertEquals("7. Uniformidade Quase-Preto / DSE:", ptRes.getString(R.string.dialog_report_dse_title));
         assertEquals("8. Preto Flutuante com Janela Brilhante:", ptRes.getString(R.string.dialog_report_float_title));
+        assertEquals("9. Burn-In de Subpíxeis / Retenção:", ptRes.getString(R.string.dialog_report_burnin_title));
         assertEquals("Cancelar", ptRes.getString(R.string.dialog_btn_cancel));
         assertEquals("Submeter", ptRes.getString(R.string.dialog_btn_submit));
         assertEquals("✅ Relatório enviado com sucesso! Obrigado pela contribuição.", ptRes.getString(R.string.report_submit_success));
@@ -786,11 +790,11 @@ public class LayoutTest {
         for (int i = 0; i < 5; i++) btnNext.performClick();
         assertTrue("Sixth smear variant must be vertical", oledView.smearVertical());
 
-        // 2. Ladder suite: Pipeline A canvas (variant 0), Pipeline B video (variants 1..3)
+        // 2. Ladder suite: Pipeline A canvas (variant 0), Pipeline B video (variants 1..3), universal brightness bar
         startSuite.invoke(activity, OledTestView.MODE_LADDER);
         assertEquals("Starting another suite resets fullscreen brightness to 1.0",
             1.0f, activity.getWindow().getAttributes().screenBrightness, 0.01f);
-        assertEquals(View.GONE, brightnessRow.getVisibility());
+        assertEquals("Universal brightness bar must be visible across all suites", View.VISIBLE, brightnessRow.getVisibility());
         assertEquals(View.VISIBLE, oledView.getVisibility());
         assertEquals(View.GONE, playerView.getVisibility());
         assertFalse("Static ladder must not schedule frame callbacks", oledView.isRunning());
@@ -798,6 +802,19 @@ public class LayoutTest {
         btnNext.performClick(); // Variant 1 -> SDR video on Media3 SurfaceView
         assertEquals(View.GONE, oledView.getVisibility());
         assertEquals(View.VISIBLE, playerView.getVisibility());
+
+        // Toggle SDR/HDR button -> switches window color mode to HDR and jumps SDR video to PQ HDR10 video (variant 2)
+        Button btnOledHdr = field("btnOledHdr");
+        assertEquals(View.VISIBLE, btnOledHdr.getVisibility());
+        btnOledHdr.performClick();
+        assertTrue((Boolean) field("oledHdrMode"));
+        assertEquals(android.content.pm.ActivityInfo.COLOR_MODE_HDR, activity.getWindow().getColorMode());
+        assertEquals(2, ((Integer) field("oledVariant")).intValue());
+        btnOledHdr.performClick(); // Toggle back to SDR -> returns to variant 1 (SDR video)
+        assertFalse((Boolean) field("oledHdrMode"));
+        assertEquals(android.content.pm.ActivityInfo.COLOR_MODE_DEFAULT, activity.getWindow().getColorMode());
+        assertEquals(1, ((Integer) field("oledVariant")).intValue());
+
         btnNext.performClick(); // Variant 2 -> PQ video
         assertEquals(View.VISIBLE, playerView.getVisibility());
         btnNext.performClick(); // Variant 3 -> HLG video
@@ -808,6 +825,7 @@ public class LayoutTest {
 
         // 3. DSE suite: 6 static + 6 pan variants
         startSuite.invoke(activity, OledTestView.MODE_DSE);
+        assertEquals(View.VISIBLE, brightnessRow.getVisibility());
         assertFalse(oledView.dsePan());
         assertFalse(oledView.isRunning());
         for (int i = 0; i < 6; i++) btnNext.performClick();
@@ -816,15 +834,25 @@ public class LayoutTest {
 
         // 4. APL suite: 7 window sizes from 1% to 100%
         startSuite.invoke(activity, OledTestView.MODE_APL);
+        assertEquals(View.VISIBLE, brightnessRow.getVisibility());
         assertEquals(1f, oledView.aplPercent(), 0.01f);
         btnPrev.performClick(); // Wraps to last (100%)
         assertEquals(100f, oledView.aplPercent(), 0.01f);
+
+        // 5. Subpixel Burn-In suite: 9 color slides
+        startSuite.invoke(activity, OledTestView.MODE_BURNIN);
+        assertEquals(View.VISIBLE, brightnessRow.getVisibility());
+        assertEquals(0xFFFF0000, oledView.burnInColor());
+        btnNext.performClick();
+        assertEquals(0xFF00FF00, oledView.burnInColor());
+        btnNext.performClick();
+        assertEquals(0xFF0000FF, oledView.burnInColor());
 
         // Draw pass executes cleanly for all canvas modes
         android.graphics.Bitmap bmp = android.graphics.Bitmap.createBitmap(400, 300, android.graphics.Bitmap.Config.ARGB_8888);
         android.graphics.Canvas canvas = new android.graphics.Canvas(bmp);
         oledView.layout(0, 0, 400, 300);
-        for (int m : new int[] {OledTestView.MODE_SMEAR, OledTestView.MODE_LADDER, OledTestView.MODE_DSE, OledTestView.MODE_APL}) {
+        for (int m : new int[] {OledTestView.MODE_SMEAR, OledTestView.MODE_LADDER, OledTestView.MODE_DSE, OledTestView.MODE_APL, OledTestView.MODE_BURNIN}) {
             oledView.setPattern(m, 0);
             oledView.draw(canvas);
         }
@@ -853,7 +881,7 @@ public class LayoutTest {
             "Pure black", "All 6 steps", "Remained pure black", "All 6 steps in HDR",
             "Notes", 123456789L,
             120f, java.util.Arrays.asList("2400 × 1080 @ 60.00 Hz", "2400 × 1080 @ 120.00 Hz"),
-            "Crushes below 1%", "Mild", "Clean & uniform", "True black (pixels off)"
+            "Crushes below 1%", "Mild", "Clean & uniform", "True black (pixels off)", "Clean (no ghosting)"
         );
         JSONObject json = report.toJson();
         assertEquals(120.0, json.getDouble("refreshRateHz"), 0.01);
@@ -862,6 +890,7 @@ public class LayoutTest {
         assertEquals("Mild", json.getString("oledSmear"));
         assertEquals("Clean & uniform", json.getString("oledUniformity"));
         assertEquals("True black (pixels off)", json.getString("oledFloatingBlack"));
+        assertEquals("Clean (no ghosting)", json.getString("oledBurnIn"));
     }
 
     @Test public void manualHdrSwitchCancelsAutomatedCountdown() throws Exception {

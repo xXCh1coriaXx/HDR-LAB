@@ -88,7 +88,7 @@
     <string name="dialog_report_q4_opt_b">4 a 5 degraus visíveis em HDR</string>
     <string name="dialog_report_q4_opt_c">Menos de 4 degraus em HDR (Sombras esmagadas em HDR)</string>
     <!-- Secção 3: Notas -->
-    <string name="dialog_report_q5_title">9. Observações / Notas (opcional):</string>
+    <string name="dialog_report_q5_title">10. Observações / Notas (opcional):</string>
     <string name="dialog_report_q5_hint">ex.: iluminação ambiente, modo de ecrã…</string>
     <string name="dialog_btn_cancel">Cancelar</string>
     <string name="dialog_btn_submit">Submeter</string>
@@ -97,16 +97,19 @@
 
     <!-- Cartão 3: Bateria de Testes OLED -->
     <string name="card_oled_title">Bateria de Testes OLED</string>
-    <string name="card_oled_subtitle">Padrões em ecrã cheio para arrastamento, black crush, uniformidade e ABL</string>
+    <string name="card_oled_subtitle">Padrões em ecrã cheio para arrastamento, black crush, uniformidade, ABL e burn-in</string>
     <string name="oled_caveat">Apenas observações visuais: os padrões usam níveis de sinal, não luminância medida. O processamento do fabricante, o brilho e a luz ambiente afetam os resultados.</string>
     <string name="btn_oled_smear">Arrastamento Preto-Escuro (Movimento)</string>
     <string name="btn_oled_ladder">Escada Quase-Preto e Black Crush</string>
     <string name="btn_oled_dse">Uniformidade Quase-Preto / DSE</string>
     <string name="btn_oled_apl">Janelas ABL / APL e Preto Flutuante</string>
+    <string name="btn_oled_burnin">Verificação de Burn-In e Subpíxeis</string>
 
     <!-- HUD OLED em ecrã cheio -->
     <string name="hud_btn_prev">◀ Anterior</string>
     <string name="hud_btn_next">Seguinte ▶</string>
+    <string name="hud_btn_oled_sdr">Modo: SDR</string>
+    <string name="hud_btn_oled_hdr">Modo: HDR</string>
     <string name="oled_brightness">Brilho</string>
     <string name="oled_dir_horizontal">horizontal</string>
     <string name="oled_dir_vertical">vertical</string>
@@ -122,6 +125,17 @@
     <string name="oled_tip_dse">Procura faixas verticais, manchas ou textura irregular. O deslocamento lento ajuda a revelar não-uniformidades fixas do painel.</string>
     <string name="oled_title_apl">ABL / APL · janela de %1$.0f%%</string>
     <string name="oled_tip_apl">O preto à volta mantém-se desligado? A caixa branca escurece à medida que a janela cresce?</string>
+    <string name="oled_title_burnin">BURN-IN · %1$s</string>
+    <string name="oled_tip_burnin">Procura sombras da barra de estado ou do teclado, manchas de cor ou desgaste nos subpíxeis azuis.</string>
+    <string name="oled_burnin_red">Vermelho Puro (Subpíxel R)</string>
+    <string name="oled_burnin_green">Verde Puro (Subpíxel G)</string>
+    <string name="oled_burnin_blue">Azul Puro (Subpíxel B)</string>
+    <string name="oled_burnin_white">Branco Puro (Matriz Completa)</string>
+    <string name="oled_burnin_gray50" formatted="false">Cinzento Médio 50%</string>
+    <string name="oled_burnin_gray20" formatted="false">Cinzento Escuro 20%</string>
+    <string name="oled_burnin_cyan">Ciano (Subpíxeis G + B)</string>
+    <string name="oled_burnin_magenta">Magenta (Subpíxeis R + B)</string>
+    <string name="oled_burnin_yellow">Amarelo (Subpíxeis R + G)</string>
     <string name="oled_ladder_label">%1$d · %2$.1f%%</string>
     <string name="oled_stats_format">%1$.1f fps · %2$d perdidas · %3$.0f Hz</string>
 
@@ -145,4 +159,8 @@
     <string name="dialog_report_float_title">8. Preto Flutuante com Janela Brilhante:</string>
     <string name="dialog_report_float_true">Preto real (píxeis desligados)</string>
     <string name="dialog_report_float_glow">Brilho visível à volta da janela</string>
+    <string name="dialog_report_burnin_title">9. Burn-In de Subpíxeis / Retenção:</string>
+    <string name="dialog_report_burnin_clean">Limpo (sem sombras)</string>
+    <string name="dialog_report_burnin_retention">Retenção temporária ligeira</string>
+    <string name="dialog_report_burnin_burnin">Burn-in permanente / mancha de cor</string>
 </resources>

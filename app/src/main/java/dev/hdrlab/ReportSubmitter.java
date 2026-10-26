@@ -62,6 +62,7 @@ public final class ReportSubmitter {
         public final String oledSmear;
         public final String oledUniformity;
         public final String oledFloatingBlack;
+        public final String oledBurnIn;
 
         // Legacy compatibility fields
         public final String hdr;
@@ -78,7 +79,7 @@ public final class ReportSubmitter {
             this(deviceName, model, manufacturer, brand, product, hardware, socModel, os, androidRelease,
                  sdkInt, hdrTypes, peakNits, minNits, wideColorGamut, activeMode, appVersion,
                  sdrBlackLevel, sdrSteps, hdrBlackLevel, hdrSteps, comments, timestamp,
-                 -1f, null, null, null, null, null);
+                 -1f, null, null, null, null, null, null);
         }
 
         public CommunityReport(String deviceName, String model, String manufacturer, String brand,
@@ -92,6 +93,24 @@ public final class ReportSubmitter {
                                float refreshRateHz, List<String> supportedModes,
                                String oledBlackCrush, String oledSmear,
                                String oledUniformity, String oledFloatingBlack) {
+            this(deviceName, model, manufacturer, brand, product, hardware, socModel, os, androidRelease,
+                 sdkInt, hdrTypes, peakNits, minNits, wideColorGamut, activeMode, appVersion,
+                 sdrBlackLevel, sdrSteps, hdrBlackLevel, hdrSteps, comments, timestamp,
+                 refreshRateHz, supportedModes, oledBlackCrush, oledSmear, oledUniformity, oledFloatingBlack, null);
+        }
+
+        public CommunityReport(String deviceName, String model, String manufacturer, String brand,
+                               String product, String hardware, String socModel,
+                               String os, String androidRelease, int sdkInt,
+                               List<String> hdrTypes, float peakNits, float minNits,
+                               boolean wideColorGamut, String activeMode, String appVersion,
+                               String sdrBlackLevel, String sdrSteps,
+                               String hdrBlackLevel, String hdrSteps,
+                               String comments, long timestamp,
+                               float refreshRateHz, List<String> supportedModes,
+                               String oledBlackCrush, String oledSmear,
+                               String oledUniformity, String oledFloatingBlack,
+                               String oledBurnIn) {
             this.deviceName = deviceName != null && !deviceName.isEmpty()
                 ? deviceName : Diagnostics.getCleanDeviceName(manufacturer, model);
             this.model = model != null ? model : "";
@@ -124,6 +143,7 @@ public final class ReportSubmitter {
             this.oledSmear = oledSmear != null ? oledSmear : "";
             this.oledUniformity = oledUniformity != null ? oledUniformity : "";
             this.oledFloatingBlack = oledFloatingBlack != null ? oledFloatingBlack : "";
+            this.oledBurnIn = oledBurnIn != null ? oledBurnIn : "";
 
             this.hdr = !this.hdrTypes.isEmpty() ? String.join(", ", this.hdrTypes) : "None";
             this.nits = this.peakNits > 0 ? String.valueOf(Math.round(this.peakNits)) : "Not reported";
@@ -195,6 +215,7 @@ public final class ReportSubmitter {
             this.oledSmear = "";
             this.oledUniformity = "";
             this.oledFloatingBlack = "";
+            this.oledBurnIn = "";
         }
 
         public JSONObject toJson() {
@@ -256,6 +277,7 @@ public final class ReportSubmitter {
                 json.put("oledSmear", oledSmear);
                 json.put("oledUniformity", oledUniformity);
                 json.put("oledFloatingBlack", oledFloatingBlack);
+                json.put("oledBurnIn", oledBurnIn);
 
                 // Compatibility aliases
                 json.put("hdr", hdr);

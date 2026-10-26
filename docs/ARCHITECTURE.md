@@ -56,7 +56,7 @@ The documented Apps Script saves individual immutable JSON reports to the `HDR l
 
 ## OLED test suite (`OledTestView`)
 
-`OledTestView` renders Pipeline A canvas patterns (black-to-dark motion smear, 0.5%–10% near-black step ladder, 1%–15% uniformity/DSE static and optokinetic horizontal pan, and 1%–100% APL white windows) on a `#000000` background. Levels are full-range 8-bit signal percentages (`Math.round(percent * 2.55f)`), not calibrated luminance. Pipeline B in the ladder suite reuses the packaged `sdr_steps`, `pq_steps` and `hlg_steps` reference videos on Media3 `SurfaceView`.
+`OledTestView` renders Pipeline A canvas patterns (black-to-dark motion smear, 0.5%–10% near-black step ladder, 1%–15% uniformity/DSE static and optokinetic horizontal pan, 1%–100% APL white windows, and 9 subpixel burn-in/aging slides) on a `#000000` background. Levels are full-range 8-bit signal percentages (`Math.round(percent * 2.55f)`), not calibrated luminance. Pipeline B in the ladder suite reuses the packaged `sdr_steps`, `pq_steps` and `hlg_steps` reference videos on Media3 `SurfaceView`. The fullscreen HUD exposes a universal 1%–100% window brightness slider across all test modes and an SDR/HDR toggle (`ActivityInfo.COLOR_MODE_HDR` + API 35 `setDesiredHdrHeadroom`, restored on exit).
 
 Motion patterns use `Choreographer.FrameCallback` and request the highest supported refresh mode at the current resolution via `WindowManager.LayoutParams.preferredDisplayModeId` (restored on exit). Static patterns do not schedule frame callbacks. Dropped frames are estimated from frame deltas exceeding `1.5x` the nominal display period so app stutter is not confused with panel smearing.
 

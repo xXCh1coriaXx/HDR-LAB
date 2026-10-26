@@ -58,6 +58,7 @@ Each report saved to Google Drive contains a structured JSON payload:
     "oledSmear": "Mild",
     "oledUniformity": "Clean & uniform",
     "oledFloatingBlack": "True black (pixels off)",
+    "oledBurnIn": "Clean (no ghosting)",
     "comments": "Observed in dark room, Natural color mode."
   },
   "device": {

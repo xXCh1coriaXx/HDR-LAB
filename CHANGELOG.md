@@ -8,7 +8,9 @@
   - Near-black step ladder (`0.5%`–`10.0%`) with dual-pipeline comparison (native Canvas vs. Media3 `SurfaceView` SDR/PQ/HLG reference step videos).
   - Near-black uniformity / DSE slides (`1%`–`15%` static and `60` px/s optokinetic horizontal pan).
   - Floating black and ABL/APL white window suite (`1%`–`100%` display area).
-- Extended `Diagnostics` and `ReportSubmitter` with physical refresh rate, supported display modes, fullscreen highest-refresh mode selection (`preferredDisplayModeId`), and optional OLED survey fields (`oledBlackCrush`, `oledSmear`, `oledUniformity`, `oledFloatingBlack`).
+  - Subpixel burn-in & aging check (9 slides: R, G, B, White, 50%/20% Gray, Cyan, Magenta, Yellow).
+  - Universal fullscreen `1%`–`100%` brightness slider across all test modes and an SDR/HDR mode toggle (`COLOR_MODE_HDR` / `setDesiredHdrHeadroom` + video pipeline switching).
+- Extended `Diagnostics` and `ReportSubmitter` with physical refresh rate, supported display modes, fullscreen highest-refresh mode selection (`preferredDisplayModeId`), and optional OLED survey fields (`oledBlackCrush`, `oledSmear`, `oledUniformity`, `oledFloatingBlack`, `oledBurnIn`).
 - Restored window brightness and display mode overrides on `onPause()` as well as exit/stop, cancelled the automated countdown on manual HDR switches, and removed the hard 2 MB APK size cap.
 
 ---
