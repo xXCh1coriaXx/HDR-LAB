@@ -9,7 +9,7 @@ The link opens the latest release. For a beta, choose its preview entry on the [
 ## Start a test
 
 1. Open the app and review your device's reported display capabilities.
-2. Start **Quick Test**. It opens fullscreen at maximum window brightness, shows a standard dynamic range (SDR) pattern for ten seconds, then switches to HDR10.
+2. Start **Quick Test**. It opens fullscreen at maximum window brightness, counts ten seconds of SDR playback (excluding loading or buffering), then requests HDR10.
 3. Compare the black background and visible grey steps. Tap to show controls; leave fullscreen to restore your previous brightness setting.
 4. Use the OLED suites for other checks:
 
@@ -20,8 +20,9 @@ The link opens the latest release. For a beta, choose its preview entry on the [
 | Uniformity | Uneven grey, bands or blotches (dirty screen effect) |
 | White windows | Dimming as the bright area grows, or glow around it |
 | Burn-in / ageing | Persistent shapes or uneven colour on solid slides |
+| SDR color and grayscale ramps | Bands, abrupt transitions or highlights that appear to merge across grayscale, RGB and CMY ramps |
 
-The suites include brightness controls and SDR/HDR selection.
+The suites include brightness controls and SDR/HDR selection, except for the SDR-only ramps. Read each pattern's observation prompt and record the variant, brightness, display mode and room lighting when comparing results. Tap to reveal controls; **Hide controls** exposes the pattern. Controls scroll on small screens and stay available during touch exploration.
 
 ## Understand the results
 

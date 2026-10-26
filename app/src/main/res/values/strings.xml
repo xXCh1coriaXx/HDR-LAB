@@ -34,25 +34,26 @@
     <string name="card_quick_test_title">Quick Test: SDR vs HDR</string>
     <string name="card_quick_test_subtitle">Automated 10-second fullscreen comparison</string>
     <string name="test_how_it_works_title">How the test works:</string>
-    <string name="test_how_it_works_text">• 10 seconds in SDR, with an automatic transition to HDR in fullscreen.\n• Display is set to maximum brightness (100%) during the test.</string>
+    <string name="test_how_it_works_text">• Shows SDR for 10 seconds, then requests HDR10/PQ.\n• Fullscreen starts at maximum window brightness; system behavior may vary.</string>
     <string name="test_what_to_look_title">What to look for on screen:</string>
-    <string name="test_what_to_look_text">• True Black Background: On OLED displays, the background is pitch black (pixels off). On LCD screens, you may notice a slight grey glow (backlight glow).\n• 6 Near-Black Steps: Watch the 6 gentle grey bars (1%, 2%…). They should be distinguishable without elevating the surrounding black background.</string>
+    <string name="test_what_to_look_text">• Observe the black surround and note any visible glow.\n• Compare the six near-black reference steps and record how many you can distinguish. These are encoded signal levels, not brightness percentages or panel measurements; viewing conditions and processing affect visibility.</string>
     <string name="btn_start_test">▶ Start Fullscreen SDR vs HDR Test</string>
     <string name="btn_community_report">📋 Submit Community Report</string>
 
     <!-- Fullscreen HUD -->
     <string name="hud_title_sdr_countdown">SDR MODE · %1$ds remaining</string>
-    <string name="hud_tip_sdr_countdown">Observe the black background and visibility of the 6 grey bars.</string>
+    <string name="hud_tip_sdr_countdown">Observe black and the six steps; record visible steps. Signal references only.</string>
     <string name="hud_title_sdr_active">SDR MODE ACTIVE</string>
-    <string name="hud_tip_sdr_active">Manual SDR mode. Observe the black background and bars.</string>
+    <string name="hud_tip_sdr_active">Observe black and the six steps; record visible steps. Signal references only.</string>
     <string name="hud_title_hdr_active">HDR MODE (HDR10 / PQ) ACTIVE</string>
-    <string name="hud_tip_hdr_active">Screen activates HDR mode. Background should remain pure black.</string>
+    <string name="hud_tip_hdr_active">HDR10/PQ requested. Note black and visible steps; this does not confirm HDR output.</string>
 
     <!-- HUD Control Buttons -->
     <string name="hud_btn_watch_sdr">Watch SDR</string>
     <string name="hud_btn_watch_hdr">Watch HDR</string>
     <string name="hud_btn_restart">⟲ Restart</string>
     <string name="hud_btn_exit">✕ Exit</string>
+    <string name="hud_btn_hide">Hide controls</string>
 
     <!-- Technical Report & Share Dialogs -->
     <string name="dialog_technical_report_title">Technical Report</string>
@@ -97,36 +98,54 @@
 
     <!-- Card 3: OLED Test Suite -->
     <string name="card_oled_title">OLED Test Suite</string>
-    <string name="card_oled_subtitle">Fullscreen patterns for smearing, black crush, uniformity, ABL and burn-in</string>
+    <string name="card_oled_subtitle">Fullscreen patterns for motion, near-black, uniformity, ABL, burn-in and SDR ramps</string>
     <string name="oled_caveat">Visual observations only: patterns use signal levels, not measured luminance. Vendor processing, brightness and ambient light affect results.</string>
     <string name="btn_oled_smear">Black-to-Dark Smear (Motion)</string>
     <string name="btn_oled_ladder">Near-Black Ladder &amp; Black Crush</string>
     <string name="btn_oled_dse">Near-Black Uniformity / DSE</string>
     <string name="btn_oled_apl">ABL / APL Windows &amp; Floating Black</string>
     <string name="btn_oled_burnin">Subpixel Burn-In &amp; Aging Check</string>
+    <string name="btn_oled_ramp">SDR Color &amp; Grayscale Ramps</string>
 
     <!-- OLED Fullscreen HUD -->
     <string name="hud_btn_prev">◀ Prev</string>
     <string name="hud_btn_next">Next ▶</string>
     <string name="hud_btn_oled_sdr">Mode: SDR</string>
     <string name="hud_btn_oled_hdr">Mode: HDR</string>
+    <string name="a11y_previous_pattern">Previous pattern</string>
+    <string name="a11y_next_pattern">Next pattern</string>
+    <string name="a11y_exit_test">Exit test</string>
+    <string name="a11y_restart_test">Restart test</string>
     <string name="oled_brightness">Brightness</string>
     <string name="oled_dir_horizontal">horizontal</string>
     <string name="oled_dir_vertical">vertical</string>
     <string name="oled_title_smear">SMEAR · %1$d px/s · %2$s</string>
-    <string name="oled_tip_smear">Watch the trailing edges of the dark blocks for purple or blue trails. Compare low and high brightness.</string>
+    <string name="oled_tip_smear">Look for trails behind moving blocks; record color and conditions. Motion and processing can mimic panel response.</string>
     <string name="oled_title_ladder_canvas">BLACK CRUSH · Pipeline A: Canvas / OS UI</string>
     <string name="oled_title_ladder_video">BLACK CRUSH · Pipeline B: %1$s video</string>
-    <string name="oled_tip_ladder_canvas" formatted="false">Find the first numbered patch you can tell apart from pure black (0.5% to 10% signal).</string>
-    <string name="oled_tip_ladder_video">Media3 SurfaceView playback of the reference step video. Compare visible steps with the canvas ladder.</string>
+    <string name="oled_tip_ladder_canvas">Compare the patches and record the first visible one. Codes are signal references, not luminance; visibility varies.</string>
+    <string name="oled_tip_ladder_video">Compare visible steps and record the first one; compare with Canvas. Video processing and viewing conditions affect results.</string>
     <string name="oled_title_dse">UNIFORMITY · %1$.0f%% · %2$s</string>
     <string name="oled_dse_static">static</string>
     <string name="oled_dse_pan">slow pan</string>
-    <string name="oled_tip_dse">Look for vertical bands, blotches or mottling. The slow pan helps reveal fixed panel non-uniformity.</string>
+    <string name="oled_tip_dse">Look for bands or uneven patches; record location and mode. Processing and viewing conditions can affect appearance.</string>
     <string name="oled_title_apl">ABL / APL · %1$.0f%% window</string>
-    <string name="oled_tip_apl">Does the black surround stay off? Does the white box dim as the window grows?</string>
+    <string name="oled_tip_apl">Compare the surround and white window across sizes; record visible changes. This is visual, not a brightness measurement.</string>
     <string name="oled_title_burnin">BURN-IN · %1$s</string>
-    <string name="oled_tip_burnin">Check for status bar or keyboard ghosting, color tinting, or weakened blue subpixels.</string>
+    <string name="oled_tip_burnin">Look for persistent-looking shapes or color differences; record the color and pattern. This cannot diagnose burn-in.</string>
+    <string name="oled_title_ramp">SDR RAMP · %1$s</string>
+    <string name="oled_tip_ramp">Look for bands or clipped highlights; record color and conditions. Signal levels are not panel measurements.</string>
+    <string name="oled_ramp_scale">SDR 8-bit signal · 0 → 255</string>
+    <string name="oled_ramp_gray">Gray</string>
+    <string name="oled_ramp_red">Red</string>
+    <string name="oled_ramp_green">Green</string>
+    <string name="oled_ramp_blue">Blue</string>
+    <string name="oled_ramp_cyan">Cyan</string>
+    <string name="oled_ramp_magenta">Magenta</string>
+    <string name="oled_ramp_yellow">Yellow</string>
+    <string name="oled_brightness_value">Brightness: %1$d%%</string>
+    <string name="oled_pattern_description">%1$s. Tap to show controls.</string>
+    <string name="playback_error">Playback failed: %1$s. Close this message and start the test again.</string>
     <string name="oled_burnin_red">Pure Red (R Subpixel)</string>
     <string name="oled_burnin_green">Pure Green (G Subpixel)</string>
     <string name="oled_burnin_blue">Pure Blue (B Subpixel)</string>

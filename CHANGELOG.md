@@ -4,6 +4,14 @@ Historical changes, not guarantees of current behaviour. See [current constraint
 
 ## OLED Tester / HDR Lab Light
 
+### v0.3.0-beta.3 — SDR ramps and fullscreen reliability
+
+- Seven SDR grayscale/RGB/CMY ramps with 0–255 code labels and localized observation guidance.
+- Black interface and readable RGB accents across cards, controls and launcher icon.
+- Playback-aware Quick Test countdown, synchronized ladder mode controls, captured HDR-headroom restoration and playback-error recovery.
+- Scrollable/adaptive fullscreen controls, 48 dp button targets, wrapping dashboard labels and touch-exploration support in EN/PT-PT.
+- Fresh animation statistics after detach/reattach; regression coverage for ramps, Android 12 rotation/resizing, large text, playback stalls/errors and lifecycle cleanup.
+
 ### v0.3.0-beta.2 — OLED suite preview 2
 
 - Universal 1%–100% fullscreen brightness slider for video/Canvas.

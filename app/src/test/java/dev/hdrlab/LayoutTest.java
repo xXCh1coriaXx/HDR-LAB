@@ -13,6 +13,8 @@ import android.widget.RadioGroup;
 import android.widget.TextView;
 import androidx.media3.common.C;
 import androidx.media3.common.ColorInfo;
+import androidx.media3.common.Player;
+import androidx.media3.common.PlaybackException;
 import androidx.media3.ui.PlayerView;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -27,6 +29,7 @@ import org.robolectric.annotation.Config;
 import org.robolectric.annotation.GraphicsMode;
 import org.robolectric.shadows.ShadowAlertDialog;
 import org.robolectric.shadows.ShadowLooper;
+import org.robolectric.shadows.ShadowSystemClock;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.HashMap;
@@ -148,7 +151,7 @@ public class LayoutTest {
         assertEquals(View.VISIBLE, fullscreenContainer.getVisibility());
     }
 
-    @Test public void countdownTransitionsFromSdrToHdrAtTenSeconds() throws Exception {
+    @Test public void countdownRequiresTenSecondsOfPlayingAndExcludesBuffering() throws Exception {
         call("startAutomatedTest");
 
         TextView hudTitleLabel = field("hudTitleLabel");
@@ -157,15 +160,23 @@ public class LayoutTest {
         Runnable ticker = field("testCountdownTicker");
         assertNotNull(ticker);
 
-        // Advance 9 ticks
-        for (int i = 0; i < 9; i++) {
-            ticker.run();
-        }
-        String modeAfter9 = field("currentMode");
-        assertEquals("sdr", modeAfter9);
-        assertEquals(activity.getString(R.string.hud_title_sdr_countdown, 1), hudTitleLabel.getText().toString());
-
-        // Advance 10th tick (triggers transition to HDR)
+        Player.Listener listener = field("playbackListener");
+        ShadowSystemClock.advanceBy(java.time.Duration.ofSeconds(20));
+        ticker.run();
+        assertEquals("Loading time must not count", activity.getString(R.string.hud_title_sdr_countdown, 10),
+            hudTitleLabel.getText().toString());
+        listener.onIsPlayingChanged(true);
+        ShadowSystemClock.advanceBy(java.time.Duration.ofSeconds(3));
+        listener.onIsPlayingChanged(false);
+        ticker.run();
+        assertEquals(activity.getString(R.string.hud_title_sdr_countdown, 7), hudTitleLabel.getText().toString());
+        ShadowSystemClock.advanceBy(java.time.Duration.ofSeconds(20));
+        ticker.run();
+        assertEquals("sdr", field("currentMode"));
+        assertEquals("Buffering must not count", activity.getString(R.string.hud_title_sdr_countdown, 7),
+            hudTitleLabel.getText().toString());
+        listener.onIsPlayingChanged(true);
+        ShadowSystemClock.advanceBy(java.time.Duration.ofSeconds(7));
         ticker.run();
         String modeAfter10 = field("currentMode");
         assertEquals("hdr", modeAfter10);
@@ -180,7 +191,7 @@ public class LayoutTest {
 
         LinearLayout bottomHud = field("fullscreenBottomHud");
         assertNotNull(bottomHud);
-        FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) bottomHud.getLayoutParams();
+        LinearLayout.LayoutParams params = (LinearLayout.LayoutParams) bottomHud.getLayoutParams();
         assertNotNull(params);
 
         Method dpMethod = MainActivity.class.getDeclaredMethod("dp", float.class);
@@ -199,13 +210,13 @@ public class LayoutTest {
         assertNotNull(btnRestart);
         assertNotNull(btnExit);
 
-        int minH = (int) dpMethod.invoke(activity, 36f);
-        int minW = (int) dpMethod.invoke(activity, 44f);
+        int minH = (int) dpMethod.invoke(activity, 48f);
+        int minW = (int) dpMethod.invoke(activity, 48f);
 
         for (Button b : new Button[] {btnWatchSdr, btnWatchHdr, btnRestart, btnExit}) {
             assertTrue("Button must enforce singleLine", b.isSingleLine());
-            assertTrue("Button minHeight must be >= 36dp", b.getMinHeight() >= minH);
-            assertTrue("Button minimumWidth must be >= 44dp", b.getMinimumWidth() >= minW);
+            assertTrue("Button minHeight must be >= 48dp", b.getMinHeight() >= minH);
+            assertTrue("Button minimumWidth must be >= 48dp", b.getMinimumWidth() >= minW);
         }
     }
 
@@ -470,7 +481,7 @@ public class LayoutTest {
         Button btnCommunityReport = field("btnCommunityReport");
         assertNotNull("btnCommunityReport must exist", btnCommunityReport);
         assertEquals(activity.getString(R.string.btn_community_report), btnCommunityReport.getText().toString());
-        assertTrue("Button should be single line", btnCommunityReport.isSingleLine());
+        assertFalse("Long dashboard labels should wrap", btnCommunityReport.isSingleLine());
 
         Method dpMethod = MainActivity.class.getDeclaredMethod("dp", float.class);
         dpMethod.setAccessible(true);
@@ -746,7 +757,7 @@ public class LayoutTest {
         assertEquals("✅ Relatório enviado com sucesso! Obrigado pela contribuição.", ptRes.getString(R.string.report_submit_success));
     }
 
-    @Test public void oledSuiteCardLaunchesAllFourSuitesAndCyclesVariants() throws Exception {
+    @Test public void oledSuiteCardLaunchesExistingSuitesAndCyclesVariants() throws Exception {
         LinearLayout oledCard = field("oledCard");
         assertNotNull("OLED suite card must exist", oledCard);
         LinearLayout cardsContainer = field("cardsContainer");
@@ -900,5 +911,170 @@ public class LayoutTest {
         btnWatchHdr.performClick();
         assertFalse("Manual HDR switch must cancel automated countdown", (Boolean) field("isAutomatedTest"));
         assertEquals("hdr", field("currentMode"));
+        ShadowSystemClock.advanceBy(java.time.Duration.ofSeconds(20));
+        Runnable ticker = field("testCountdownTicker");
+        ticker.run();
+        assertEquals("hdr", field("currentMode"));
+    }
+
+    @Test public void rampStaysSdrAndLadderButtonsFollowVideoVariants() throws Exception {
+        Method startSuite = MainActivity.class.getDeclaredMethod("startOledSuite", int.class);
+        startSuite.setAccessible(true);
+        startSuite.invoke(activity, OledTestView.MODE_LADDER);
+        Button next = field("btnNext");
+        Button hdr = field("btnOledHdr");
+        next.performClick();
+        assertFalse(hdr.isSelected());
+        next.performClick();
+        assertTrue(hdr.isSelected());
+        assertEquals(android.content.pm.ActivityInfo.COLOR_MODE_HDR, activity.getWindow().getColorMode());
+        next.performClick();
+        assertTrue(hdr.isSelected());
+
+        startSuite.invoke(activity, OledTestView.MODE_RAMP);
+        assertEquals(View.GONE, hdr.getVisibility());
+        assertEquals(android.content.pm.ActivityInfo.COLOR_MODE_DEFAULT, activity.getWindow().getColorMode());
+        assertEquals(1f, activity.getWindow().getDesiredHdrHeadroom(), 0.001f);
+        OledTestView view = field("oledView");
+        assertEquals(OledTestView.MODE_RAMP, view.getMode());
+        assertFalse(view.isRunning());
+        Button previous = field("btnPrev");
+        previous.performClick();
+        assertEquals(6, view.getVariant());
+        assertTrue(view.getContentDescription().toString().contains(activity.getString(R.string.oled_ramp_yellow)));
+        android.widget.SeekBar seek = field("brightnessSeek");
+        seek.setProgress(25);
+        org.robolectric.Shadows.shadowOf(seek).getOnSeekBarChangeListener().onProgressChanged(seek, 25, true);
+        next.performClick();
+        assertEquals(0, view.getVariant());
+        assertEquals(0.25f, activity.getWindow().getAttributes().screenBrightness, 0.001f);
+        TextView brightness = field("brightnessLabel");
+        assertEquals(activity.getString(R.string.oled_brightness_value, 25), brightness.getText().toString());
+    }
+
+    @Test public void pauseStopBackAndExitRestoreAllDisplayOverrides() throws Exception {
+        WindowManager.LayoutParams original = activity.getWindow().getAttributes();
+        original.screenBrightness = 0.37f;
+        original.preferredDisplayModeId = 7;
+        activity.getWindow().setAttributes(original);
+        activity.getWindow().setColorMode(android.content.pm.ActivityInfo.COLOR_MODE_WIDE_COLOR_GAMUT);
+        activity.getWindow().setDesiredHdrHeadroom(2.5f);
+        for (int exit = 0; exit < 3; exit++) {
+            call("startAutomatedTest");
+            Button hdr = field("btnWatchHdr");
+            hdr.performClick();
+            call("startAutomatedTest"); // Restart must keep the original window values.
+            if (exit == 0) call("exitFullscreen");
+            else if (exit == 1) activity.onBackPressed();
+            else controller.pause();
+            assertFalse((Boolean) field("fullscreen"));
+            assertEquals(0.37f, activity.getWindow().getAttributes().screenBrightness, 0.001f);
+            assertEquals(7, activity.getWindow().getAttributes().preferredDisplayModeId);
+            assertEquals(android.content.pm.ActivityInfo.COLOR_MODE_WIDE_COLOR_GAMUT, activity.getWindow().getColorMode());
+            assertEquals(2.5f, activity.getWindow().getDesiredHdrHeadroom(), 0.001f);
+            assertFalse((Boolean) field("isAutomatedTest"));
+        }
+        controller.stop();
+        assertNull(field("player"));
+        PlayerView view = field("playerView");
+        assertNull(view.getPlayer());
+        controller.start().resume();
+        call("startAutomatedTest");
+        assertNotNull(field("player"));
+    }
+
+    @Test public void playbackFailureExitsAndAllowsANewTest() throws Exception {
+        call("startAutomatedTest");
+        Player.Listener listener = field("playbackListener");
+        listener.onPlayerError(new PlaybackException("decoder failure", null, PlaybackException.ERROR_CODE_DECODING_FAILED));
+        assertFalse((Boolean) field("fullscreen"));
+        assertFalse((Boolean) field("isAutomatedTest"));
+        assertEquals(-1f, activity.getWindow().getAttributes().screenBrightness, 0.001f);
+        AlertDialog dialog = ShadowAlertDialog.getLatestAlertDialog();
+        assertTrue(dialog.isShowing());
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).performClick();
+        call("startAutomatedTest");
+        assertTrue((Boolean) field("fullscreen"));
+        assertEquals("sdr", field("currentMode"));
+    }
+
+    @Test @Config(sdk = 31)
+    public void rotationAndWindowResizePreserveSuiteOnAndroid12() throws Exception {
+        Method startSuite = MainActivity.class.getDeclaredMethod("startOledSuite", int.class);
+        startSuite.setAccessible(true);
+        startSuite.invoke(activity, OledTestView.MODE_DSE);
+        Button next = field("btnNext");
+        for (int i = 0; i < 6; i++) next.performClick();
+        OledTestView view = field("oledView");
+        assertTrue(view.dsePan());
+        Configuration rotated = new Configuration(activity.getResources().getConfiguration());
+        rotated.orientation = Configuration.ORIENTATION_LANDSCAPE;
+        rotated.screenWidthDp = 800;
+        rotated.screenHeightDp = 400;
+        controller.configurationChange(rotated);
+        assertSame("Manifest handles rotation without replacing the active test", activity, controller.get());
+        assertTrue((Boolean) field("fullscreen"));
+        assertEquals(OledTestView.MODE_DSE, view.getMode());
+        assertTrue(view.dsePan());
+        assertTrue(view.isRunning());
+
+        FrameLayout root = field("root");
+        float density = activity.getResources().getDisplayMetrics().density;
+        root.layout(0, 0, (int) (320 * density), (int) (480 * density));
+        call("applyResponsiveLayout");
+        LinearLayout bottom = field("fullscreenBottomHud");
+        assertEquals(LinearLayout.VERTICAL, bottom.getOrientation());
+        call("exitFullscreen");
+        call("applyResponsiveLayout");
+        LinearLayout cards = field("cardsContainer");
+        assertEquals("Leaving a resized test must update dashboard layout", LinearLayout.VERTICAL, cards.getOrientation());
+        assertFalse(view.isRunning());
+        assertEquals(-1f, activity.getWindow().getAttributes().screenBrightness, 0.001f);
+    }
+
+    @Test @Config(qualifiers = "pt-rPT-w320dp-h480dp-port")
+    public void largeTextAndTouchExplorationKeepControlsReachable() throws Exception {
+        controller.pause().stop().destroy();
+        org.robolectric.RuntimeEnvironment.setFontScale(2f);
+        controller = Robolectric.buildActivity(MainActivity.class).create().start().resume().visible();
+        activity = controller.get();
+        android.view.accessibility.AccessibilityManager accessibility = activity.getSystemService(
+            android.view.accessibility.AccessibilityManager.class);
+        org.robolectric.Shadows.shadowOf(accessibility).setTouchExplorationEnabled(true);
+        call("startAutomatedTest");
+        FrameLayout root = field("root");
+        int w = (int) (320 * activity.getResources().getDisplayMetrics().density);
+        int h = (int) (480 * activity.getResources().getDisplayMetrics().density);
+        root.measure(View.MeasureSpec.makeMeasureSpec(w, View.MeasureSpec.EXACTLY),
+            View.MeasureSpec.makeMeasureSpec(h, View.MeasureSpec.EXACTLY));
+        root.layout(0, 0, w, h);
+        call("applyFullscreenLayout");
+        root.measure(View.MeasureSpec.makeMeasureSpec(w, View.MeasureSpec.EXACTLY),
+            View.MeasureSpec.makeMeasureSpec(h, View.MeasureSpec.EXACTLY));
+        root.layout(0, 0, w, h);
+        LinearLayout bottom = field("fullscreenBottomHud");
+        assertEquals(LinearLayout.VERTICAL, bottom.getOrientation());
+        for (int i = 0; i < bottom.getChildCount(); i++) {
+            View button = bottom.getChildAt(i);
+            if (button.getVisibility() != View.VISIBLE) continue;
+            assertTrue(button.getWidth() > 0);
+            assertTrue(button.getRight() <= bottom.getWidth());
+        }
+        assertTrue(bottom.getParent().getParent() instanceof android.widget.ScrollView);
+        FrameLayout hud = field("fullscreenHud");
+        Runnable hide = field("hideFullscreenHud");
+        hide.run();
+        assertEquals("Touch exploration must not lose its controls to the timer", View.VISIBLE, hud.getVisibility());
+        Button exit = field("btnExit");
+        assertEquals(activity.getString(R.string.a11y_exit_test), exit.getContentDescription());
+        Button hideButton = (Button) bottom.getChildAt(bottom.getChildCount() - 1);
+        hideButton.performClick();
+        assertEquals(View.GONE, hud.getVisibility());
+        PlayerView playerView = field("playerView");
+        playerView.performClick();
+        assertEquals(View.VISIBLE, hud.getVisibility());
+        call("exitFullscreen");
+        Button start = field("btnStartTest");
+        assertFalse("Long dashboard buttons need to wrap", start.isSingleLine());
     }
 }

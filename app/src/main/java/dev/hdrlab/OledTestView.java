@@ -14,7 +14,8 @@ import android.view.View;
  * OS colour pipeline, panel gamma and vendor processing still apply.
  */
 final class OledTestView extends View implements Choreographer.FrameCallback {
-    static final int MODE_SMEAR = 0, MODE_LADDER = 1, MODE_DSE = 2, MODE_APL = 3, MODE_BURNIN = 4;
+    static final int MODE_SMEAR = 0, MODE_LADDER = 1, MODE_DSE = 2, MODE_APL = 3, MODE_BURNIN = 4,
+        MODE_RAMP = 5;
 
     static final int[] SMEAR_CODES = {0x05, 0x08, 0x0F, 0x18, 0x20};
     static final int[] SMEAR_SPEEDS = {100, 250, 500, 1000, 2000};
@@ -26,6 +27,8 @@ final class OledTestView extends View implements Choreographer.FrameCallback {
         0xFFFFFFFF, 0xFF808080, 0xFF333333,
         0xFF00FFFF, 0xFFFF00FF, 0xFFFFFF00
     };
+    // Grayscale, red, green, blue, cyan, magenta, yellow.
+    private static final int[] RAMP_CHANNELS = {7, 1, 2, 4, 6, 5, 3};
     private static final float DSE_PAN_SPEED = 60f;
     private static final int DSE_STRIPE_PERIOD = 128, DSE_STRIPE_WIDTH = 32;
 
@@ -56,6 +59,7 @@ final class OledTestView extends View implements Choreographer.FrameCallback {
             case MODE_DSE: return DSE_PERCENT.length * 2;
             case MODE_APL: return APL_PERCENT.length;
             case MODE_BURNIN: return BURNIN_COLORS.length;
+            case MODE_RAMP: return RAMP_CHANNELS.length;
             default: return 1;
         }
     }
@@ -79,6 +83,7 @@ final class OledTestView extends View implements Choreographer.FrameCallback {
         offset = 0f;
         fps = 0f;
         droppedFrames = 0;
+        framesInWindow = 0;
         statsText = "";
         invalidate();
         start();
@@ -89,9 +94,11 @@ final class OledTestView extends View implements Choreographer.FrameCallback {
     }
 
     void start() {
-        if (running || !isAnimated() || getVisibility() != VISIBLE) return;
+        if (running || !isAnimated() || getVisibility() != VISIBLE || !isAttachedToWindow()) return;
         running = true;
         lastFrameNanos = 0;
+        framesInWindow = 0;
+        statsText = "";
         Choreographer.getInstance().postFrameCallback(this);
     }
 
@@ -103,6 +110,11 @@ final class OledTestView extends View implements Choreographer.FrameCallback {
     @Override protected void onDetachedFromWindow() {
         stop();
         super.onDetachedFromWindow();
+    }
+
+    @Override protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        start();
     }
 
     @Override public void doFrame(long frameTimeNanos) {
@@ -159,6 +171,7 @@ final class OledTestView extends View implements Choreographer.FrameCallback {
             case MODE_DSE: drawDse(canvas, w, h); break;
             case MODE_APL: drawApl(canvas, w, h); break;
             case MODE_BURNIN: canvas.drawColor(burnInColor()); break;
+            case MODE_RAMP: drawRamp(canvas, w, h); break;
         }
         if (running && !statsText.isEmpty()) {
             canvas.drawText(statsText, text.getTextSize(), h - text.getTextSize() * 2, text);
@@ -213,6 +226,42 @@ final class OledTestView extends View implements Choreographer.FrameCallback {
         float bw = w * scale, bh = h * scale;
         fill.setColor(Color.WHITE);
         canvas.drawRect((w - bw) / 2f, (h - bh) / 2f, (w + bw) / 2f, (h + bh) / 2f, fill);
+    }
+
+    private void drawRamp(Canvas canvas, int w, int h) {
+        float padding = 8f * getResources().getDisplayMetrics().density;
+        float labelHeight = text.getTextSize();
+        float top = Math.max(h * 0.2f, labelHeight + padding * 2f);
+        float bottom = Math.min(h * 0.8f, h - labelHeight * 2f - padding * 2f);
+        if (bottom <= top) {
+            top = h * 0.35f;
+            bottom = h * 0.65f;
+        }
+
+        int channels = RAMP_CHANNELS[variant];
+        for (int code = 0; code < 256; code++) {
+            fill.setColor(Color.rgb(
+                (channels & 1) != 0 ? code : 0,
+                (channels & 2) != 0 ? code : 0,
+                (channels & 4) != 0 ? code : 0));
+            canvas.drawRect(code * w / 256f, top, (code + 1) * w / 256f, bottom, fill);
+        }
+
+        int originalColor = text.getColor();
+        float originalSize = text.getTextSize();
+        text.setColor(gray(0xB0));
+        String scale = getContext().getString(R.string.oled_ramp_scale);
+        float scaleWidth = text.measureText(scale);
+        if (scaleWidth > w - padding * 2f && w > padding * 2f) {
+            text.setTextSize(originalSize * (w - padding * 2f) / scaleWidth);
+        }
+        canvas.drawText(scale, (w - text.measureText(scale)) / 2f, top - padding, text);
+        text.setTextSize(originalSize);
+        float baseline = bottom + padding + labelHeight;
+        canvas.drawText("0", padding, baseline, text);
+        canvas.drawText("128", (w - text.measureText("128")) / 2f, baseline, text);
+        canvas.drawText("255", w - padding - text.measureText("255"), baseline, text);
+        text.setColor(originalColor);
     }
 
     private static int gray(int c) {

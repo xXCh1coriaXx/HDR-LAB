@@ -34,25 +34,26 @@
     <string name="card_quick_test_title">Teste Rápido: SDR vs HDR</string>
     <string name="card_quick_test_subtitle">Comparação automatizada de 10 segundos em ecrã inteiro</string>
     <string name="test_how_it_works_title">Como funciona o teste:</string>
-    <string name="test_how_it_works_text">• 10 segundos em SDR, com transição automática para HDR em ecrã cheio.\n• O ecrã é colocado com brilho no máximo (100%) durante o teste.</string>
+    <string name="test_how_it_works_text">• Apresenta SDR durante 10 segundos e depois solicita HDR10/PQ.\n• O ecrã inteiro inicia com brilho máximo da janela; o comportamento do sistema pode variar.</string>
     <string name="test_what_to_look_title">O que deves observar no ecrã:</string>
-    <string name="test_what_to_look_text">• Fundo Preto Puro: Em ecrãs OLED, o fundo é preto absoluto (píxeis desligados). Em ecrãs LCD, poderás notar um ligeiro brilho cinzento (backlight glow).\n• 6 Degraus Quase-Preto: Observa as 6 barras de cinzento suave (1%, 2%…). Devem ser percetíveis sem clarear o fundo preto ao redor.</string>
+    <string name="test_what_to_look_text">• Observa o fundo preto e regista qualquer brilho visível.\n• Compara os seis degraus de referência quase-preto e regista quantos distingues. São níveis de sinal codificados, não percentagens de brilho nem medições do ecrã; as condições de observação e o processamento afetam a visibilidade.</string>
     <string name="btn_start_test">▶ Iniciar Teste SDR vs HDR em Ecrã Cheio</string>
     <string name="btn_community_report">📋 Submeter Relatório Comunitário</string>
 
     <!-- Fullscreen HUD -->
     <string name="hud_title_sdr_countdown">MODO SDR · %1$ds restantes</string>
-    <string name="hud_tip_sdr_countdown">Observe o fundo preto e a visibilidade das 6 barras de cinzento.</string>
+    <string name="hud_tip_sdr_countdown">Observa o preto e os seis degraus; regista os visíveis. São referências de sinal.</string>
     <string name="hud_title_sdr_active">MODO SDR ATIVADO</string>
-    <string name="hud_tip_sdr_active">Modo SDR manual. Observe o fundo preto e as barras.</string>
+    <string name="hud_tip_sdr_active">Observa o preto e os seis degraus; regista os visíveis. São referências de sinal.</string>
     <string name="hud_title_hdr_active">MODO HDR (HDR10 / PQ) ATIVADO</string>
-    <string name="hud_tip_hdr_active">O ecrã ativa o modo HDR. O fundo deve manter-se preto puro.</string>
+    <string name="hud_tip_hdr_active">HDR10/PQ solicitado. Regista o preto e os degraus visíveis; isto não confirma saída HDR.</string>
 
     <!-- HUD Control Buttons -->
     <string name="hud_btn_watch_sdr">Ver em SDR</string>
     <string name="hud_btn_watch_hdr">Ver em HDR</string>
     <string name="hud_btn_restart">⟲ Reiniciar</string>
     <string name="hud_btn_exit">✕ Sair</string>
+    <string name="hud_btn_hide">Ocultar controlos</string>
 
     <!-- Technical Report & Share Dialogs -->
     <string name="dialog_technical_report_title">Relatório Técnico do Dispositivo</string>
@@ -97,36 +98,54 @@
 
     <!-- Cartão 3: Bateria de Testes OLED -->
     <string name="card_oled_title">Bateria de Testes OLED</string>
-    <string name="card_oled_subtitle">Padrões em ecrã cheio para arrastamento, black crush, uniformidade, ABL e burn-in</string>
+    <string name="card_oled_subtitle">Padrões em ecrã inteiro para movimento, quase-preto, uniformidade, ABL, burn-in e rampas SDR</string>
     <string name="oled_caveat">Apenas observações visuais: os padrões usam níveis de sinal, não luminância medida. O processamento do fabricante, o brilho e a luz ambiente afetam os resultados.</string>
     <string name="btn_oled_smear">Arrastamento Preto-Escuro (Movimento)</string>
     <string name="btn_oled_ladder">Escada Quase-Preto e Black Crush</string>
     <string name="btn_oled_dse">Uniformidade Quase-Preto / DSE</string>
     <string name="btn_oled_apl">Janelas ABL / APL e Preto Flutuante</string>
     <string name="btn_oled_burnin">Verificação de Burn-In e Subpíxeis</string>
+    <string name="btn_oled_ramp">Rampas SDR de Cores e Cinzentos</string>
 
     <!-- HUD OLED em ecrã cheio -->
     <string name="hud_btn_prev">◀ Anterior</string>
     <string name="hud_btn_next">Seguinte ▶</string>
     <string name="hud_btn_oled_sdr">Modo: SDR</string>
     <string name="hud_btn_oled_hdr">Modo: HDR</string>
+    <string name="a11y_previous_pattern">Padrão anterior</string>
+    <string name="a11y_next_pattern">Padrão seguinte</string>
+    <string name="a11y_exit_test">Sair do teste</string>
+    <string name="a11y_restart_test">Reiniciar teste</string>
     <string name="oled_brightness">Brilho</string>
     <string name="oled_dir_horizontal">horizontal</string>
     <string name="oled_dir_vertical">vertical</string>
     <string name="oled_title_smear">ARRASTAMENTO · %1$d px/s · %2$s</string>
-    <string name="oled_tip_smear">Observa as extremidades traseiras dos blocos escuros: há rastos roxos ou azuis? Compara com brilho baixo e alto.</string>
+    <string name="oled_tip_smear">Procura rastos atrás dos blocos em movimento; regista a cor e as condições. O movimento e o processamento podem imitar a resposta do ecrã.</string>
     <string name="oled_title_ladder_canvas">BLACK CRUSH · Pipeline A: Canvas / IU do sistema</string>
     <string name="oled_title_ladder_video">BLACK CRUSH · Pipeline B: vídeo %1$s</string>
-    <string name="oled_tip_ladder_canvas" formatted="false">Encontra o primeiro quadrado numerado que distingues do preto puro (sinal de 0,5% a 10%).</string>
-    <string name="oled_tip_ladder_video">Reprodução Media3 em SurfaceView do vídeo de degraus de referência. Compara os degraus visíveis com a escada Canvas.</string>
+    <string name="oled_tip_ladder_canvas">Compara os quadrados e regista o primeiro visível. Os códigos são referências de sinal, não luminância; a visibilidade varia.</string>
+    <string name="oled_tip_ladder_video">Compara os degraus visíveis e regista o primeiro; compara com Canvas. O processamento de vídeo e as condições de observação afetam os resultados.</string>
     <string name="oled_title_dse">UNIFORMIDADE · %1$.0f%% · %2$s</string>
     <string name="oled_dse_static">estático</string>
     <string name="oled_dse_pan">deslocamento lento</string>
-    <string name="oled_tip_dse">Procura faixas verticais, manchas ou textura irregular. O deslocamento lento ajuda a revelar não-uniformidades fixas do painel.</string>
+    <string name="oled_tip_dse">Procura faixas ou manchas irregulares; regista a localização e o modo. O processamento e as condições de observação afetam o aspeto.</string>
     <string name="oled_title_apl">ABL / APL · janela de %1$.0f%%</string>
-    <string name="oled_tip_apl">O preto à volta mantém-se desligado? A caixa branca escurece à medida que a janela cresce?</string>
+    <string name="oled_tip_apl">Compara o fundo e a janela branca em vários tamanhos; regista as alterações visíveis. É uma observação visual, não uma medição de brilho.</string>
     <string name="oled_title_burnin">BURN-IN · %1$s</string>
-    <string name="oled_tip_burnin">Procura sombras da barra de estado ou do teclado, manchas de cor ou desgaste nos subpíxeis azuis.</string>
+    <string name="oled_tip_burnin">Procura formas que pareçam persistentes ou diferenças de cor; regista a cor e o padrão. Isto não permite diagnosticar burn-in.</string>
+    <string name="oled_title_ramp">RAMPA SDR · %1$s</string>
+    <string name="oled_tip_ramp">Procura bandas ou realces sem detalhe; regista a cor e as condições. Os níveis de sinal não são medições do ecrã.</string>
+    <string name="oled_ramp_scale">Sinal SDR de 8 bits · 0 → 255</string>
+    <string name="oled_ramp_gray">Cinzento</string>
+    <string name="oled_ramp_red">Vermelho</string>
+    <string name="oled_ramp_green">Verde</string>
+    <string name="oled_ramp_blue">Azul</string>
+    <string name="oled_ramp_cyan">Ciano</string>
+    <string name="oled_ramp_magenta">Magenta</string>
+    <string name="oled_ramp_yellow">Amarelo</string>
+    <string name="oled_brightness_value">Brilho: %1$d%%</string>
+    <string name="oled_pattern_description">%1$s. Toca para mostrar os controlos.</string>
+    <string name="playback_error">Falha na reprodução: %1$s. Fecha esta mensagem e inicia o teste novamente.</string>
     <string name="oled_burnin_red">Vermelho Puro (Subpíxel R)</string>
     <string name="oled_burnin_green">Verde Puro (Subpíxel G)</string>
     <string name="oled_burnin_blue">Azul Puro (Subpíxel B)</string>

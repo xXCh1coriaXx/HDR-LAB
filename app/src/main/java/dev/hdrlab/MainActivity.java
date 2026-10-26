@@ -15,12 +15,15 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.SystemClock;
 import android.view.Display;
 import android.view.Gravity;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowInsets;
 import android.view.WindowInsetsController;
 import android.view.WindowManager;
+import android.view.accessibility.AccessibilityManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.FrameLayout;
@@ -36,6 +39,7 @@ import androidx.media3.common.C;
 import androidx.media3.common.ColorInfo;
 import androidx.media3.common.MediaItem;
 import androidx.media3.common.Player;
+import androidx.media3.common.PlaybackException;
 import androidx.media3.common.util.UnstableApi;
 import androidx.media3.exoplayer.DefaultRenderersFactory;
 import androidx.media3.exoplayer.ExoPlayer;
@@ -57,8 +61,9 @@ import java.util.concurrent.Executors;
 
 @UnstableApi
 public final class MainActivity extends Activity {
-    private static final int BG = 0xff101411, CARD = 0xff1b211c, TEXT = 0xffedf2e9;
-    private static final int MUTED = 0xffa7b2a5, ACCENT = 0xffc8f578, CARD_STROKE = 0xff2c372c;
+    private static final int BG = Color.BLACK, CARD = 0xff161616, TEXT = 0xfff5f5f5;
+    private static final int MUTED = 0xffb8b8b8, ACCENT = 0xff69f0ae, CARD_STROKE = 0xff343434;
+    private static final int RED = 0xffff6b6b, BLUE = 0xff82b1ff;
     /** Pipeline B ladder variants reuse the packaged reference step videos. */
     private static final String[] LADDER_VIDEOS = {"sdr_steps", "pq_steps", "hlg_steps"};
     private static final int[] LADDER_VIDEO_LABELS = {R.string.oled_video_sdr, R.string.oled_video_pq, R.string.oled_video_hlg};
@@ -66,6 +71,11 @@ public final class MainActivity extends Activity {
         R.string.oled_burnin_red, R.string.oled_burnin_green, R.string.oled_burnin_blue,
         R.string.oled_burnin_white, R.string.oled_burnin_gray50, R.string.oled_burnin_gray20,
         R.string.oled_burnin_cyan, R.string.oled_burnin_magenta, R.string.oled_burnin_yellow
+    };
+    private static final int[] RAMP_LABELS = {
+        R.string.oled_ramp_gray, R.string.oled_ramp_red, R.string.oled_ramp_green,
+        R.string.oled_ramp_blue, R.string.oled_ramp_cyan, R.string.oled_ramp_magenta,
+        R.string.oled_ramp_yellow
     };
 
     private final Handler handler = new Handler(Looper.getMainLooper());
@@ -92,6 +102,7 @@ public final class MainActivity extends Activity {
 
     private PlayerView playerView;
     private ExoPlayer player;
+    private Player.Listener playbackListener;
 
     private FrameLayout fullscreenHud;
     private LinearLayout fullscreenTopHud;
@@ -110,37 +121,42 @@ public final class MainActivity extends Activity {
     private Button btnOledHdr;
     private LinearLayout oledBrightnessRow;
     private SeekBar brightnessSeek;
+    private TextView brightnessLabel;
     private int oledVariant;
     private boolean oledHdrMode;
     private int originalDisplayModeId;
     private int originalColorMode;
+    private float originalHdrHeadroom;
 
     private boolean fullscreen;
     private String currentMode = "sdr";
     private boolean isAutomatedTest;
-    private int testSecondsElapsed;
+    private long testPlaybackMs;
+    private long testPlayingSinceMs = -1;
     private float originalBrightness = -1f;
     private JSONObject deviceSnapshot;
     private Diagnostics.DeviceSummary currentSummary;
 
     private final Runnable hideFullscreenHud = () -> {
-        if (fullscreenHud != null && fullscreen) {
-            fullscreenHud.animate().alpha(0f).setDuration(250)
-                .withEndAction(() -> { if (fullscreenHud != null) fullscreenHud.setVisibility(View.GONE); }).start();
+        AccessibilityManager accessibility = getSystemService(AccessibilityManager.class);
+        if (fullscreenHud != null && fullscreen && !fullscreenHud.hasFocus()
+            && (accessibility == null || !accessibility.isTouchExplorationEnabled())) {
+            fullscreenHud.setVisibility(View.GONE);
         }
     };
 
     private final Runnable testCountdownTicker = new Runnable() {
         @Override public void run() {
             if (!fullscreen || !isAutomatedTest) return;
-            testSecondsElapsed++;
-            int remaining = 10 - testSecondsElapsed;
+            long playedMs = testPlaybackMs + (testPlayingSinceMs < 0 ? 0
+                : SystemClock.elapsedRealtime() - testPlayingSinceMs);
+            int remaining = (int) Math.max(0, (10_000 - playedMs + 999) / 1000);
             if (remaining > 0) {
                 updateHudMode("sdr", remaining);
-                handler.postDelayed(this, 1000);
+                handler.removeCallbacks(this);
+                handler.postDelayed(this, 250);
             } else {
-                isAutomatedTest = false;
-                switchToHdr(true);
+                switchToHdr();
             }
         }
     };
@@ -180,6 +196,8 @@ public final class MainActivity extends Activity {
                 root.setPadding(bars.left, bars.top, bars.right, bars.bottom);
             } else {
                 root.setPadding(0, 0, 0, 0);
+                android.graphics.Insets cutout = insets.getInsets(WindowInsets.Type.displayCutout());
+                fullscreenHud.setPadding(cutout.left, cutout.top, cutout.right, cutout.bottom);
             }
             return insets;
         });
@@ -221,9 +239,10 @@ public final class MainActivity extends Activity {
     }
 
     private void buildDeviceCapabilitiesCard() {
-        deviceCapabilitiesCard = card();
-        TextView capTitle = label(getString(R.string.card_capabilities_title), 18, TEXT);
+        deviceCapabilitiesCard = card(RED);
+        TextView capTitle = label(getString(R.string.card_capabilities_title), 18, RED);
         capTitle.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        capTitle.setAccessibilityHeading(true);
         deviceCapabilitiesCard.addView(capTitle);
         deviceCapabilitiesCard.addView(label(getString(R.string.card_capabilities_subtitle), 12, MUTED));
 
@@ -245,9 +264,10 @@ public final class MainActivity extends Activity {
     }
 
     private void buildQuickTestCard() {
-        quickTestCard = card();
-        TextView testTitle = label(getString(R.string.card_quick_test_title), 18, TEXT);
+        quickTestCard = card(ACCENT);
+        TextView testTitle = label(getString(R.string.card_quick_test_title), 18, ACCENT);
         testTitle.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        testTitle.setAccessibilityHeading(true);
         quickTestCard.addView(testTitle);
         quickTestCard.addView(label(getString(R.string.card_quick_test_subtitle), 12, MUTED));
 
@@ -283,9 +303,10 @@ public final class MainActivity extends Activity {
 
     /** Full-width card below the two responsive cards; it does not take part in their sizing. */
     private void buildOledCard() {
-        oledCard = card();
-        TextView title = label(getString(R.string.card_oled_title), 18, TEXT);
+        oledCard = card(BLUE);
+        TextView title = label(getString(R.string.card_oled_title), 18, BLUE);
         title.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        title.setAccessibilityHeading(true);
         oledCard.addView(title);
         oledCard.addView(label(getString(R.string.card_oled_subtitle), 12, MUTED));
         oledCard.addView(label(getString(R.string.oled_caveat), 12, TEXT));
@@ -294,6 +315,7 @@ public final class MainActivity extends Activity {
         oledCard.addView(button(getString(R.string.btn_oled_dse), () -> startOledSuite(OledTestView.MODE_DSE)));
         oledCard.addView(button(getString(R.string.btn_oled_apl), () -> startOledSuite(OledTestView.MODE_APL)));
         oledCard.addView(button(getString(R.string.btn_oled_burnin), () -> startOledSuite(OledTestView.MODE_BURNIN)));
+        oledCard.addView(button(getString(R.string.btn_oled_ramp), () -> startOledSuite(OledTestView.MODE_RAMP)));
         cardsLayout.addView(oledCard);
     }
 
@@ -322,14 +344,29 @@ public final class MainActivity extends Activity {
     private void buildFullscreenHud() {
         fullscreenHud = new FrameLayout(this);
         fullscreenHud.setVisibility(View.GONE);
+        ScrollView hudScroll = new ScrollView(this) {
+            @Override public boolean dispatchTouchEvent(MotionEvent event) {
+                handler.removeCallbacks(hideFullscreenHud);
+                boolean handled = super.dispatchTouchEvent(event);
+                if ((event.getActionMasked() == MotionEvent.ACTION_UP
+                    || event.getActionMasked() == MotionEvent.ACTION_CANCEL)
+                    && fullscreenHud.getVisibility() == View.VISIBLE) showFullscreenHud();
+                return handled;
+            }
+        };
+        hudScroll.setFillViewport(true);
+        LinearLayout hudContent = new LinearLayout(this);
+        hudContent.setOrientation(LinearLayout.VERTICAL);
+        hudScroll.addView(hudContent, new ScrollView.LayoutParams(-1, -2));
+        fullscreenHud.addView(hudScroll, new FrameLayout.LayoutParams(-1, -1));
 
         fullscreenTopHud = new LinearLayout(this);
         fullscreenTopHud.setOrientation(LinearLayout.VERTICAL);
         fullscreenTopHud.setGravity(Gravity.CENTER);
         GradientDrawable topPill = new GradientDrawable();
-        topPill.setColor(0xdd101411);
+        topPill.setColor(0xee101010);
         topPill.setCornerRadius(dp(16));
-        topPill.setStroke(dp(1), 0x55485546);
+        topPill.setStroke(dp(1), CARD_STROKE);
         fullscreenTopHud.setBackground(topPill);
         fullscreenTopHud.setPadding(dp(16), dp(10), dp(16), dp(10));
 
@@ -346,7 +383,8 @@ public final class MainActivity extends Activity {
         oledBrightnessRow = new LinearLayout(this);
         oledBrightnessRow.setGravity(Gravity.CENTER_VERTICAL);
         oledBrightnessRow.setVisibility(View.GONE);
-        oledBrightnessRow.addView(label(getString(R.string.oled_brightness), 12, MUTED));
+        brightnessLabel = label(getString(R.string.oled_brightness_value, 100), 12, MUTED);
+        oledBrightnessRow.addView(brightnessLabel);
         brightnessSeek = new SeekBar(this);
         brightnessSeek.setMin(1);
         brightnessSeek.setMax(100);
@@ -355,6 +393,7 @@ public final class MainActivity extends Activity {
         brightnessSeek.setThumbTintList(ColorStateList.valueOf(ACCENT));
         brightnessSeek.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override public void onProgressChanged(SeekBar bar, int progress, boolean fromUser) {
+                brightnessLabel.setText(getString(R.string.oled_brightness_value, progress));
                 if (!fromUser || !fullscreen) return;
                 // Window override only; exitFullscreen() restores the pre-fullscreen value.
                 WindowManager.LayoutParams lp = getWindow().getAttributes();
@@ -364,32 +403,38 @@ public final class MainActivity extends Activity {
             @Override public void onStartTrackingTouch(SeekBar bar) { handler.removeCallbacks(hideFullscreenHud); }
             @Override public void onStopTrackingTouch(SeekBar bar) { showFullscreenHud(); }
         });
-        oledBrightnessRow.addView(brightnessSeek, new LinearLayout.LayoutParams(dp(200), -2));
+        brightnessSeek.setMinimumHeight(dp(48));
+        oledBrightnessRow.addView(brightnessSeek, new LinearLayout.LayoutParams(0, dp(48), 1f));
         fullscreenTopHud.addView(oledBrightnessRow);
 
-        FrameLayout.LayoutParams topParams = new FrameLayout.LayoutParams(-2, -2, Gravity.TOP | Gravity.CENTER_HORIZONTAL);
+        LinearLayout.LayoutParams topParams = new LinearLayout.LayoutParams(-1, -2);
         topParams.topMargin = dp(44);
         topParams.leftMargin = dp(16);
         topParams.rightMargin = dp(16);
-        fullscreenHud.addView(fullscreenTopHud, topParams);
+        hudContent.addView(fullscreenTopHud, topParams);
+        hudContent.addView(new View(this), new LinearLayout.LayoutParams(1, 0, 1f));
 
         fullscreenBottomHud = new LinearLayout(this);
         fullscreenBottomHud.setOrientation(LinearLayout.HORIZONTAL);
         fullscreenBottomHud.setGravity(Gravity.CENTER);
         GradientDrawable bottomPill = new GradientDrawable();
-        bottomPill.setColor(0xdd101411);
+        bottomPill.setColor(0xee101010);
         bottomPill.setCornerRadius(dp(20));
-        bottomPill.setStroke(dp(1), 0x55485546);
+        bottomPill.setStroke(dp(1), CARD_STROKE);
         fullscreenBottomHud.setBackground(bottomPill);
         fullscreenBottomHud.setPadding(dp(6), dp(4), dp(6), dp(4));
 
         btnWatchSdr = hudButton(getString(R.string.hud_btn_watch_sdr), this::switchToSdr);
-        btnWatchHdr = hudButton(getString(R.string.hud_btn_watch_hdr), () -> switchToHdr(false));
+        btnWatchHdr = hudButton(getString(R.string.hud_btn_watch_hdr), this::switchToHdr);
         btnRestart = hudButton(getString(R.string.hud_btn_restart), this::restartTest);
         btnExit = hudButton(getString(R.string.hud_btn_exit), this::exitFullscreen);
         btnPrev = hudButton(getString(R.string.hud_btn_prev), () -> showOledVariant(oledView.getMode(), oledVariant - 1));
         btnNext = hudButton(getString(R.string.hud_btn_next), () -> showOledVariant(oledView.getMode(), oledVariant + 1));
         btnOledHdr = hudButton(getString(R.string.hud_btn_oled_sdr), this::toggleOledHdr);
+        btnPrev.setContentDescription(getString(R.string.a11y_previous_pattern));
+        btnNext.setContentDescription(getString(R.string.a11y_next_pattern));
+        btnRestart.setContentDescription(getString(R.string.a11y_restart_test));
+        btnExit.setContentDescription(getString(R.string.a11y_exit_test));
         btnPrev.setVisibility(View.GONE);
         btnNext.setVisibility(View.GONE);
         btnOledHdr.setVisibility(View.GONE);
@@ -401,12 +446,20 @@ public final class MainActivity extends Activity {
         fullscreenBottomHud.addView(btnNext);
         fullscreenBottomHud.addView(btnOledHdr);
         fullscreenBottomHud.addView(btnExit);
+        Button btnHide = hudButton(getString(R.string.hud_btn_hide), () -> {});
+        btnHide.setOnClickListener(v -> {
+            handler.removeCallbacks(hideFullscreenHud);
+            fullscreenHud.setVisibility(View.GONE);
+            (oledView.getVisibility() == View.VISIBLE ? oledView : playerView).requestFocus();
+        });
+        fullscreenBottomHud.addView(btnHide);
 
-        FrameLayout.LayoutParams bottomParams = new FrameLayout.LayoutParams(-2, -2, Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL);
+        LinearLayout.LayoutParams bottomParams = new LinearLayout.LayoutParams(-1, -2);
+        bottomParams.topMargin = dp(12);
         bottomParams.bottomMargin = dp(76);
         bottomParams.leftMargin = dp(8);
         bottomParams.rightMargin = dp(8);
-        fullscreenHud.addView(fullscreenBottomHud, bottomParams);
+        hudContent.addView(fullscreenBottomHud, bottomParams);
 
         fullscreenContainer.addView(fullscreenHud, new FrameLayout.LayoutParams(-1, -1));
     }
@@ -420,9 +473,9 @@ public final class MainActivity extends Activity {
         b.setBackgroundTintList(null);
         b.setGravity(Gravity.CENTER);
         b.setSingleLine(true);
-        b.setMinHeight(dp(36));
-        b.setMinimumWidth(dp(44));
-        b.setBackground(ripple(0x33252e25, 0x443b4739, 14));
+        b.setMinHeight(dp(48));
+        b.setMinimumWidth(dp(48));
+        b.setBackground(ripple(0xff222222, CARD_STROKE, 14));
         b.setPadding(dp(10), dp(4), dp(10), dp(4));
         LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(-2, -2);
         p.setMarginStart(dp(2));
@@ -445,7 +498,11 @@ public final class MainActivity extends Activity {
     }
 
     private void startAutomatedTest() {
+        cancelAutomatedTest();
+        if (player != null) player.pause();
         setFullscreen(true);
+        oledHdrMode = false;
+        applyDisplayColorMode(false);
         configureHudForOled(false);
         oledBrightnessRow.setVisibility(View.VISIBLE);
         brightnessSeek.setProgress(100);
@@ -453,7 +510,6 @@ public final class MainActivity extends Activity {
         oledView.setVisibility(View.GONE);
         playerView.setVisibility(View.VISIBLE);
         isAutomatedTest = true;
-        testSecondsElapsed = 0;
         currentMode = "sdr";
         playPattern("sdr_steps", 0);
         updateHudMode("sdr", 10);
@@ -463,10 +519,11 @@ public final class MainActivity extends Activity {
     }
 
     private void startOledSuite(int mode) {
+        cancelAutomatedTest();
         setFullscreen(true);
-        isAutomatedTest = false;
-        handler.removeCallbacks(testCountdownTicker);
+        oledHdrMode = false;
         configureHudForOled(true);
+        btnOledHdr.setVisibility(mode == OledTestView.MODE_RAMP ? View.GONE : View.VISIBLE);
         oledBrightnessRow.setVisibility(View.VISIBLE);
         brightnessSeek.setProgress(100);
         applyOledColorMode();
@@ -486,6 +543,7 @@ public final class MainActivity extends Activity {
     }
 
     private void toggleOledHdr() {
+        if (!fullscreen || oledView.getMode() == OledTestView.MODE_RAMP) return;
         oledHdrMode = !oledHdrMode;
         applyOledColorMode();
         if (oledView.getMode() == OledTestView.MODE_LADDER) {
@@ -501,29 +559,35 @@ public final class MainActivity extends Activity {
     }
 
     private void applyOledColorMode() {
-        getWindow().setColorMode(oledHdrMode ? ActivityInfo.COLOR_MODE_HDR : ActivityInfo.COLOR_MODE_DEFAULT);
-        if (Build.VERSION.SDK_INT >= 35) {
-            getWindow().setDesiredHdrHeadroom(oledHdrMode ? 0f : 1f);
-        }
+        applyDisplayColorMode(oledHdrMode);
         btnOledHdr.setSelected(oledHdrMode);
         btnOledHdr.setText((oledHdrMode ? "✓ " : "") + getString(oledHdrMode ? R.string.hud_btn_oled_hdr : R.string.hud_btn_oled_sdr));
         btnOledHdr.setTextColor(oledHdrMode ? ACCENT : TEXT);
         btnOledHdr.setTypeface(Typeface.DEFAULT, oledHdrMode ? Typeface.BOLD : Typeface.NORMAL);
-        btnOledHdr.setBackground(ripple(oledHdrMode ? 0x66252e25 : 0x33252e25, oledHdrMode ? ACCENT : 0x443b4739, 14));
+        btnOledHdr.setBackground(ripple(oledHdrMode ? 0x33416955 : 0x33222222, oledHdrMode ? ACCENT : CARD_STROKE, 14));
+    }
+
+    private void applyDisplayColorMode(boolean hdr) {
+        getWindow().setColorMode(hdr ? ActivityInfo.COLOR_MODE_HDR : ActivityInfo.COLOR_MODE_DEFAULT);
+        if (Build.VERSION.SDK_INT >= 35) getWindow().setDesiredHdrHeadroom(hdr ? 0f : 1f);
     }
 
     private void showOledVariant(int mode, int variant) {
+        if (!fullscreen) return;
         int count = mode == OledTestView.MODE_LADDER ? 1 + LADDER_VIDEOS.length : OledTestView.variantCount(mode);
         oledVariant = Math.floorMod(variant, count);
         oledBrightnessRow.setVisibility(View.VISIBLE);
         if (mode == OledTestView.MODE_LADDER && oledVariant > 0) {
             int videoIdx = oledVariant - 1;
+            oledHdrMode = videoIdx > 0;
+            applyOledColorMode();
             oledView.stop();
             oledView.setVisibility(View.GONE);
             playerView.setVisibility(View.VISIBLE);
             playPattern(LADDER_VIDEOS[videoIdx], 0);
             hudTitleLabel.setText(getString(R.string.oled_title_ladder_video, getString(LADDER_VIDEO_LABELS[videoIdx])));
             hudTipLabel.setText(getString(R.string.oled_tip_ladder_video));
+            updatePatternDescription();
             return;
         }
         if (player != null) player.pause();
@@ -553,14 +617,18 @@ public final class MainActivity extends Activity {
                 hudTitleLabel.setText(getString(R.string.oled_title_burnin, getString(BURNIN_LABELS[oledVariant])));
                 hudTipLabel.setText(getString(R.string.oled_tip_burnin));
                 break;
+            case OledTestView.MODE_RAMP:
+                hudTitleLabel.setText(getString(R.string.oled_title_ramp, getString(RAMP_LABELS[oledVariant])));
+                hudTipLabel.setText(getString(R.string.oled_tip_ramp));
+                break;
         }
+        updatePatternDescription();
     }
 
-    private void switchToHdr(boolean autoTransition) {
-        if (!autoTransition) {
-            isAutomatedTest = false;
-            handler.removeCallbacks(testCountdownTicker);
-        }
+    private void switchToHdr() {
+        if (!fullscreen) return;
+        cancelAutomatedTest();
+        applyDisplayColorMode(true);
         currentMode = "hdr";
         long pos = player != null ? player.getCurrentPosition() : 0;
         playPattern("pq_steps", pos);
@@ -569,8 +637,9 @@ public final class MainActivity extends Activity {
     }
 
     private void switchToSdr() {
-        isAutomatedTest = false;
-        handler.removeCallbacks(testCountdownTicker);
+        if (!fullscreen) return;
+        cancelAutomatedTest();
+        applyDisplayColorMode(false);
         currentMode = "sdr";
         long pos = player != null ? player.getCurrentPosition() : 0;
         playPattern("sdr_steps", pos);
@@ -580,6 +649,13 @@ public final class MainActivity extends Activity {
 
     private void restartTest() {
         startAutomatedTest();
+    }
+
+    private void cancelAutomatedTest() {
+        isAutomatedTest = false;
+        testPlaybackMs = 0;
+        testPlayingSinceMs = -1;
+        handler.removeCallbacks(testCountdownTicker);
     }
 
     private void setFullscreen(boolean enabled) {
@@ -593,6 +669,7 @@ public final class MainActivity extends Activity {
             originalBrightness = lp.screenBrightness;
             originalDisplayModeId = lp.preferredDisplayModeId;
             originalColorMode = getWindow().getColorMode();
+            if (Build.VERSION.SDK_INT >= 35) originalHdrHeadroom = getWindow().getDesiredHdrHeadroom();
         }
         lp.screenBrightness = 1.0f;
         Display display = Diagnostics.defaultDisplay(this);
@@ -612,13 +689,14 @@ public final class MainActivity extends Activity {
 
         workspaceLayout.setVisibility(View.GONE);
         fullscreenContainer.setVisibility(View.VISIBLE);
+        root.setPadding(0, 0, 0, 0);
+        root.requestApplyInsets();
     }
 
     private void exitFullscreen() {
         if (!fullscreen) return;
         fullscreen = false;
-        isAutomatedTest = false;
-        handler.removeCallbacks(testCountdownTicker);
+        cancelAutomatedTest();
         handler.removeCallbacks(hideFullscreenHud);
         if (fullscreenHud != null) fullscreenHud.setVisibility(View.GONE);
         if (oledView != null) {
@@ -634,7 +712,7 @@ public final class MainActivity extends Activity {
         oledHdrMode = false;
         getWindow().setColorMode(originalColorMode);
         if (Build.VERSION.SDK_INT >= 35) {
-            getWindow().setDesiredHdrHeadroom(0f);
+            getWindow().setDesiredHdrHeadroom(originalHdrHeadroom);
         }
 
         if (Build.VERSION.SDK_INT >= 30) {
@@ -644,6 +722,9 @@ public final class MainActivity extends Activity {
 
         fullscreenContainer.setVisibility(View.GONE);
         workspaceLayout.setVisibility(View.VISIBLE);
+        fullscreenHud.setPadding(0, 0, 0, 0);
+        root.requestApplyInsets();
+        root.post(this::applyResponsiveLayout);
     }
 
     private void ensurePlayer() {
@@ -652,6 +733,26 @@ public final class MainActivity extends Activity {
         player.setSeekParameters(SeekParameters.EXACT);
         playerView.setPlayer(player);
         player.setRepeatMode(Player.REPEAT_MODE_ONE);
+        playbackListener = new Player.Listener() {
+            @Override public void onIsPlayingChanged(boolean isPlaying) {
+                if (!isAutomatedTest) return;
+                if (isPlaying && testPlayingSinceMs < 0) {
+                    testPlayingSinceMs = SystemClock.elapsedRealtime();
+                } else if (!isPlaying && testPlayingSinceMs >= 0) {
+                    testPlaybackMs += SystemClock.elapsedRealtime() - testPlayingSinceMs;
+                    testPlayingSinceMs = -1;
+                }
+            }
+
+            @Override public void onPlayerError(PlaybackException error) {
+                if (!fullscreen || playerView.getVisibility() != View.VISIBLE) return;
+                exitFullscreen();
+                new AlertDialog.Builder(MainActivity.this)
+                    .setMessage(getString(R.string.playback_error, error.getErrorCodeName()))
+                    .setPositiveButton(R.string.dialog_btn_close, null).show();
+            }
+        };
+        player.addListener(playbackListener);
     }
 
     private void playPattern(String patternName, long position) {
@@ -694,6 +795,16 @@ public final class MainActivity extends Activity {
             hudTipLabel.setText(getString(R.string.hud_tip_hdr_active));
         }
         updateHudButtons();
+        updatePatternDescription();
+    }
+
+    private void updatePatternDescription() {
+        String description = getString(R.string.oled_pattern_description,
+            hudTitleLabel.getText() + ". " + hudTipLabel.getText());
+        oledView.setContentDescription(description);
+        playerView.setContentDescription(description);
+        oledView.setFocusable(true);
+        playerView.setFocusable(true);
     }
 
     private void updateHudButtons() {
@@ -702,23 +813,27 @@ public final class MainActivity extends Activity {
         btnWatchSdr.setText((isSdr ? "✓ " : "") + getString(R.string.hud_btn_watch_sdr));
         btnWatchSdr.setTextColor(isSdr ? ACCENT : TEXT);
         btnWatchSdr.setTypeface(Typeface.DEFAULT, isSdr ? Typeface.BOLD : Typeface.NORMAL);
-        btnWatchSdr.setBackground(ripple(isSdr ? 0x66252e25 : 0x221b211c, isSdr ? ACCENT : 0x44485546, 14));
+        btnWatchSdr.setBackground(ripple(isSdr ? 0x33416955 : 0xff222222, isSdr ? ACCENT : CARD_STROKE, 14));
 
         boolean isHdr = "hdr".equals(currentMode);
         btnWatchHdr.setSelected(isHdr);
         btnWatchHdr.setText((isHdr ? "✓ " : "") + getString(R.string.hud_btn_watch_hdr));
         btnWatchHdr.setTextColor(isHdr ? ACCENT : TEXT);
         btnWatchHdr.setTypeface(Typeface.DEFAULT, isHdr ? Typeface.BOLD : Typeface.NORMAL);
-        btnWatchHdr.setBackground(ripple(isHdr ? 0x66252e25 : 0x221b211c, isHdr ? ACCENT : 0x44485546, 14));
+        btnWatchHdr.setBackground(ripple(isHdr ? 0x33416955 : 0xff222222, isHdr ? ACCENT : CARD_STROKE, 14));
     }
 
     private void showFullscreenHud() {
         if (fullscreenHud == null || !fullscreen) return;
         handler.removeCallbacks(hideFullscreenHud);
-        fullscreenHud.animate().cancel();
-        fullscreenHud.setAlpha(1f);
         fullscreenHud.setVisibility(View.VISIBLE);
-        handler.postDelayed(hideFullscreenHud, 3000);
+        applyFullscreenLayout();
+        AccessibilityManager accessibility = getSystemService(AccessibilityManager.class);
+        if (accessibility == null || !accessibility.isTouchExplorationEnabled()) {
+            int timeout = accessibility == null ? 3000 : accessibility.getRecommendedTimeoutMillis(3000,
+                AccessibilityManager.FLAG_CONTENT_TEXT | AccessibilityManager.FLAG_CONTENT_CONTROLS);
+            handler.postDelayed(hideFullscreenHud, timeout);
+        }
     }
 
     private void showDetailedReport() {
@@ -768,9 +883,9 @@ public final class MainActivity extends Activity {
         LinearLayout specsBox = new LinearLayout(this);
         specsBox.setOrientation(LinearLayout.VERTICAL);
         GradientDrawable boxBg = new GradientDrawable();
-        boxBg.setColor(0xdd101411);
+        boxBg.setColor(0xee101010);
         boxBg.setCornerRadius(dp(8));
-        boxBg.setStroke(dp(1), 0x55485546);
+        boxBg.setStroke(dp(1), CARD_STROKE);
         specsBox.setBackground(boxBg);
         specsBox.setPadding(dp(12), dp(8), dp(12), dp(8));
         LinearLayout.LayoutParams boxParams = new LinearLayout.LayoutParams(-1, -2);
@@ -916,9 +1031,9 @@ public final class MainActivity extends Activity {
         etComments.setMinLines(2);
         etComments.setMaxLines(4);
         GradientDrawable etBg = new GradientDrawable();
-        etBg.setColor(0x33101411);
+        etBg.setColor(0xff242424);
         etBg.setCornerRadius(dp(8));
-        etBg.setStroke(dp(1), 0x55485546);
+        etBg.setStroke(dp(1), CARD_STROKE);
         etComments.setBackground(etBg);
         etComments.setPadding(dp(12), dp(8), dp(12), dp(8));
         LinearLayout.LayoutParams etParams = new LinearLayout.LayoutParams(-1, -2);
@@ -1128,6 +1243,7 @@ public final class MainActivity extends Activity {
     }
 
     private void applyResponsiveLayout() {
+        applyFullscreenLayout();
         if (fullscreen || cardsLayout == null || cardsContainer == null) return;
         int availableWidth = root.getWidth() - root.getPaddingLeft() - root.getPaddingRight();
         float widthDp = availableWidth / getResources().getDisplayMetrics().density;
@@ -1173,6 +1289,40 @@ public final class MainActivity extends Activity {
         }
     }
 
+    private void applyFullscreenLayout() {
+        if (fullscreenBottomHud == null || root.getWidth() == 0) return;
+        int available = root.getWidth() - fullscreenHud.getPaddingLeft() - fullscreenHud.getPaddingRight() - dp(40);
+        int needed = fullscreenBottomHud.getPaddingLeft() + fullscreenBottomHud.getPaddingRight();
+        for (int i = 0; i < fullscreenBottomHud.getChildCount(); i++) {
+            View child = fullscreenBottomHud.getChildAt(i);
+            if (child.getVisibility() != View.VISIBLE) continue;
+            Button button = (Button) child;
+            needed += Math.max(button.getMinimumWidth(), (int) Math.ceil(button.getPaint().measureText(
+                button.getText().toString())) + button.getPaddingLeft() + button.getPaddingRight()) + dp(4);
+        }
+        boolean vertical = needed > available;
+        fullscreenBottomHud.setOrientation(vertical ? LinearLayout.VERTICAL : LinearLayout.HORIZONTAL);
+        for (int i = 0; i < fullscreenBottomHud.getChildCount(); i++) {
+            View child = fullscreenBottomHud.getChildAt(i);
+            LinearLayout.LayoutParams params = (LinearLayout.LayoutParams) child.getLayoutParams();
+            int width = vertical ? -1 : -2;
+            if (params.width != width) {
+                params.width = width;
+                child.setLayoutParams(params);
+            }
+        }
+        boolean stackBrightness = brightnessLabel.getPaint().measureText(brightnessLabel.getText().toString())
+            + dp(128) > available - dp(32);
+        oledBrightnessRow.setOrientation(stackBrightness ? LinearLayout.VERTICAL : LinearLayout.HORIZONTAL);
+        LinearLayout.LayoutParams seekParams = (LinearLayout.LayoutParams) brightnessSeek.getLayoutParams();
+        int seekWidth = stackBrightness ? -1 : 0;
+        if (seekParams.width != seekWidth) {
+            seekParams.width = seekWidth;
+            seekParams.weight = stackBrightness ? 0f : 1f;
+            brightnessSeek.setLayoutParams(seekParams);
+        }
+    }
+
     @Override public void onConfigurationChanged(android.content.res.Configuration configuration) {
         super.onConfigurationChanged(configuration);
         root.post(this::applyResponsiveLayout);
@@ -1196,8 +1346,10 @@ public final class MainActivity extends Activity {
         handler.removeCallbacks(hideFullscreenHud);
         if (player != null) {
             playerView.setPlayer(null);
+            player.removeListener(playbackListener);
             player.release();
             player = null;
+            playbackListener = null;
         }
         super.onStop();
     }
@@ -1234,10 +1386,10 @@ public final class MainActivity extends Activity {
         b.setBackgroundTintList(null);
         b.setTextSize(14);
         b.setGravity(Gravity.CENTER);
-        b.setSingleLine(true);
+        b.setSingleLine(false);
         b.setMinHeight(dp(48));
         b.setMinimumWidth(dp(48));
-        b.setBackground(ripple(0xff252e25, 0xff3b4739, 12));
+        b.setBackground(ripple(0xff242424, CARD_STROKE, 12));
         b.setPadding(dp(12), dp(10), dp(12), dp(10));
         LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(-1, -2);
         p.topMargin = dp(8);
@@ -1264,14 +1416,14 @@ public final class MainActivity extends Activity {
         button.setBackground(ripple(ACCENT, ACCENT, 12));
     }
 
-    private LinearLayout card() {
+    private LinearLayout card(int accent) {
         LinearLayout c = new LinearLayout(this);
         c.setOrientation(LinearLayout.VERTICAL);
         c.setPadding(dp(16), dp(16), dp(16), dp(16));
         GradientDrawable bg = new GradientDrawable();
         bg.setColor(CARD);
         bg.setCornerRadius(dp(16));
-        bg.setStroke(dp(1), CARD_STROKE);
+        bg.setStroke(dp(1), accent);
         c.setBackground(bg);
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(-1, -2);
         params.topMargin = dp(16);
@@ -1284,7 +1436,7 @@ public final class MainActivity extends Activity {
         LinearLayout row = new LinearLayout(this);
         row.setOrientation(LinearLayout.VERTICAL);
         row.setPadding(0, dp(4), 0, dp(4));
-        TextView title = label(labelText, 12, ACCENT);
+        TextView title = label(labelText, 12, RED);
         row.addView(title);
         row.addView(valueView);
         return row;

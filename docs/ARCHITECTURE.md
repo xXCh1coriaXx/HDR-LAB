@@ -10,11 +10,11 @@ Video uses Media3 ExoPlayer, `surface_type="surface_view"` and `SeekParameters.E
 
 ## Fullscreen and lifecycle
 
-- Quick Test shows SDR for ten seconds, then requests HDR10/PQ.
+- Quick Test counts ten seconds reported as playing by Media3, excluding loading/buffering, then requests HDR10/PQ. This is not confirmation of frames presented by the panel.
 - Fullscreen initially requests `screenBrightness = 1.0f`; the slider changes the window override. Restore the previous override (normally `BRIGHTNESS_OVERRIDE_NONE`, `-1.0f`) on exit, `onPause()`, `onStop()` and Back.
-- Use `WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE`. Hide revealed controls after three seconds; keep at least 76 dp bottom HUD clearance.
+- Use transient system bars revealed by swipe. Hide revealed controls after three seconds (respecting Android accessibility timeouts); touch exploration or keyboard focus keeps controls visible. An explicit Hide controls action exposes the pattern. Keep at least 76 dp bottom HUD clearance and account for display cutouts.
 - Cancel `testCountdownTicker` and `hideFullscreenHud` on stop, manual mode changes and fullscreen exit.
-- Restore colour/headroom and refresh overrides on exit. Pause exits fullscreen; stop detaches/releases the player.
+- Restore the captured colour mode, API 35 desired HDR headroom, brightness and refresh overrides on exit. Pause exits fullscreen; stop detaches/releases the player. Playback errors exit and offer guidance to start again.
 
 ## Layout and widgets
 
@@ -23,6 +23,8 @@ Video uses Media3 ExoPlayer, `surface_type="surface_view"` and `SeekParameters.E
 Wide threshold: `widthDp >= 720 || (widthDp >= 580 && isLandscape)`. Wide: horizontal, `setBaselineAligned(false)`, children `LinearLayout.LayoutParams(0, MATCH_PARENT, 1f)`. A `height=0, weight=1f` spacer above `btnDetailedReport` aligns buttons. Narrow/portrait: vertical, children `MATCH_PARENT/WRAP_CONTENT` (−1/−2).
 
 Call `setSingleLine(true)` before minimum dimensions; apply padding after `setBackground()`. RadioButtons need `View.generateViewId()` and `RadioGroup.check(id)`; `setChecked(true)` alone can leave the group ID unsynchronised. Keep `getCheckedText()` fallback traversal of checked children.
+
+Dashboard buttons wrap long labels. Fullscreen buttons remain single-line with 48 dp minimum targets; controls stack when their text cannot fit horizontally. The HUD scrolls vertically to keep large text and all actions reachable on short displays; its brightness row also stacks when needed. RGB UI accents use readable tints on neutral black surfaces, independently of pattern reference values.
 
 ## Device and ROM discovery
 
@@ -38,11 +40,13 @@ After asset changes, review generation parameters and [verify patterns](../tools
 
 ## OLED suite
 
-`OledTestView` draws Canvas patterns on black: motion smear, 0.5%–10% ladder, 1%–15% uniformity (static or 60 px/s horizontal pan), 1%–100% area white windows, and nine burn-in slides (RGB, white, 50%/20% grey, cyan, magenta, yellow).
+`OledTestView` draws Canvas patterns on black: motion smear, 0.5%–10% ladder, 1%–15% uniformity (static or 60 px/s horizontal pan), 1%–100% area white windows, nine burn-in slides (RGB, white, 50%/20% grey, cyan, magenta, yellow), and seven SDR ramps (grayscale, RGB and CMY).
 
-Canvas percentages are full-range 8-bit codes (`Math.round(percent * 2.55f)`), not luminance. The ladder's video path reuses `sdr_steps`, `pq_steps`, `hlg_steps` on SurfaceView. All suites have a 1%–100% window-brightness slider and SDR/HDR selection (`ActivityInfo.COLOR_MODE_HDR`, API 35 `setDesiredHdrHeadroom`).
+Canvas percentages are full-range 8-bit codes (`Math.round(percent * 2.55f)`), not luminance. The ladder's video path reuses `sdr_steps`, `pq_steps`, `hlg_steps` on SurfaceView; its mode control follows the selected video. All suites have a 1%–100% window-brightness slider. Existing suites retain SDR/HDR selection (`ActivityInfo.COLOR_MODE_HDR`, API 35 `setDesiredHdrHeadroom`); the ramp suite forces SDR and hides that toggle. Starting a suite resets its mode to SDR.
 
-Motion uses `Choreographer.FrameCallback` and requests the highest refresh mode at the current resolution via `preferredDisplayModeId`. Static patterns schedule no frame callbacks. Dropped frames are estimated from deltas exceeding 1.5× the nominal display period; app stutter can resemble panel smear.
+Ramps draw 256 solid vertical bands with code 0 on the left and 255 on the right, plus localized signal labels. These visual references reveal transitions, banding or apparent clipping; they do not measure accuracy or luminance. Views narrower than 256 physical pixels cannot show every code in a separate column. Each suite's guidance asks users to record an observation and explains its limits; screen readers can read the active pattern description.
+
+Motion uses `Choreographer.FrameCallback` and requests the highest refresh mode at the current resolution via `preferredDisplayModeId`. Static patterns schedule no frame callbacks. Detached views stop callbacks and restart visible animated patterns on attach. Dropped frames are estimated from deltas exceeding 1.5× the nominal display period; app stutter can resemble panel smear.
 
 ## Reports and language
 
@@ -53,6 +57,6 @@ English source/comments/IDs/log tags; every UI string in resources. English `res
 ## Known gaps
 
 - Exposed release key/credentials: [signing rules](DEVELOPMENT.md#signing-and-releases).
-- Countdown tracks callbacks, not confirmed playback time. HDR status cannot establish panel output.
+- Media3 playback timing and requested HDR modes cannot establish physical panel output. Vendor behaviour still requires device checks.
 - Submission is accessible before test completion; HTTP 2xx/3xx is accepted without server acknowledgement validation. Real network, redirects and backend rejection need targeted tests.
 - Survey defaults, translated response values, percentage labels and schema versioning need scientific review. Existing tests do not establish research validity.

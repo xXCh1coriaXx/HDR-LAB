@@ -29,7 +29,7 @@ git diff --check
 
 Inspect the final diff; report actual results and blockers. Test report: `app/build/reports/tests/testDebugUnitTest/index.html`; lint: `app/build/reports/lint-results-debug.html` (or release equivalent); APK: `app/build/outputs/apk/release/app-release.apk`.
 
-Robolectric simulates API 35; compilation targets API 36. It cannot verify physical HDR or real HTTP delivery.
+Robolectric covers APIs 31 and 35; compilation targets API 36. It cannot verify physical HDR or real HTTP delivery.
 
 ## Code map
 
@@ -45,6 +45,7 @@ Java files below are in `app/src/main/java/dev/hdrlab/`.
 | `app/src/main/res/values*/strings.xml` | Localisation |
 | `app/src/main/assets/patterns/` | Reference videos |
 | `app/src/test/java/dev/hdrlab/LayoutTest.java` | Regression tests |
+| `app/src/test/java/dev/hdrlab/OledRampTest.java` | Ramp pixels and animation attachment lifecycle |
 | `app/build.gradle.kts` | Version, identity, SDK, signing, dependencies, shrinking |
 | `tools/`, `.github/workflows/` | Validation/generation, CI/releases |
 
