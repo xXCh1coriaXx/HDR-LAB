@@ -1,74 +1,58 @@
-# Architecture and hardware lessons
+# Runtime constraints and known limits
 
-Detailed constraints behind [AGENTS.md](../AGENTS.md). Requirements describe intended behavior; known gaps below describe current limitations. Read relevant code before treating historical documentation as proof.
+Read the section relevant to your change. Requirements below are not proof of physical display behaviour.
 
 ## Identity and playback
 
-Application ID is `dev.hdrlab.light`; source namespace remains `dev.hdrlab`. Preserve `${applicationId}.files` in the manifest and `getPackageName() + ".files"` in Java, allowing coexistence with full `dev.hdrlab`.
+Keep application ID `dev.hdrlab.light`, Java namespace `dev.hdrlab`, manifest authority `${applicationId}.files` and Java `getPackageName() + ".files"` for coexistence with full HDR Lab.
 
-Keep Media3 ExoPlayer with SurfaceView, never TextureView or an application shader, and `SeekParameters.EXACT`. Exact seeking avoids intentionally snapping to a different keyframe; it does not establish a seamless physical SDR/HDR transition. SurfaceView permits native surface composition but cannot guarantee that OS, decoder, vendor tone mapping or panel processing leaves the image unmodified. A stream label is not proof of panel output. Display-reported nits are declarations, not photometer measurements.
+Video uses Media3 ExoPlayer, `surface_type="surface_view"` and `SeekParameters.EXACT`; no TextureView or application shader. Exact seeking avoids keyframe snapping but does not prove a seamless physical SDR/HDR transition. SurfaceView cannot bypass or rule out all OS, decoder, vendor or panel processing. Reported nits/HDR formats are declarations, not measurements.
 
-Fullscreen currently requests `screenBrightness = 1.0f`. Restore the previous window brightness override (normally `BRIGHTNESS_OVERRIDE_NONE`, `-1.0f`) on fullscreen exit, `onPause()`, `onStop()` and Back. This is a window override, not measured panel drive. Hide system bars with `WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE`. Dismiss revealed controls after three seconds and retain at least 76 dp bottom HUD margin for gestures. Cancel `testCountdownTicker` and `hideFullscreenHud` on stop, manual switches and fullscreen exit.
+## Fullscreen and lifecycle
 
-## Layout and widget ordering
+- Quick Test shows SDR for ten seconds, then requests HDR10/PQ.
+- Fullscreen initially requests `screenBrightness = 1.0f`; the slider changes the window override. Restore the previous override (normally `BRIGHTNESS_OVERRIDE_NONE`, `-1.0f`) on exit, `onPause()`, `onStop()` and Back.
+- Use `WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE`. Hide revealed controls after three seconds; keep at least 76 dp bottom HUD clearance.
+- Cancel `testCountdownTicker` and `hideFullscreenHud` on stop, manual mode changes and fullscreen exit.
+- Restore colour/headroom and refresh overrides on exit. Pause exits fullscreen; stop detaches/releases the player.
 
-`cardsContainer` inside `cardsLayout` holds Screen Capabilities and Quick Test. `oledCard` is a full-width card added to `cardsLayout` below `cardsContainer` so it does not affect the two-card responsive sizing. Wide threshold: `widthDp >= 720 || (widthDp >= 580 && isLandscape)`.
+## Layout and widgets
 
-- Wide: horizontal container, `setBaselineAligned(false)`, child `LinearLayout.LayoutParams(0, MATCH_PARENT, 1f)`.
-- Flexible spacer (`height=0`, `weight=1f`) above `btnDetailedReport` aligns primary buttons at the bottom.
-- Portrait: vertical, child `MATCH_PARENT`/`WRAP_CONTENT` (`-1`, `-2`). Check rotation/multi-window for jitter and clipping.
+`cardsContainer` in `cardsLayout` holds Screen Capabilities and Quick Test. Keep full-width `oledCard` below it, outside two-card sizing.
 
-Call `setSingleLine(true)` before `setMinHeight(...)` and `setMinimumWidth(...)`. Set custom padding after `setBackground(...)`, which can reset it.
+Wide threshold: `widthDp >= 720 || (widthDp >= 580 && isLandscape)`. Wide: horizontal, `setBaselineAligned(false)`, children `LinearLayout.LayoutParams(0, MATCH_PARENT, 1f)`. A `height=0, weight=1f` spacer above `btnDetailedReport` aligns buttons. Narrow/portrait: vertical, children `MATCH_PARENT/WRAP_CONTENT` (−1/−2).
 
-Programmatic RadioButtons start with `View.NO_ID`. Assign `View.generateViewId()` and select through `RadioGroup.check(id)`; `setChecked(true)` alone may leave `getCheckedRadioButtonId()` unsynchronized. Retain `getCheckedText()` fallback traversal inspecting `RadioButton.isChecked()`.
+Call `setSingleLine(true)` before minimum dimensions; apply padding after `setBackground()`. RadioButtons need `View.generateViewId()` and `RadioGroup.check(id)`; `setChecked(true)` alone can leave the group ID unsynchronised. Keep `getCheckedText()` fallback traversal of checked children.
 
 ## Device and ROM discovery
 
-Discover hardware dynamically from `Build.MANUFACTURER`, `BRAND`, `MODEL`, `PRODUCT`, `DEVICE`, `BOARD`, `HARDWARE` and API-guarded `SOC_MODEL` (31+). Never restrict supported brands to an allowlist. `Diagnostics.getCleanDeviceName(manufacturer, model)` capitalizes brands and removes repeated brand prefixes.
+Discover hardware from `Build.MANUFACTURER`, `BRAND`, `MODEL`, `PRODUCT`, `DEVICE`, `BOARD`, `HARDWARE` and API-guarded `SOC_MODEL` (31+). No brand allowlist. `Diagnostics.getCleanDeviceName()` capitalises brands and removes repeated prefixes.
 
-Vendor properties supplement universal detection and can be absent/inaccessible:
-
-| ROM | Properties/hints |
-| --- | --- |
-| Honor MagicOS | `ro.build.version.magic`, `ro.honor.build.version.incremental` |
-| Xiaomi HyperOS / MIUI | `ro.mi.os.version.name`, `ro.miui.ui.version.name` |
-| Samsung One UI | `ro.build.version.oneui`, `ro.build.version.sep` |
-| OnePlus OxygenOS | `ro.oxygen.version`, `ro.build.version.opporom` |
-| OPPO ColorOS | `ro.build.version.opporom` |
-| Pixel UI | `ro.build.flavor`, Google vendor build tags |
-| Generic/custom ROM | `ro.modversion`, `ro.rom.version`, then `Android <version>` |
-
-Retain manufacturer/model/Android-version fallbacks for every device. Vendor enhancers, contrast and tone mapping can affect observations; a ROM label does not establish causation.
+ROM properties are optional hints, not evidence of video processing. `Diagnostics.detectOsInfo()` contains the detection order/properties for MagicOS, HyperOS/MIUI, One UI, OxygenOS, ColorOS, Realme UI, Vivo, Pixel UI and Nothing OS. Preserve custom-ROM `ro.modversion`/`ro.rom.version` and manufacturer/model/Android-version fallbacks.
 
 ## Pattern integrity and extraction
 
-`tools/generate_patterns.py` produces SDR/PQ/HLG black, steps and window MP4s. Preserve PQ limited-range 10-bit steps `[83, 104, 137, 167, 214, 281]`, approximately `[0.01, 0.05, 0.20, 0.50, 1.50, 5.00]` nominal ST 2084 nits. These are encoded references, not measured panel brightness or evenly spaced percentages. Very low raw PQ increments may be invisible under real panel/ambient conditions.
+`tools/generate_patterns.py` generates SDR/PQ/HLG black, steps and window videos. Preserve limited-range 10-bit PQ steps `[83, 104, 137, 167, 214, 281]` on reference black 64: approximately `[0.01, 0.05, 0.20, 0.50, 1.50, 5.00]` nominal ST 2084 nits. These are encoded references, not measured brightness or evenly spaced percentages. Very low levels may be invisible in real viewing conditions.
 
-Run `tools/verify_patterns.py` after asset changes. It checks signaling and decoded first/last frames, not all frames or physical playback. Review generation parameters too.
+After asset changes, review generation parameters and [verify patterns](../tools/README.md#results-and-assets). `getPatternFile()` extracts to `getFilesDir()/patterns/`. Refresh after APK updates; file existence alone is insufficient. `extractedPatterns` is per Activity, not process-wide. Direct writes can leave partial files; atomic extraction is deferred.
 
-`getPatternFile()` extracts to `getFilesDir()/patterns/`. Refresh after APK updates rather than trusting `file.exists()`. Current `extractedPatterns` is an Activity instance field: the cache is per Activity, not process-wide. Do not document it as process-wide or regress freshness while optimizing. Direct writes can leave partial files after failure; atomic extraction is deferred.
+## OLED suite
 
-## Optional reports and privacy
+`OledTestView` draws Canvas patterns on black: motion smear, 0.5%–10% ladder, 1%–15% uniformity (static or 60 px/s horizontal pan), 1%–100% area white windows, and nine burn-in slides (RGB, white, 50%/20% grey, cyan, magenta, yellow).
 
-Intended flow: ten-second SDR-to-HDR test followed by voluntary reporting. Current UI can expose submission before test completion. Reports cover SDR/HDR black appearance, visible steps, optional notes, ROM and declared display specs (nits/HDR types). Older documentation calls this ten columns; inspect `ReportSubmitter` for actual JSON rather than assuming a strict column contract.
+Canvas percentages are full-range 8-bit codes (`Math.round(percent * 2.55f)`), not luminance. The ladder's video path reuses `sdr_steps`, `pq_steps`, `hlg_steps` on SurfaceView. All suites have a 1%–100% window-brightness slider and SDR/HDR selection (`ActivityInfo.COLOR_MODE_HDR`, API 35 `setDesiredHdrHeadroom`).
 
-The documented Apps Script saves individual immutable JSON reports to the `HDR lab reports` Drive folder (`1VEHauaaZFqlIzDBNgHXb0RLlgMnkwoeb`), named `report_YYYY-MM-DD_HH-mm-ss_<device_model>.json`. [COMMUNITY_DATABASE.md](COMMUNITY_DATABASE.md) describes the proposed backend; it does not establish deployed configuration. Keep submission asynchronous, optional, non-blocking and safe offline. Avoid persistent identifiers or personal-data prompts; optional free text can still contain user-entered personal data.
+Motion uses `Choreographer.FrameCallback` and requests the highest refresh mode at the current resolution via `preferredDisplayModeId`. Static patterns schedule no frame callbacks. Dropped frames are estimated from deltas exceeding 1.5× the nominal display period; app stutter can resemble panel smear.
 
-## OLED test suite (`OledTestView`)
+## Reports and language
 
-`OledTestView` renders Pipeline A canvas patterns (black-to-dark motion smear, 0.5%–10% near-black step ladder, 1%–15% uniformity/DSE static and optokinetic horizontal pan, 1%–100% APL white windows, and 9 subpixel burn-in/aging slides) on a `#000000` background. Levels are full-range 8-bit signal percentages (`Math.round(percent * 2.55f)`), not calibrated luminance. Pipeline B in the ladder suite reuses the packaged `sdr_steps`, `pq_steps` and `hlg_steps` reference videos on Media3 `SurfaceView`. The fullscreen HUD exposes a universal 1%–100% window brightness slider across all test modes and an SDR/HDR toggle (`ActivityInfo.COLOR_MODE_HDR` + API 35 `setDesiredHdrHeadroom`, restored on exit).
+Keep reports optional, asynchronous, non-blocking and safe offline; [payload/backend reference](COMMUNITY_DATABASE.md). No unsolicited networking, analytics, ads, crash beacons, accounts or persistent identifiers.
 
-Motion patterns use `Choreographer.FrameCallback` and request the highest supported refresh mode at the current resolution via `WindowManager.LayoutParams.preferredDisplayModeId` (restored on exit). Static patterns do not schedule frame callbacks. Dropped frames are estimated from frame deltas exceeding `1.5x` the nominal display period so app stutter is not confused with panel smearing.
+English source/comments/IDs/log tags; every UI string in resources. English `res/values/strings.xml` is fallback; European Portuguese uses `values-pt` and `values-pt-rPT`. Android selects the locale; no custom language switch.
 
-## Known gaps outside developer QoL cleanup
+## Known gaps
 
-- Release key and credentials are tracked/exposed. Preserve signing continuity; deleting a working-tree file cannot revoke previous copies. Secure storage/key migration need separate work.
-- Countdown measures callbacks rather than confirmed playback time; HDR status does not confirm physical output.
-- Submission accepts HTTP 2xx/3xx without validating server acknowledgement. Real network, redirection and backend rejection need targeted tests and changes.
-- Survey defaults, translated response text, percentage labels and schema versioning need a scientific-data pass. Existing tests do not establish scientific validity.
-
-## Language and scope
-
-English source/comments/IDs; UI text in resources. English `res/values/strings.xml` is fallback and European Portuguese lives in `res/values-pt/strings.xml`, selected natively by Android. No custom language switch.
-
-Normal use stays offline. INTERNET is exclusively for requested community reports; no analytics, ads, crash beacons, accounts or persistent identifiers. Preserve R8 and resource shrinking; there is no hard 2 MB APK size limit. Avoid speculative layers and do not remove existing functionality merely to simplify.
+- Exposed release key/credentials: [signing rules](DEVELOPMENT.md#signing-and-releases).
+- Countdown tracks callbacks, not confirmed playback time. HDR status cannot establish panel output.
+- Submission is accessible before test completion; HTTP 2xx/3xx is accepted without server acknowledgement validation. Real network, redirects and backend rejection need targeted tests.
+- Survey defaults, translated response values, percentage labels and schema versioning need scientific review. Existing tests do not establish research validity.

@@ -1,142 +1,108 @@
-# HDR Lab — Changelog
+# Changelog
 
-## v0.3.0-beta.2 (OLED Tester Suite Preview 2)
+Historical changes, not guarantees of current behaviour. See [current constraints](docs/ARCHITECTURE.md).
 
-- Added **Universal Fullscreen Brightness Slider** across all video and canvas test suites (`1%`–`100%` `SeekBar`).
-- Added **Subpixel Burn-In & Aging Suite** (`OledTestView.MODE_BURNIN`) with 9 full-field slides (R, G, B, White, 50% Mid Gray, 20% Dark Gray, Cyan, Magenta, Yellow).
-- Added **SDR vs. HDR Mode Toggle** (`btnOledHdr`) supporting window color mode switching (`ActivityInfo.COLOR_MODE_HDR` and API 35 `setDesiredHdrHeadroom`) and automatic video stream switching between SDR and HDR10/PQ.
-- Added optional community survey field for subpixel burn-in / image retention (`oledBurnIn`).
-- Full English and European Portuguese (`values-pt` / `values-pt-rPT`) coverage and comprehensive Robolectric unit tests.
+## OLED Tester / HDR Lab Light
 
----
+### v0.3.0-beta.2 — OLED suite preview 2
 
-## v0.3.0-beta.1 (OLED Tester Suite Preview)
+- Universal 1%–100% fullscreen brightness slider for video/Canvas.
+- Nine burn-in/ageing slides: RGB, white, 50%/20% grey, cyan, magenta, yellow.
+- SDR/HDR toggle using window colour mode, API 35 headroom and SDR/PQ ladder switching.
+- Optional `oledBurnIn` report field; EN/PT-PT resource coverage and Robolectric tests.
 
-- Renamed app to **OLED Tester** across English and European Portuguese (`values-pt` / `values-pt-rPT`) catalogs while preserving `dev.hdrlab.light` package identity and signing continuity.
-- Added the **OLED Test Suite** (`OledTestView` & `MainActivity`):
-  - Black-to-dark motion smear test (`#050505`–`#202020` on `#000000`, 100–2000 px/s horizontal/vertical, `Choreographer` frame callbacks, live FPS/dropped-frame counter, and in-test brightness slider).
-  - Near-black step ladder (`0.5%`–`10.0%`) with dual-pipeline comparison (native Canvas vs. Media3 `SurfaceView` SDR/PQ/HLG reference step videos).
-  - Near-black uniformity / DSE slides (`1%`–`15%` static and `60` px/s optokinetic horizontal pan).
-  - Floating black and ABL/APL white window suite (`1%`–`100%` display area).
-  - Subpixel burn-in & aging check (9 slides: R, G, B, White, 50%/20% Gray, Cyan, Magenta, Yellow).
-  - Universal fullscreen `1%`–`100%` brightness slider across all test modes and an SDR/HDR mode toggle (`COLOR_MODE_HDR` / `setDesiredHdrHeadroom` + video pipeline switching).
-- Extended `Diagnostics` and `ReportSubmitter` with physical refresh rate, supported display modes, fullscreen highest-refresh mode selection (`preferredDisplayModeId`), and optional OLED survey fields (`oledBlackCrush`, `oledSmear`, `oledUniformity`, `oledFloatingBlack`, `oledBurnIn`).
-- Restored window brightness and display mode overrides on `onPause()` as well as exit/stop, cancelled the automated countdown on manual HDR switches, and removed the hard 2 MB APK size cap.
+### v0.3.0-beta.1 — OLED suite preview
 
----
+- Renamed app to OLED Tester in EN/PT-PT; retained package/signing identity.
+- Motion smear: `#050505`–`#202020` on black, 100–2000 px/s horizontal/vertical, Choreographer, FPS/drop counter and brightness control.
+- Near-black ladder (0.5%–10%): Canvas versus SDR/PQ/HLG SurfaceView videos.
+- Uniformity (1%–15%, static/60 px/s pan), white windows (1%–100% area), nine burn-in slides, universal brightness and SDR/HDR controls.
+- Diagnostics/reporting: active/supported refresh modes, highest-refresh fullscreen selection, `oledBlackCrush`, `oledSmear`, `oledUniformity`, `oledFloatingBlack`, `oledBurnIn`.
+- Pause/exit/stop restore brightness/refresh; manual HDR switching cancels countdown. Removed 2 MB cap.
 
-## v0.2.0 (Cleanup)
+### v0.2.0 — Cleanup
 
-- Developer validation script with JDK/SDK discovery, persistent logs, optional decoded video verification, and a release APK budget below 2,000,000 bytes.
-- PR/main CI runs unit tests, lint, release compilation, and pattern checks; verification reports are retained as workflow artifacts.
-- Release workflow validates an existing tag against the Gradle app version and handles manual dispatch safely.
-- Report metadata derives its app version from generated BuildConfig; removed the unused Media3 Transformer dependency.
-- Shorter agent entry point with developer/architecture documentation and consistent text/editor settings.
-- Existing playback, video patterns, and signing identity are retained; signing-key exposure and report-delivery issues remain follow-up work.
+- Validation script: JDK/SDK discovery, logs, decoded pattern checks and a historical 2,000,000-byte budget (later removed).
+- CI: unit tests, lint, release build, patterns and retained reports.
+- Release tag/version validation and safe manual dispatch.
+- BuildConfig report version; removed unused Media3 Transformer.
+- Shortened agent guide, added developer/architecture references and consistent editor settings.
+- Retained playback/assets/signing; key exposure and report delivery remained unresolved.
 
----
+### v0.1.8 — PQ steps and extraction refresh
 
-## v0.1.8 (Calibrated PQ Near-Black Steps & Session Asset Cache Refresh)
+- Re-encoded `pq_steps.mp4` with codes `[83, 104, 137, 167, 214, 281]` on black 64, nominal `[0.01, 0.05, 0.20, 0.50, 1.50, 5.00]` nits, addressing previously invisible low steps (<0.03 nits).
+- Refresh cached videos after app updates. Originally described as per process; implementation is per Activity.
 
-- Calibrated 10-bit PQ Near-Black Steps (`pq_steps.mp4`): Re-encoded HDR10 / SMPTE ST 2084 near-black steps with calibrated code values `[83, 104, 137, 167, 214, 281]` corresponding to `0.01, 0.05, 0.20, 0.50, 1.50, and 5.00` nits on a `64` reference black floor, resolving invisible steps (`< 0.03` nits) on mobile displays.
-- Session Asset Cache Refresh: Updated `getPatternFile()` in `MainActivity.java` to overwrite cached `.mp4` files in `getFilesDir()/patterns/` once per process session so APK upgrades immediately apply updated test patterns.
+### v0.1.7 — JSON reports and device discovery
 
----
+- Dynamic Build-property discovery, brand capitalisation and prefix deduplication replaced brand lists.
+- JSON POST reporting with proposed individual files in Drive folder `HDR lab reports`; deployed configuration remains unverified.
+- Added declared peak/min luminance, gamut, resolution/refresh, SoC and HDR formats alongside survey results.
 
-## v0.1.7 (Event-Sourced JSON Drive Ingestion & Dynamic Device Discovery)
+### v0.1.6.1 — RadioGroup selection fix
 
-- Dynamic Brand & Model Auto-Discovery: Hardware identity is discovered dynamically from Android build properties (`Build.MANUFACTURER`, `Build.BRAND`, `Build.MODEL`, `Build.PRODUCT`, `Build.HARDWARE`, `Build.SOC_MODEL`). Eliminated hardcoded brand lists, added dynamic title-casing and prefix deduplication (`Diagnostics.getCleanDeviceName`).
-- Event-Sourced JSON Google Drive Pipeline: Direct HTTP POST of `application/json` payloads directly creating individual immutable `.json` report files inside Google Drive folder `HDR lab reports` (`1VEHauaaZFqlIzDBNgHXb0RLlgMnkwoeb`).
-- Enriched Diagnostics Telemetry: Captures peak/min luminance, wide color gamut, resolution and refresh rate, SoC model, and supported HDR formats alongside perceptual comparative survey results.
+- Generated IDs, `RadioGroup.check(id)` and checked-child fallback fixed untouched default selections missing from reports.
 
----
+### v0.1.6 — SDR/HDR survey
 
-## v0.1.6.1 (Survey RadioGroup State Tracking Fix)
+- Four questions compare SDR/HDR black appearance and six shadow steps.
+- Historical ten-column schema: timestamp, model, OS, HDR capabilities, peak brightness, SDR black/steps, HDR black/steps and notes.
+- Webhook accepted `sdr_black`, `sdr_steps`, `hdr_black`, `hdr_steps` plus legacy `black_level`/`steps_visible`.
+- Vendor-ROM detection; retained shader-free SurfaceView (then described as an HWC bypass), exact-seeking ten-second transition, tablet cards and EN/PT-PT. Current architecture explains the processing limits.
 
-- Reliable RadioGroup Selection Capture: Fixed an Android programmatic view quirk where default Option A was not serialized when untouched. Added dynamic view IDs (`View.generateViewId()`), `RadioGroup.check(id)`, and fallback checked state verification in `getCheckedText()`.
+### v0.1.5.1 — Webhook integration
 
----
+- Configured Apps Script endpoint for the then-documented community Sheet.
+- Isolated mock endpoints kept unit tests offline.
 
-## v0.1.6 (SDR vs HDR Comparative Community Report & 10-Column Database)
+### v0.1.5 — Community reports
 
-- SDR vs HDR 4-Question Comparison Matrix: Evaluates SDR baseline black levels and shadow step visibility (1% to 6%) alongside HDR10 transition black levels and shadow steps to pinpoint raised blacks and black crush anomalies.
-- 10-Column Live Community Database: Upgraded community database schema and Google Apps Script webhook to record 10 structured fields (Timestamp, Device Model, Operating System, HDR Capabilities, Peak Brightness, SDR Black Level, SDR Visible Steps, HDR Black Level, HDR Visible Steps, and User Notes).
-- Backward-Compatible Parameter Ingestion: Webhook gracefully accepts both comparative keys (`sdr_black`, `sdr_steps`, `hdr_black`, `hdr_steps`) and legacy aliases (`black_level`, `steps_visible`).
-- Automated Custom OS & ROM Detection: Real-time detection of vendor skins (Honor MagicOS, Xiaomi HyperOS/MIUI, Samsung One UI, OnePlus OxygenOS, OPPO ColorOS, Google Pixel UI, etc.).
-- Retained Core Engine & Tablet Layout: Preserved zero-shader SurfaceView bypass directly to Android Hardware Composer (HWC), exact-seeking 10-second SDR-to-HDR transition, responsive side-by-side tablet cards, and full bilingual localization (EN / PT-PT).
+- Optional Forms/Sheets survey for black appearance, near-black steps and notes.
+- Vendor OS/ROM discovery via properties; display/ROM/observation reporting without persistent tracking identifiers.
+- INTERNET permission limited to user-triggered reports.
+- Retained tablet layout, ten-second comparison, SurfaceView and EN/PT-PT.
 
----
+### v0.1.2 — Localisation
 
-## v0.1.5.1 (Live Community Webhook Integration)
+- Localised UI, cards, reports and HUD in English/European Portuguese using Android locale selection.
+- Separated resource strings from English source/layouts; retained matched tablet cards and near-black comparison.
 
-- Production Webhook Endpoint: Activated live Google Apps Script endpoint in `ReportSubmitter.java`, directing submissions to the central community Google Sheet in real time.
-- Offline Test Suite: Ensured all unit tests run hermetically with isolated mock endpoints.
+### v0.1.1 — Tablet layout
 
----
+- Side-by-side cards at ≥720 dp, or ≥580 dp in landscape; vertical stacking elsewhere.
+- Equal heights/weighted spacers aligned action buttons and kept landscape setup/actions visible without scrolling.
 
-## v0.1.5 (Community Display Database & Custom OS Detection)
+### v0.1.0 — Light initial release
 
-- Community Display Report & Database integration: Introduced an optional, user-prompted survey to submit display calibration evaluations to a crowd-sourced Google Forms / Sheets database (evaluating OLED true black vs. raised black bugs, near-black step visibility, and user notes).
-- Automated Custom OS / ROM detection: Automatically identifies custom Android vendor skins and versions (Honor MagicOS, Xiaomi HyperOS/MIUI, Samsung One UI, OnePlus OxygenOS, OPPO ColorOS, Google Pixel UI, etc.) by reading vendor build properties.
-- Anonymous, privacy-first telemetry: Collects solely display hardware capabilities, ROM identifiers, and user perceptual ratings without personal data or persistent tracking identifiers.
-- Controlled network permission: Added `<uses-permission android:name="android.permission.INTERNET" />` scoped strictly to optional, user-initiated survey form dispatch.
-- Retained core HDR Lab Light features: Preserved adaptive side-by-side tablet layout, 10-second SDR-to-HDR near-black step test, zero-shader SurfaceView HWC bypass, and full bilingual i18n (EN / PT-PT).
+- `dev.hdrlab.light` coexists with full `dev.hdrlab`, avoiding package/version conflicts.
+- Two-card setup for a short evaluation; fullscreen six-patch SDR-to-HDR comparison after ten seconds.
+- Maximum window brightness with restoration; tap-to-reveal HUD, three-second dismissal and manual mode toggles.
+- SurfaceView playback without an application shader.
 
----
+## Earlier full HDR Lab history
 
-## v0.1.2 (Full Bilingual i18n: EN & PT-PT)
+These entries describe the full app, not features promised by Light.
 
-- Full bilingual support (International English & Portuguese pt-PT): All UI strings, diagnostic cards, technical report dialogs, and test HUD labels fully localized.
-- Automatic system locale detection: Dynamically selects European Portuguese (`pt-PT`) for Portuguese device locales, defaulting to International English for all other locales.
-- International standard English codebase: Complete separation of UI strings into native Android resource catalogs (`res/values/strings.xml` and `res/values-pt/strings.xml`), standardizing underlying code and layout templates in English.
-- Retained tablet adaptive side-by-side layout & near-black test: Dynamic two-column card arrangement in wide/landscape viewports with matched heights and aligned action buttons, alongside automated 10-second SDR-to-HDR near-black evaluation.
+### v0.3.0.1 — Dark-room controls
 
----
+- 76 dp HUD clearance avoids scrubber/settings overlap.
+- Compact Original/Codec/GPU controls prevent narrow-screen clipping.
+- Single-line Fullscreen button matches frame-step button heights.
+- Readable transfer/colour/range labels replace raw ColorInfo output.
 
-## v0.1.1 (Tablet Adaptive Side-by-Side Layout)
+### v0.3.0 — Hardware pipeline analysis
 
-- Adaptive two-card tablet and landscape layout: dynamically positions "Capacidades do Teu Ecrã" and "Teste Rápido: SDR vs HDR" side-by-side in 2 columns on wide screens and tablets in landscape (>= 720dp width or >= 580dp in landscape).
-- Equal card height and button alignment: matched card heights with weighted vertical spacers aligning action buttons ("Ver Relatório Técnico Detalhado" and "Iniciar Teste SDR vs HDR") along the same horizontal baseline.
-- Scroll-free landscape viewport: fits entire test setup and action controls on-screen simultaneously, preventing the start button from being pushed offscreen or requiring vertical scrolling.
-- Fluid responsive reflow: maintains clean 1-column vertical stacking on portrait and narrow devices.
+- Dim fullscreen Original/SDR Codec/SDR GPU comparisons.
+- Paused forward/back frame stepping on bench/fullscreen for compression, dithering and edge inspection.
+- Exact seeking avoids long-GOP keyframe rounding.
+- CTA-861.3/ST 2086 metadata: RGB primaries, white point, mastering min/max nits, MaxCLL/MaxFALL.
+- SDR export strips audio to avoid TrueHD/DTS-HD/multichannel-PCM conversion failures.
+- Android 14+ `Display.registerHdrSdrRatioChangedListener` tracks headroom changes.
 
----
+### v0.2.0 — Adaptive split view
 
-## v0.1.0 (HDR Lab Light Initial Release)
-
-- Standalone lightweight package (`dev.hdrlab.light`): Coexists side-by-side with full HDR Lab (`dev.hdrlab`) without package conflicts or version downgrade errors (`INSTALL_FAILED_VERSION_DOWNGRADE`).
-- Streamlined two-card architecture ("Capacidades do Teu Ecrã" and "Teste Rápido: SDR vs HDR") tailored for fast 2-minute display evaluation.
-- Automated 10-second SDR-to-HDR transition in fullscreen on calibrated 6-patch near-black step pattern with countdown timer and matching-frame switch.
-- Auto-boost fullscreen window brightness to 100% (`screenBrightness = 1.0f`) with guaranteed restoration to system brightness on exit.
-- Tap-to-reveal floating HUD with 3-second auto-dimming and manual mode toggles.
-- Preserved zero-shader SurfaceView bypass directly to Android Hardware Composer (HWC).
-
----
-
-## v0.3.0.1 (Maintenance & Dark-Room UI Polish)
-
-- Fullscreen HUD timeline clearance: Raised floating HUD baseline (76dp bottom clearance) to completely clear ExoPlayer's DefaultTimeBar scrubber and settings gear, avoiding accidental touch interception.
-- HUD horizontal condensing: Compact pill layout with "Original", "Codec", and "GPU" labels, preventing horizontal button clipping and wrapping on narrow portrait displays.
-- Test bench button alignment: Standardized "↗ Fullscreen" single-line label matching "◀ Step" / "Step ▶" button heights.
-- Clean format inspection string: Human-readable transfer function, color space, and dynamic range tags (`BT.2020 · Limited · HLG / PQ`) replacing raw Media3 ColorInfo dumps.
-
----
-
-## v0.3.0 (Dark-Room View & Hardware Pipeline Analysis)
-
-- Dark-room in-fullscreen A/B switcher: Toggle between Original, SDR Codec, and SDR GPU comparisons directly in Fullscreen mode using a low-luminance auto-dimming HUD, preventing eye dark-adaptation loss.
-- Single-frame stepping: Step forward and backward frame-by-frame (◀ / ▶) while paused on both the test bench and in fullscreen for inspecting near-black macroblocking, dithering, and edge glow.
-- Exact-frame seeking: Configured ExoPlayer with `SeekParameters.EXACT` to eliminate sync keyframe rounding when toggling comparisons on long-GOP streams.
-- CTA-861.3 / ST 2086 HDR Static Metadata parser: Decodes mastering display primaries (Rx, Ry, Gx, Gy, Bx, By), white point (Wx, Wy), min/max mastering luminance (nits), MaxCLL, and MaxFALL into structured diagnostic metadata.
-- Reliable tone-mapping export pipeline: Transcoder strips audio tracks during SDR conversions, eliminating tone-mapping failures triggered by exotic surround audio formats (TrueHD, DTS-HD, multichannel PCM).
-- Real-time HDR/SDR headroom tracking: Added dynamic listener on Android 14+ (`Display.registerHdrSdrRatioChangedListener`) to log panel HDR headroom shifts during session playback.
-
----
-
-## v0.2.0 (Tablet & Adaptive Split-View)
-
-- Clear active comparison states, with a filled button, checkmark, and Selected label.
-- Adaptive tablet layout: approximately 25% controls and 75% testing area, with a single-column layout for narrow windows.
-- Refined controls, device-neutral guidance, and capability queries off the UI thread.
-- Retains the player across responsive layout changes and avoids reloading the active comparison mode.
-- Optimized APK with R8 and resource shrinking, signed with the dedicated local release key for in-place updates.
+- Filled/checkmarked Selected state; approximately 25% controls/75% test area and narrow-screen stacking.
+- Device-neutral guidance, refined controls and capability queries off the UI thread.
+- Retained player/current comparison through layout changes.
+- R8/resource shrinking and dedicated release signing for in-place updates.

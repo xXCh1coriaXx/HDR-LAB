@@ -1,116 +1,32 @@
-# OLED Tester — Community Display Calibration Database
+# Community reports
 
-> **Architecture, Google Drive Ingestion & JSON Telemetry Specification**  
-> Documentation for the crowd-sourced calibration data bucket in **OLED Tester** (`dev.hdrlab.light`).
+Testing works offline. Submission is optional and user-triggered: the app posts JSON asynchronously to the Apps Script endpoint in `ReportSubmitter.DEFAULT_ENDPOINT`. The UI currently allows reporting before test completion.
 
----
+## Current payload
 
-## 1. Overview & Data Flow
+`ReportSubmitter.CommunityReport.toJson()` is the source of truth. Its object is **flat**, not nested:
 
-Evaluating HDR presentation across fragmented Android OEM skins (One UI, HyperOS, MagicOS, OxygenOS) requires community benchmarking. HDR Lab Light tests a 10-second SDR baseline followed by an exact-frame HDR transition, allowing users to voluntarily submit perceptual evaluations alongside rich hardware and display diagnostics.
+| Group | Keys |
+| --- | --- |
+| Metadata | `appVersion`, `timestamp` (Unix milliseconds) |
+| Device | `deviceName`, `model`, `manufacturer`, `brand`, `product`, `hardware`, `socModel` |
+| OS | `os`, `androidRelease`, `sdkInt` |
+| Display | `hdrTypes`, `peakNits`, `minNits`, `wideColorGamut`, `activeMode`, `refreshRateHz`, `supportedModes` |
+| Survey | `sdrBlackLevel`, `sdrSteps`, `hdrBlackLevel`, `hdrSteps`, `comments` |
+| OLED observations | `oledBlackCrush`, `oledSmear`, `oledUniformity`, `oledFloatingBlack`, `oledBurnIn` |
+| Compatibility aliases | `hdr`, `nits`, `sdr_black`, `sdr_steps`, `hdr_black`, `hdr_steps` |
 
-To eliminate spreadsheet write locks, column misalignment, and mobile formatting issues, HDR Lab Light uses an **Event-Sourced JSON Bucket** architecture:
-* Every test submission creates an **immutable, self-contained JSON document** inside a designated Google Drive folder.
-* Submissions are processed through a serverless Google Apps Script webhook running `DriveApp.createFile()`.
-* At any time, reports can be aggregated into Excel (`.xlsx`) or Google Sheets on demand.
+HDR types/supported modes are arrays; gamut is boolean. Invalid/unavailable luminance or refresh values become JSON null; refresh is rounded to two decimals. Missing optional OLED responses are empty strings. Survey values are localised text, not stable research categories. Report version comes from BuildConfig; there is no current schema-version field.
 
-```mermaid
-flowchart TD
-    subgraph AndroidDevice ["Android Device (dev.hdrlab.light)"]
-        A["Hardware & Display Query (Nits, Gamut, Refresh Rate, HDR Types)"]
-        B["Custom OS Detection (MagicOS, HyperOS, One UI, OxygenOS)"]
-        C["SDR Baseline Survey (Pure Black OLED vs LCD Glow, 1%-6% Steps)"]
-        D["HDR Transition Survey (Pure Black vs Raised Bug, 1%-6% Steps)"]
-        A & B & C & D --> E["Asynchronous HTTPS POST (JSON Payload)"]
-    end
+Display values are declarations, not measurements. ROM detection is covered in [architecture](ARCHITECTURE.md#device-and-rom-discovery).
 
-    subgraph Webhook ["Google Apps Script Webhook"]
-        F["doPost(e) Ingestion (JSON Parsing & Sanitization)"]
-    end
+## Proposed backend
 
-    subgraph Storage ["Google Drive Folder: HDR lab reports"]
-        G["report_YYYY-MM-DD_HH-mm-ss_Model.json"]
-    end
+The script below saves each submission as a separate JSON file in Drive folder `HDR lab reports` (`1VEHauaaZFqlIzDBNgHXb0RLlgMnkwoeb`), named `report_YYYY-MM-DD_HH-mm-ss_<model>.json` using server UTC. Reports can later be aggregated into CSV/Excel/Sheets; no aggregation tool is supplied here.
 
-    subgraph Analytics ["On-Demand Aggregation"]
-        H["Batch Script (Python / Apps Script) -> Excel (.xlsx) / CSV"]
-    end
+This is a backend example, not confirmation of the deployed configuration. Separate files avoid shared spreadsheet row updates but do not enforce immutability. The client accepts HTTP 2xx/3xx without checking the script's response body, so displayed success does not prove storage.
 
-    E -->|"HTTPS POST (application/json)"| F
-    F -->|"folder.createFile()"| G
-    G --> H
-```
-
----
-
-## 2. Structured JSON Document Schema
-
-Each report saved to Google Drive contains a structured JSON payload:
-
-```json
-{
-  "survey": {
-    "sdrBlackLevel": "Pure absolute black (OLED / Pixels off)",
-    "sdrSteps": "All 6 steps visible (Excellent shadow detail)",
-    "hdrBlackLevel": "Elevated / Glowed grey (Raised blacks bug in HDR)",
-    "hdrSteps": "4 to 5 steps visible in HDR",
-    "oledBlackCrush": "Crushes below 1%",
-    "oledSmear": "Mild",
-    "oledUniformity": "Clean & uniform",
-    "oledFloatingBlack": "True black (pixels off)",
-    "oledBurnIn": "Clean (no ghosting)",
-    "comments": "Observed in dark room, Natural color mode."
-  },
-  "device": {
-    "manufacturer": "HONOR",
-    "model": "ROD2-W09",
-    "os": "MagicOS_10.0.0 (Android 16)",
-    "androidRelease": "16",
-    "sdkInt": 36,
-    "hardware": "qcom",
-    "socModel": "SM8650"
-  },
-  "display": {
-    "peakBrightnessNits": 460,
-    "minLuminanceNits": 0.0001,
-    "maxAverageLuminanceNits": 460,
-    "advertisedHdrTypes": ["HDR10", "HLG", "HDR10+"],
-    "wideColorGamut": true,
-    "activeMode": "2800 × 1840 @ 120.00 Hz",
-    "refreshRateHz": 120.0,
-    "supportedModes": ["2800 × 1840 @ 60.00 Hz", "2800 × 1840 @ 120.00 Hz"],
-    "reportedHdrSdrRatio": 1.0
-  },
-  "metadata": {
-    "appVersion": "0.1.7",
-    "appVersionCode": 8,
-    "timestamp": 1729685000000,
-    "timestampIso": "2026-10-23T12:00:00.000Z"
-  }
-}
-```
-
----
-
-## 3. Custom OS / ROM Mapping
-
-Custom OEM video enhancers and dynamic contrast layers are detected via system properties:
-
-| Vendor Skin | Primary System Property | Secondary / Fallback Property |
-|---|---|---|
-| **Honor MagicOS** | `ro.build.version.magic` | `ro.honor.build.version.incremental` |
-| **Xiaomi HyperOS / MIUI** | `ro.mi.os.version.name` | `ro.miui.ui.version.name` |
-| **Samsung One UI** | `ro.build.version.oneui` | `SEM_PLATFORM_INT` (Build.VERSION) |
-| **OnePlus OxygenOS** | `ro.oxygen.version` | `ro.build.version.opporom` |
-| **OPPO ColorOS** | `ro.build.version.opporom` | `ro.rom.different.version` |
-| **Google Pixel UI** | `ro.build.flavor` | Google vendor build tags |
-| **Stock AOSP / Fallback** | `Build.DISPLAY` | `"AOSP / Stock (" + Build.VERSION.RELEASE + ")"` |
-
----
-
-## 4. Turnkey Google Apps Script (`Code.gs`)
-
-Paste this code into **Extensions $\rightarrow$ Apps Script** in your Google Workspace:
+### Apps Script (`Code.gs`)
 
 ```javascript
 /**
@@ -186,32 +102,17 @@ function doGet(e) {
 }
 ```
 
-### Deployment Instructions:
-1. Open [Google Apps Script](https://script.google.com).
-2. Paste the code above into `Code.gs` and click **Save** (disk icon).
-3. In the top right, click **Deploy $\rightarrow$ Manage deployments** (or **New deployment**).
-4. Click the **Edit** (pencil icon) next to your Web App.
-5. Under **Version**, select **"New version"**.
-6. Set **Who has access:** `Anyone`.
-7. Click **Deploy**.
+### Deploy
 
----
+1. Open [Google Apps Script](https://script.google.com) (or a Sheet's **Extensions → Apps Script**) and save the code as `Code.gs`.
+2. Select **Deploy → New deployment → Web app**, or edit an existing web-app deployment under **Manage deployments**.
+3. For an update, select **New version**. Set **Who has access** to **Anyone**, then deploy.
+4. Check the resulting endpoint against `ReportSubmitter.DEFAULT_ENDPOINT`; a new deployment may have a different URL. Changing the app endpoint is separate code work.
 
-## 5. Privacy & Zero-Telemetry Guarantee
+This cleanup does not deploy the example or send reports.
 
-```
-+-----------------------------------------------------------------------------------------+
-|                               WHAT IS NEVER COLLECTED (ZERO)                            |
-+-----------------------------------------------------------------------------------------+
-|  [X] NO User Identity:          Zero names, email addresses, phone numbers, accounts.  |
-|  [X] NO Device Hardware IDs:    Zero IMEI, MEID, Serial Number, or MAC Address.        |
-|  [X] NO Persistent Tracking:    Zero Android ID (SSAID), Google Advertising ID (GAID). |
-|  [X] NO Location Telemetry:     Zero GPS coordinates, Wi-Fi SSIDs/BSSIDs, Cell IDs.   |
-|  [X] NO Media or File Data:     Zero user files, gallery content, or usage history.    |
-|  [X] NO Cookies or Credentials: Zero OAuth tokens, session storage, or account linking.|
-+-----------------------------------------------------------------------------------------+
-```
+## Privacy and limitations
 
-* **No Background Telemetry:** The app never transmits data in the background or during normal video playback.
-* **Explicit Opt-In:** Survey is presented only after the automated 10-second SDR-to-HDR test finishes.
-* **Dismissible Without Penalty:** Tapping "Cancel" discards all entered data immediately.
+The app adds no accounts, names, email addresses, hardware/tracking IDs, location, user files, cookies or credentials to the report. There is no background analytics or automatic reporting. Optional notes can contain personal information entered by the user; avoid including it. Cancel closes the survey without submission.
+
+Keep networking fail-safe and non-blocking. Real delivery, redirect handling, backend rejection and scientific validity need separate verification; see [known gaps](ARCHITECTURE.md#known-gaps).
