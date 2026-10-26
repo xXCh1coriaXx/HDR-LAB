@@ -14,6 +14,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.view.Display;
 import android.view.Gravity;
 import android.view.View;
 import android.view.WindowInsets;
@@ -26,6 +27,7 @@ import android.widget.LinearLayout;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.ScrollView;
+import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.core.content.FileProvider;
@@ -56,6 +58,9 @@ import java.util.concurrent.Executors;
 public final class MainActivity extends Activity {
     private static final int BG = 0xff101411, CARD = 0xff1b211c, TEXT = 0xffedf2e9;
     private static final int MUTED = 0xffa7b2a5, ACCENT = 0xffc8f578, CARD_STROKE = 0xff2c372c;
+    /** Pipeline B ladder variants reuse the packaged reference step videos. */
+    private static final String[] LADDER_VIDEOS = {"sdr_steps", "pq_steps", "hlg_steps"};
+    private static final int[] LADDER_VIDEO_LABELS = {R.string.oled_video_sdr, R.string.oled_video_pq, R.string.oled_video_hlg};
 
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final ExecutorService worker = Executors.newSingleThreadExecutor();
@@ -91,6 +96,15 @@ public final class MainActivity extends Activity {
     private Button btnWatchHdr;
     private Button btnRestart;
     private Button btnExit;
+
+    private LinearLayout oledCard;
+    private OledTestView oledView;
+    private Button btnPrev;
+    private Button btnNext;
+    private LinearLayout oledBrightnessRow;
+    private SeekBar brightnessSeek;
+    private int oledVariant;
+    private int originalDisplayModeId;
 
     private boolean fullscreen;
     private String currentMode = "sdr";
@@ -185,6 +199,7 @@ public final class MainActivity extends Activity {
 
         buildDeviceCapabilitiesCard();
         buildQuickTestCard();
+        buildOledCard();
 
         buildFullscreenContainer();
 
@@ -257,6 +272,21 @@ public final class MainActivity extends Activity {
         cardsContainer.addView(quickTestCard);
     }
 
+    /** Full-width card below the two responsive cards; it does not take part in their sizing. */
+    private void buildOledCard() {
+        oledCard = card();
+        TextView title = label(getString(R.string.card_oled_title), 18, TEXT);
+        title.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        oledCard.addView(title);
+        oledCard.addView(label(getString(R.string.card_oled_subtitle), 12, MUTED));
+        oledCard.addView(label(getString(R.string.oled_caveat), 12, TEXT));
+        oledCard.addView(button(getString(R.string.btn_oled_smear), () -> startOledSuite(OledTestView.MODE_SMEAR)));
+        oledCard.addView(button(getString(R.string.btn_oled_ladder), () -> startOledSuite(OledTestView.MODE_LADDER)));
+        oledCard.addView(button(getString(R.string.btn_oled_dse), () -> startOledSuite(OledTestView.MODE_DSE)));
+        oledCard.addView(button(getString(R.string.btn_oled_apl), () -> startOledSuite(OledTestView.MODE_APL)));
+        cardsLayout.addView(oledCard);
+    }
+
     private void buildFullscreenContainer() {
         fullscreenContainer = new FrameLayout(this);
         fullscreenContainer.setBackgroundColor(Color.BLACK);
@@ -266,6 +296,11 @@ public final class MainActivity extends Activity {
         playerView.setKeepContentOnPlayerReset(false);
         playerView.setUseController(false);
         fullscreenContainer.addView(playerView, new FrameLayout.LayoutParams(-1, -1));
+
+        oledView = new OledTestView(this);
+        oledView.setVisibility(View.GONE);
+        oledView.setOnClickListener(v -> showFullscreenHud());
+        fullscreenContainer.addView(oledView, new FrameLayout.LayoutParams(-1, -1));
 
         buildFullscreenHud();
         fullscreenContainer.setOnClickListener(v -> showFullscreenHud());
@@ -298,6 +333,30 @@ public final class MainActivity extends Activity {
         fullscreenTopHud.addView(hudTitleLabel);
         fullscreenTopHud.addView(hudTipLabel);
 
+        oledBrightnessRow = new LinearLayout(this);
+        oledBrightnessRow.setGravity(Gravity.CENTER_VERTICAL);
+        oledBrightnessRow.setVisibility(View.GONE);
+        oledBrightnessRow.addView(label(getString(R.string.oled_brightness), 12, MUTED));
+        brightnessSeek = new SeekBar(this);
+        brightnessSeek.setMin(1);
+        brightnessSeek.setMax(100);
+        brightnessSeek.setContentDescription(getString(R.string.oled_brightness));
+        brightnessSeek.setProgressTintList(ColorStateList.valueOf(ACCENT));
+        brightnessSeek.setThumbTintList(ColorStateList.valueOf(ACCENT));
+        brightnessSeek.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override public void onProgressChanged(SeekBar bar, int progress, boolean fromUser) {
+                if (!fromUser || !fullscreen) return;
+                // Window override only; exitFullscreen() restores the pre-fullscreen value.
+                WindowManager.LayoutParams lp = getWindow().getAttributes();
+                lp.screenBrightness = progress / 100f;
+                getWindow().setAttributes(lp);
+            }
+            @Override public void onStartTrackingTouch(SeekBar bar) { handler.removeCallbacks(hideFullscreenHud); }
+            @Override public void onStopTrackingTouch(SeekBar bar) { showFullscreenHud(); }
+        });
+        oledBrightnessRow.addView(brightnessSeek, new LinearLayout.LayoutParams(dp(200), -2));
+        fullscreenTopHud.addView(oledBrightnessRow);
+
         FrameLayout.LayoutParams topParams = new FrameLayout.LayoutParams(-2, -2, Gravity.TOP | Gravity.CENTER_HORIZONTAL);
         topParams.topMargin = dp(44);
         topParams.leftMargin = dp(16);
@@ -318,10 +377,16 @@ public final class MainActivity extends Activity {
         btnWatchHdr = hudButton(getString(R.string.hud_btn_watch_hdr), () -> switchToHdr(false));
         btnRestart = hudButton(getString(R.string.hud_btn_restart), this::restartTest);
         btnExit = hudButton(getString(R.string.hud_btn_exit), this::exitFullscreen);
+        btnPrev = hudButton(getString(R.string.hud_btn_prev), () -> showOledVariant(oledView.getMode(), oledVariant - 1));
+        btnNext = hudButton(getString(R.string.hud_btn_next), () -> showOledVariant(oledView.getMode(), oledVariant + 1));
+        btnPrev.setVisibility(View.GONE);
+        btnNext.setVisibility(View.GONE);
 
         fullscreenBottomHud.addView(btnWatchSdr);
         fullscreenBottomHud.addView(btnWatchHdr);
         fullscreenBottomHud.addView(btnRestart);
+        fullscreenBottomHud.addView(btnPrev);
+        fullscreenBottomHud.addView(btnNext);
         fullscreenBottomHud.addView(btnExit);
 
         FrameLayout.LayoutParams bottomParams = new FrameLayout.LayoutParams(-2, -2, Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL);
@@ -368,6 +433,10 @@ public final class MainActivity extends Activity {
 
     private void startAutomatedTest() {
         setFullscreen(true);
+        configureHudForOled(false);
+        oledView.stop();
+        oledView.setVisibility(View.GONE);
+        playerView.setVisibility(View.VISIBLE);
         isAutomatedTest = true;
         testSecondsElapsed = 0;
         currentMode = "sdr";
@@ -378,7 +447,71 @@ public final class MainActivity extends Activity {
         handler.postDelayed(testCountdownTicker, 1000);
     }
 
+    private void startOledSuite(int mode) {
+        setFullscreen(true);
+        isAutomatedTest = false;
+        handler.removeCallbacks(testCountdownTicker);
+        configureHudForOled(true);
+        brightnessSeek.setProgress(100);
+        showOledVariant(mode, 0);
+        showFullscreenHud();
+    }
+
+    private void configureHudForOled(boolean oled) {
+        int quickVis = oled ? View.GONE : View.VISIBLE;
+        int oledVis = oled ? View.VISIBLE : View.GONE;
+        btnWatchSdr.setVisibility(quickVis);
+        btnWatchHdr.setVisibility(quickVis);
+        btnRestart.setVisibility(quickVis);
+        btnPrev.setVisibility(oledVis);
+        btnNext.setVisibility(oledVis);
+    }
+
+    private void showOledVariant(int mode, int variant) {
+        int count = mode == OledTestView.MODE_LADDER ? 1 + LADDER_VIDEOS.length : OledTestView.variantCount(mode);
+        oledVariant = Math.floorMod(variant, count);
+        oledBrightnessRow.setVisibility(mode == OledTestView.MODE_SMEAR ? View.VISIBLE : View.GONE);
+        if (mode == OledTestView.MODE_LADDER && oledVariant > 0) {
+            int videoIdx = oledVariant - 1;
+            oledView.stop();
+            oledView.setVisibility(View.GONE);
+            playerView.setVisibility(View.VISIBLE);
+            playPattern(LADDER_VIDEOS[videoIdx], 0);
+            hudTitleLabel.setText(getString(R.string.oled_title_ladder_video, getString(LADDER_VIDEO_LABELS[videoIdx])));
+            hudTipLabel.setText(getString(R.string.oled_tip_ladder_video));
+            return;
+        }
+        if (player != null) player.pause();
+        playerView.setVisibility(View.GONE);
+        oledView.setVisibility(View.VISIBLE);
+        oledView.setPattern(mode, oledVariant);
+        switch (mode) {
+            case OledTestView.MODE_SMEAR:
+                hudTitleLabel.setText(getString(R.string.oled_title_smear, oledView.smearSpeed(),
+                    getString(oledView.smearVertical() ? R.string.oled_dir_vertical : R.string.oled_dir_horizontal)));
+                hudTipLabel.setText(getString(R.string.oled_tip_smear));
+                break;
+            case OledTestView.MODE_LADDER:
+                hudTitleLabel.setText(getString(R.string.oled_title_ladder_canvas));
+                hudTipLabel.setText(getString(R.string.oled_tip_ladder_canvas));
+                break;
+            case OledTestView.MODE_DSE:
+                hudTitleLabel.setText(getString(R.string.oled_title_dse, oledView.dsePercent(),
+                    getString(oledView.dsePan() ? R.string.oled_dse_pan : R.string.oled_dse_static)));
+                hudTipLabel.setText(getString(R.string.oled_tip_dse));
+                break;
+            case OledTestView.MODE_APL:
+                hudTitleLabel.setText(getString(R.string.oled_title_apl, oledView.aplPercent()));
+                hudTipLabel.setText(getString(R.string.oled_tip_apl));
+                break;
+        }
+    }
+
     private void switchToHdr(boolean autoTransition) {
+        if (!autoTransition) {
+            isAutomatedTest = false;
+            handler.removeCallbacks(testCountdownTicker);
+        }
         currentMode = "hdr";
         long pos = player != null ? player.getCurrentPosition() : 0;
         playPattern("pq_steps", pos);
@@ -401,27 +534,34 @@ public final class MainActivity extends Activity {
     }
 
     private void setFullscreen(boolean enabled) {
-        if (fullscreen == enabled) return;
-        if (enabled) {
-            fullscreen = true;
-            WindowManager.LayoutParams lp = getWindow().getAttributes();
-            originalBrightness = lp.screenBrightness;
-            lp.screenBrightness = 1.0f;
-            getWindow().setAttributes(lp);
-
-            if (Build.VERSION.SDK_INT >= 30) {
-                WindowInsetsController controller = getWindow().getInsetsController();
-                if (controller != null) {
-                    controller.hide(WindowInsets.Type.systemBars());
-                    controller.setSystemBarsBehavior(WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
-                }
-            }
-
-            workspaceLayout.setVisibility(View.GONE);
-            fullscreenContainer.setVisibility(View.VISIBLE);
-        } else {
+        if (!enabled) {
             exitFullscreen();
+            return;
         }
+        WindowManager.LayoutParams lp = getWindow().getAttributes();
+        if (!fullscreen) {
+            fullscreen = true;
+            originalBrightness = lp.screenBrightness;
+            originalDisplayModeId = lp.preferredDisplayModeId;
+        }
+        lp.screenBrightness = 1.0f;
+        Display display = Diagnostics.defaultDisplay(this);
+        if (display != null) {
+            Display.Mode best = Diagnostics.highestRefreshMode(display);
+            if (best != null) lp.preferredDisplayModeId = best.getModeId();
+        }
+        getWindow().setAttributes(lp);
+
+        if (Build.VERSION.SDK_INT >= 30) {
+            WindowInsetsController controller = getWindow().getInsetsController();
+            if (controller != null) {
+                controller.hide(WindowInsets.Type.systemBars());
+                controller.setSystemBarsBehavior(WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
+            }
+        }
+
+        workspaceLayout.setVisibility(View.GONE);
+        fullscreenContainer.setVisibility(View.VISIBLE);
     }
 
     private void exitFullscreen() {
@@ -431,10 +571,15 @@ public final class MainActivity extends Activity {
         handler.removeCallbacks(testCountdownTicker);
         handler.removeCallbacks(hideFullscreenHud);
         if (fullscreenHud != null) fullscreenHud.setVisibility(View.GONE);
+        if (oledView != null) {
+            oledView.stop();
+            oledView.setVisibility(View.GONE);
+        }
         if (player != null) player.pause();
 
         WindowManager.LayoutParams lp = getWindow().getAttributes();
         lp.screenBrightness = originalBrightness;
+        lp.preferredDisplayModeId = originalDisplayModeId;
         getWindow().setAttributes(lp);
 
         if (Build.VERSION.SDK_INT >= 30) {
@@ -663,7 +808,39 @@ public final class MainActivity extends Activity {
         rgHdrSteps.check(rb4A.getId());
         content.addView(rgHdrSteps);
 
-        // Question 5: Observations / Notes (optional)
+        // Optional OLED Test Suite observations
+        TextView oledHeader = label(getString(R.string.dialog_report_oled_header), 11, ACCENT);
+        oledHeader.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        oledHeader.setLetterSpacing(0.08f);
+        LinearLayout.LayoutParams oledHeaderParams = new LinearLayout.LayoutParams(-1, -2);
+        oledHeaderParams.topMargin = dp(16);
+        oledHeader.setLayoutParams(oledHeaderParams);
+        content.addView(oledHeader);
+
+        String notTested = getString(R.string.oled_not_tested);
+        RadioGroup rgCrush = addSurveyGroup(content, getString(R.string.dialog_report_crush_title),
+            notTested,
+            getString(R.string.dialog_report_crush_all),
+            getString(R.string.dialog_report_crush_below1),
+            getString(R.string.dialog_report_crush_below2),
+            getString(R.string.dialog_report_crush_below3),
+            getString(R.string.dialog_report_crush_above3));
+        RadioGroup rgSmear = addSurveyGroup(content, getString(R.string.dialog_report_smear_title),
+            notTested,
+            getString(R.string.dialog_report_smear_none),
+            getString(R.string.dialog_report_smear_mild),
+            getString(R.string.dialog_report_smear_severe));
+        RadioGroup rgDse = addSurveyGroup(content, getString(R.string.dialog_report_dse_title),
+            notTested,
+            getString(R.string.dialog_report_dse_clean),
+            getString(R.string.dialog_report_dse_banding),
+            getString(R.string.dialog_report_dse_mottling));
+        RadioGroup rgFloat = addSurveyGroup(content, getString(R.string.dialog_report_float_title),
+            notTested,
+            getString(R.string.dialog_report_float_true),
+            getString(R.string.dialog_report_float_glow));
+
+        // Question 9: Observations / Notes (optional)
         TextView q5Title = label(getString(R.string.dialog_report_q5_title), 13, ACCENT);
         q5Title.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
         LinearLayout.LayoutParams q5Params = new LinearLayout.LayoutParams(-1, -2);
@@ -740,6 +917,9 @@ public final class MainActivity extends Activity {
                 String brand = Build.BRAND != null ? Build.BRAND : "";
                 String product = Build.PRODUCT != null ? Build.PRODUCT : "";
                 String hardware = Build.HARDWARE != null ? Build.HARDWARE : "";
+                Display display = Diagnostics.defaultDisplay(this);
+                float refreshRateHz = display != null ? display.getRefreshRate() : -1f;
+                List<String> supportedModes = Diagnostics.supportedModeLabels(display);
 
                 ReportSubmitter.CommunityReport report = new ReportSubmitter.CommunityReport(
                     cleanDevice,
@@ -763,7 +943,13 @@ public final class MainActivity extends Activity {
                     hdrBlackLevel,
                     hdrSteps,
                     comments,
-                    System.currentTimeMillis()
+                    System.currentTimeMillis(),
+                    refreshRateHz,
+                    supportedModes,
+                    optionalObservation(rgCrush, notTested),
+                    optionalObservation(rgSmear, notTested),
+                    optionalObservation(rgDse, notTested),
+                    optionalObservation(rgFloat, notTested)
                 );
 
                 ReportSubmitter.submit(report, ReportSubmitter.DEFAULT_ENDPOINT, new ReportSubmitter.Callback() {
@@ -777,6 +963,29 @@ public final class MainActivity extends Activity {
             })
             .setNegativeButton(getString(R.string.dialog_btn_cancel), null)
             .show();
+    }
+
+    private RadioGroup addSurveyGroup(LinearLayout parent, String titleText, String... options) {
+        TextView title = label(titleText, 13, ACCENT);
+        title.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(-1, -2);
+        p.topMargin = dp(12);
+        title.setLayoutParams(p);
+        parent.addView(title);
+        RadioGroup rg = new RadioGroup(this);
+        rg.setOrientation(RadioGroup.VERTICAL);
+        for (int i = 0; i < options.length; i++) {
+            RadioButton rb = createRadioButton(options[i]);
+            rg.addView(rb);
+            if (i == 0) rg.check(rb.getId());
+        }
+        parent.addView(rg);
+        return rg;
+    }
+
+    private String optionalObservation(RadioGroup group, String notTested) {
+        String value = getCheckedText(group);
+        return value.equals(notTested) ? "" : value;
     }
 
     private String getCheckedText(RadioGroup group) {
@@ -913,6 +1122,11 @@ public final class MainActivity extends Activity {
     @Override public void onBackPressed() {
         if (fullscreen) exitFullscreen();
         else super.onBackPressed();
+    }
+
+    @Override protected void onPause() {
+        if (fullscreen) exitFullscreen();
+        super.onPause();
     }
 
     @Override protected void onStop() {

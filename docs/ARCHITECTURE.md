@@ -12,7 +12,7 @@ Fullscreen currently requests `screenBrightness = 1.0f`. Restore the previous wi
 
 ## Layout and widget ordering
 
-`cardsContainer` inside `cardsLayout` holds Screen Capabilities and Quick Test. Wide threshold: `widthDp >= 720 || (widthDp >= 580 && isLandscape)`.
+`cardsContainer` inside `cardsLayout` holds Screen Capabilities and Quick Test. `oledCard` is a full-width card added to `cardsLayout` below `cardsContainer` so it does not affect the two-card responsive sizing. Wide threshold: `widthDp >= 720 || (widthDp >= 580 && isLandscape)`.
 
 - Wide: horizontal container, `setBaselineAligned(false)`, child `LinearLayout.LayoutParams(0, MATCH_PARENT, 1f)`.
 - Flexible spacer (`height=0`, `weight=1f`) above `btnDetailedReport` aligns primary buttons at the bottom.
@@ -54,11 +54,16 @@ Intended flow: ten-second SDR-to-HDR test followed by voluntary reporting. Curre
 
 The documented Apps Script saves individual immutable JSON reports to the `HDR lab reports` Drive folder (`1VEHauaaZFqlIzDBNgHXb0RLlgMnkwoeb`), named `report_YYYY-MM-DD_HH-mm-ss_<device_model>.json`. [COMMUNITY_DATABASE.md](COMMUNITY_DATABASE.md) describes the proposed backend; it does not establish deployed configuration. Keep submission asynchronous, optional, non-blocking and safe offline. Avoid persistent identifiers or personal-data prompts; optional free text can still contain user-entered personal data.
 
+## OLED test suite (`OledTestView`)
+
+`OledTestView` renders Pipeline A canvas patterns (black-to-dark motion smear, 0.5%–10% near-black step ladder, 1%–15% uniformity/DSE static and optokinetic horizontal pan, and 1%–100% APL white windows) on a `#000000` background. Levels are full-range 8-bit signal percentages (`Math.round(percent * 2.55f)`), not calibrated luminance. Pipeline B in the ladder suite reuses the packaged `sdr_steps`, `pq_steps` and `hlg_steps` reference videos on Media3 `SurfaceView`.
+
+Motion patterns use `Choreographer.FrameCallback` and request the highest supported refresh mode at the current resolution via `WindowManager.LayoutParams.preferredDisplayModeId` (restored on exit). Static patterns do not schedule frame callbacks. Dropped frames are estimated from frame deltas exceeding `1.5x` the nominal display period so app stutter is not confused with panel smearing.
+
 ## Known gaps outside developer QoL cleanup
 
 - Release key and credentials are tracked/exposed. Preserve signing continuity; deleting a working-tree file cannot revoke previous copies. Secure storage/key migration need separate work.
-- `onPause()` does not currently restore brightness. Requirements above do not mean this is fixed.
-- Manual HDR selection can leave the countdown active and reload HDR later. Countdown measures callbacks rather than confirmed playback time; HDR status does not confirm physical output.
+- Countdown measures callbacks rather than confirmed playback time; HDR status does not confirm physical output.
 - Submission accepts HTTP 2xx/3xx without validating server acknowledgement. Real network, redirection and backend rejection need targeted tests and changes.
 - Survey defaults, translated response text, percentage labels and schema versioning need a scientific-data pass. Existing tests do not establish scientific validity.
 
@@ -66,4 +71,4 @@ The documented Apps Script saves individual immutable JSON reports to the `HDR l
 
 English source/comments/IDs; UI text in resources. English `res/values/strings.xml` is fallback and European Portuguese lives in `res/values-pt/strings.xml`, selected natively by Android. No custom language switch.
 
-Normal use stays offline. INTERNET is exclusively for requested community reports; no analytics, ads, crash beacons, accounts or persistent identifiers. Preserve R8/resource shrinking and APK below 2,000,000 bytes. Avoid speculative layers and do not remove existing functionality merely to simplify.
+Normal use stays offline. INTERNET is exclusively for requested community reports; no analytics, ads, crash beacons, accounts or persistent identifiers. Preserve R8 and resource shrinking; there is no hard 2 MB APK size limit. Avoid speculative layers and do not remove existing functionality merely to simplify.

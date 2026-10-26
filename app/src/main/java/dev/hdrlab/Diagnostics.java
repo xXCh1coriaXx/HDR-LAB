@@ -250,17 +250,24 @@ final class Diagnostics {
         }
     }
 
+    static Display defaultDisplay(Context context) {
+        if (context == null) return null;
+        try {
+            Display d = context.getDisplay();
+            if (d != null) return d;
+        } catch (Throwable ignored) { /* Fall back for contexts without a display */ }
+        try {
+            DisplayManager dm = context.getSystemService(DisplayManager.class);
+            return dm != null ? dm.getDisplay(Display.DEFAULT_DISPLAY) : null;
+        } catch (Throwable ignored) {
+            return null;
+        }
+    }
+
     static DeviceSummary summarize(Context context, JSONObject deviceSnapshot) {
         String osInfo = detectOsInfo();
         String modelAndVersion = getCleanDeviceName(Build.MANUFACTURER, Build.MODEL) + "  ·  " + osInfo;
-        Display display = null;
-        try { display = context != null ? context.getDisplay() : null; }
-        catch (Throwable ignored) { /* Fall back for contexts without a display */ }
-        if (display == null && context != null) {
-            try {
-                display = context.getSystemService(DisplayManager.class).getDisplay(Display.DEFAULT_DISPLAY);
-            } catch (Throwable ignored) {}
-        }
+        Display display = defaultDisplay(context);
 
         boolean hasHdr = false;
         String hdrSupport = context != null ? context.getString(R.string.hdr_support_no) : "No (SDR only)";
@@ -288,10 +295,7 @@ final class Diagnostics {
                 minLum = caps.getDesiredMinLuminance();
             }
             Display.Mode active = display.getMode();
-            if (active != null) {
-                activeMode = active.getPhysicalWidth() + " × " + active.getPhysicalHeight()
-                    + " @ " + String.format(Locale.US, "%.2f Hz", active.getRefreshRate());
-            }
+            if (active != null) activeMode = formatMode(active);
         } else if (deviceSnapshot != null && deviceSnapshot.has("display")) {
             JSONObject screen = deviceSnapshot.optJSONObject("display");
             if (screen != null) {
@@ -361,11 +365,7 @@ final class Diagnostics {
         root.put("android", Build.VERSION.RELEASE != null ? Build.VERSION.RELEASE : "");
         root.put("sdk", Build.VERSION.SDK_INT);
         root.put("build", Build.DISPLAY != null ? Build.DISPLAY : "");
-        Display display = null;
-        try { display = context.getDisplay(); }
-        catch (UnsupportedOperationException ignored) { /* Fall back for contexts without a display. */ }
-        if (display == null) display = context.getSystemService(DisplayManager.class)
-            .getDisplay(Display.DEFAULT_DISPLAY);
+        Display display = defaultDisplay(context);
         if (display != null) {
             JSONObject screen = new JSONObject();
             Display.HdrCapabilities caps = display.getHdrCapabilities();
@@ -378,8 +378,19 @@ final class Diagnostics {
             putLuminance(screen, "desiredMaxAverageLuminanceNits", caps == null ? -1 : caps.getDesiredMaxAverageLuminance());
             putLuminance(screen, "desiredMinLuminanceNits", caps == null ? -1 : caps.getDesiredMinLuminance());
             Display.Mode active = display.getMode();
-            screen.put("activeMode", active.getPhysicalWidth() + " × " + active.getPhysicalHeight()
-                + " @ " + String.format(Locale.US, "%.2f Hz", active.getRefreshRate()));
+            screen.put("activeMode", formatMode(active));
+            screen.put("activeModeId", active.getModeId());
+            screen.put("refreshRateHz", round2(display.getRefreshRate()));
+            JSONArray modes = new JSONArray();
+            Display.Mode[] supported = display.getSupportedModes();
+            if (supported == null || supported.length == 0) supported = new Display.Mode[] {active};
+            for (Display.Mode m : supported) {
+                if (m == null) continue;
+                modes.put(new JSONObject().put("id", m.getModeId())
+                    .put("width", m.getPhysicalWidth()).put("height", m.getPhysicalHeight())
+                    .put("refreshRateHz", round2(m.getRefreshRate())));
+            }
+            screen.put("supportedModes", modes);
             if (Build.VERSION.SDK_INT >= 34 && display.isHdrSdrRatioAvailable()) {
                 screen.put("reportedHdrSdrRatio", display.getHdrSdrRatio());
             }
@@ -413,6 +424,38 @@ final class Diagnostics {
         }
         root.put("decoders", decoders);
         return root;
+    }
+
+    static String formatMode(Display.Mode mode) {
+        return mode.getPhysicalWidth() + " × " + mode.getPhysicalHeight()
+            + " @ " + String.format(Locale.US, "%.2f Hz", mode.getRefreshRate());
+    }
+
+    /** Distinct physical modes declared by the display, in OS order. */
+    static List<String> supportedModeLabels(Display display) {
+        java.util.Set<String> labels = new java.util.LinkedHashSet<>();
+        if (display != null) {
+            Display.Mode[] supported = display.getSupportedModes();
+            if (supported != null) for (Display.Mode m : supported) if (m != null) labels.add(formatMode(m));
+            if (labels.isEmpty() && display.getMode() != null) labels.add(formatMode(display.getMode()));
+        }
+        return new ArrayList<>(labels);
+    }
+
+    /** Highest-refresh supported mode at the active resolution, or the active mode. */
+    static Display.Mode highestRefreshMode(Display display) {
+        Display.Mode best = display.getMode();
+        Display.Mode[] supported = display.getSupportedModes();
+        if (best != null && supported != null) for (Display.Mode m : supported) {
+            if (m != null && m.getPhysicalWidth() == best.getPhysicalWidth()
+                    && m.getPhysicalHeight() == best.getPhysicalHeight()
+                    && m.getRefreshRate() > best.getRefreshRate()) best = m;
+        }
+        return best;
+    }
+
+    private static double round2(float value) {
+        return Math.round(value * 100.0) / 100.0;
     }
 
     private static void putLuminance(JSONObject out, String name, float value) throws Exception {

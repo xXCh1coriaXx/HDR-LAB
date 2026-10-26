@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- App & Header -->
-    <string name="app_name">HDR Lab Light</string>
+    <string name="app_name">OLED Tester</string>
     <string name="header_eyebrow">DIAGNÓSTICO VISUAL DE ECRÃ</string>
-    <string name="header_title">HDR Lab Light</string>
+    <string name="header_title">OLED Tester</string>
     <string name="header_subtitle">Verifica a calibração de pretos e capacidade HDR do teu ecrã.</string>
 
     <!-- Card 1: Screen Capabilities -->
@@ -58,8 +58,8 @@
     <string name="dialog_technical_report_title">Relatório Técnico do Dispositivo</string>
     <string name="dialog_btn_share">Partilhar</string>
     <string name="dialog_btn_close">Fechar</string>
-    <string name="share_report_title">Partilhar Relatório HDR Lab Light</string>
-    <string name="share_clip_label">Relatório HDR Lab Light</string>
+    <string name="share_report_title">Partilhar Relatório OLED Tester</string>
+    <string name="share_clip_label">Relatório OLED Tester</string>
     <string name="error_dialog">Erro: %1$s</string>
     <string name="error_share">Falha ao partilhar: %1$s</string>
 
@@ -88,10 +88,61 @@
     <string name="dialog_report_q4_opt_b">4 a 5 degraus visíveis em HDR</string>
     <string name="dialog_report_q4_opt_c">Menos de 4 degraus em HDR (Sombras esmagadas em HDR)</string>
     <!-- Secção 3: Notas -->
-    <string name="dialog_report_q5_title">5. Observações / Notas (opcional):</string>
+    <string name="dialog_report_q5_title">9. Observações / Notas (opcional):</string>
     <string name="dialog_report_q5_hint">ex.: iluminação ambiente, modo de ecrã…</string>
     <string name="dialog_btn_cancel">Cancelar</string>
     <string name="dialog_btn_submit">Submeter</string>
     <string name="report_submit_success">✅ Relatório enviado com sucesso! Obrigado pela contribuição.</string>
     <string name="report_submit_error">❌ Falha ao enviar relatório: %1$s</string>
+
+    <!-- Cartão 3: Bateria de Testes OLED -->
+    <string name="card_oled_title">Bateria de Testes OLED</string>
+    <string name="card_oled_subtitle">Padrões em ecrã cheio para arrastamento, black crush, uniformidade e ABL</string>
+    <string name="oled_caveat">Apenas observações visuais: os padrões usam níveis de sinal, não luminância medida. O processamento do fabricante, o brilho e a luz ambiente afetam os resultados.</string>
+    <string name="btn_oled_smear">Arrastamento Preto-Escuro (Movimento)</string>
+    <string name="btn_oled_ladder">Escada Quase-Preto e Black Crush</string>
+    <string name="btn_oled_dse">Uniformidade Quase-Preto / DSE</string>
+    <string name="btn_oled_apl">Janelas ABL / APL e Preto Flutuante</string>
+
+    <!-- HUD OLED em ecrã cheio -->
+    <string name="hud_btn_prev">◀ Anterior</string>
+    <string name="hud_btn_next">Seguinte ▶</string>
+    <string name="oled_brightness">Brilho</string>
+    <string name="oled_dir_horizontal">horizontal</string>
+    <string name="oled_dir_vertical">vertical</string>
+    <string name="oled_title_smear">ARRASTAMENTO · %1$d px/s · %2$s</string>
+    <string name="oled_tip_smear">Observa as extremidades traseiras dos blocos escuros: há rastos roxos ou azuis? Compara com brilho baixo e alto.</string>
+    <string name="oled_title_ladder_canvas">BLACK CRUSH · Pipeline A: Canvas / IU do sistema</string>
+    <string name="oled_title_ladder_video">BLACK CRUSH · Pipeline B: vídeo %1$s</string>
+    <string name="oled_tip_ladder_canvas" formatted="false">Encontra o primeiro quadrado numerado que distingues do preto puro (sinal de 0,5% a 10%).</string>
+    <string name="oled_tip_ladder_video">Reprodução Media3 em SurfaceView do vídeo de degraus de referência. Compara os degraus visíveis com a escada Canvas.</string>
+    <string name="oled_title_dse">UNIFORMIDADE · %1$.0f%% · %2$s</string>
+    <string name="oled_dse_static">estático</string>
+    <string name="oled_dse_pan">deslocamento lento</string>
+    <string name="oled_tip_dse">Procura faixas verticais, manchas ou textura irregular. O deslocamento lento ajuda a revelar não-uniformidades fixas do painel.</string>
+    <string name="oled_title_apl">ABL / APL · janela de %1$.0f%%</string>
+    <string name="oled_tip_apl">O preto à volta mantém-se desligado? A caixa branca escurece à medida que a janela cresce?</string>
+    <string name="oled_ladder_label">%1$d · %2$.1f%%</string>
+    <string name="oled_stats_format">%1$.1f fps · %2$d perdidas · %3$.0f Hz</string>
+
+    <!-- Relatório Comunitário: Bateria de Testes OLED -->
+    <string name="dialog_report_oled_header">BATERIA DE TESTES OLED (OPCIONAL)</string>
+    <string name="oled_not_tested">Não testado</string>
+    <string name="dialog_report_crush_title">5. Limiar de Black Crush (Escada Quase-Preto):</string>
+    <string name="dialog_report_crush_all" formatted="false">Todos os degraus visíveis (a partir de 0,5%)</string>
+    <string name="dialog_report_crush_below1" formatted="false">Esmaga abaixo de 1%</string>
+    <string name="dialog_report_crush_below2" formatted="false">Esmaga abaixo de 2%</string>
+    <string name="dialog_report_crush_below3" formatted="false">Esmaga abaixo de 3%</string>
+    <string name="dialog_report_crush_above3" formatted="false">Esmaga 3% ou mais</string>
+    <string name="dialog_report_smear_title">6. Arrastamento Roxo OLED (Movimento):</string>
+    <string name="dialog_report_smear_none">Nenhum</string>
+    <string name="dialog_report_smear_mild">Ligeiro</string>
+    <string name="dialog_report_smear_severe">Severo</string>
+    <string name="dialog_report_dse_title">7. Uniformidade Quase-Preto / DSE:</string>
+    <string name="dialog_report_dse_clean">Limpo e uniforme</string>
+    <string name="dialog_report_dse_banding">Faixas visíveis</string>
+    <string name="dialog_report_dse_mottling">Manchas severas / DSE</string>
+    <string name="dialog_report_float_title">8. Preto Flutuante com Janela Brilhante:</string>
+    <string name="dialog_report_float_true">Preto real (píxeis desligados)</string>
+    <string name="dialog_report_float_glow">Brilho visível à volta da janela</string>
 </resources>

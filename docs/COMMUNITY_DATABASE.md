@@ -1,7 +1,7 @@
-# HDR Lab Light — Community Display Calibration Database
+# OLED Tester — Community Display Calibration Database
 
 > **Architecture, Google Drive Ingestion & JSON Telemetry Specification**  
-> Documentation for the crowd-sourced calibration data bucket in **HDR Lab Light** (`dev.hdrlab.light`).
+> Documentation for the crowd-sourced calibration data bucket in **OLED Tester** (`dev.hdrlab.light`).
 
 ---
 
@@ -54,6 +54,10 @@ Each report saved to Google Drive contains a structured JSON payload:
     "sdrSteps": "All 6 steps visible (Excellent shadow detail)",
     "hdrBlackLevel": "Elevated / Glowed grey (Raised blacks bug in HDR)",
     "hdrSteps": "4 to 5 steps visible in HDR",
+    "oledBlackCrush": "Crushes below 1%",
+    "oledSmear": "Mild",
+    "oledUniformity": "Clean & uniform",
+    "oledFloatingBlack": "True black (pixels off)",
     "comments": "Observed in dark room, Natural color mode."
   },
   "device": {
@@ -72,6 +76,8 @@ Each report saved to Google Drive contains a structured JSON payload:
     "advertisedHdrTypes": ["HDR10", "HLG", "HDR10+"],
     "wideColorGamut": true,
     "activeMode": "2800 × 1840 @ 120.00 Hz",
+    "refreshRateHz": 120.0,
+    "supportedModes": ["2800 × 1840 @ 60.00 Hz", "2800 × 1840 @ 120.00 Hz"],
     "reportedHdrSdrRatio": 1.0
   },
   "metadata": {

@@ -9,8 +9,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\tools\verify.ps1 -Release 
 ```
 
 The default runs `testDebugUnitTest` and `lintDebug`. `-Release` also runs
-`assembleRelease` and `lintRelease`, then requires the release APK to be strictly
-smaller than 2,000,000 bytes. `-Patterns` additionally runs `verify_patterns.py`
+`assembleRelease` and `lintRelease`, then verifies and reports the release APK
+size (no hard 2 MB cap). `-Patterns` additionally runs `verify_patterns.py`
 against all existing video assets; it requires Python 3, `ffmpeg`, and `ffprobe`
 on PATH. Checks do not regenerate assets or submit community reports.
 

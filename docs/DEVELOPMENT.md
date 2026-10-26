@@ -16,7 +16,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\tools\verify.ps1
 powershell -NoProfile -ExecutionPolicy Bypass -File .\tools\verify.ps1 -Release -Patterns
 ```
 
-Default checks run unit tests and debug lint. `-Release` adds release assembly, release lint and the strict APK size gate; `-Patterns` checks packaged video signaling and decoded references. Failures return a nonzero exit code. No patterns are regenerated or reports submitted. Logs are under `app/build/validation`; reports under `app/build/reports`. See [tool reference](../tools/README.md) for toolchain discovery and optional path overrides.
+Default checks run unit tests and debug lint. `-Release` adds release assembly, release lint and reports the release APK size (no hard 2 MB limit); `-Patterns` checks packaged video signaling and decoded references. Failures return a nonzero exit code. No patterns are regenerated or reports submitted. Logs are under `app/build/validation`; reports under `app/build/reports`. See [tool reference](../tools/README.md) for toolchain discovery and optional path overrides.
 
 Windows may resolve `python` to a nonfunctional Microsoft Store alias. Use `-PythonExecutable 'C:\path\to\python.exe'` with a real Python 3 runtime; the script checks it before Gradle when patterns are requested.
 
@@ -38,8 +38,9 @@ Test report: `app/build/reports/tests/testDebugUnitTest/index.html`. Lint: `app/
 
 | Location | Responsibility |
 | --- | --- |
-| `app/src/main/java/dev/hdrlab/MainActivity.java` | Two-card UI, playback, fullscreen/countdown, asset extraction, survey |
-| `app/src/main/java/dev/hdrlab/Diagnostics.java` | Device names, display declarations, ROM detection, JSON |
+| `app/src/main/java/dev/hdrlab/MainActivity.java` | Two-card UI, OLED suite card, playback, fullscreen/countdown, asset extraction, survey |
+| `app/src/main/java/dev/hdrlab/OledTestView.java` | Canvas OLED patterns (smear, near-black ladder, DSE/uniformity, APL windows) |
+| `app/src/main/java/dev/hdrlab/Diagnostics.java` | Device names, display declarations, refresh modes, ROM detection, JSON |
 | `app/src/main/java/dev/hdrlab/ReportSubmitter.java` | Payload serialization and asynchronous HTTP |
 | `app/src/main/res/layout/player.xml` | SurfaceView configuration |
 | `app/src/main/res/values*/strings.xml` | English and Portuguese UI catalogs |
@@ -61,7 +62,7 @@ A successful build, PQ label, SurfaceView or declared nits does not prove correc
 
 Prefer GitHub Actions for shared compilation/publication. Local work does not imply pushing, tagging or releasing. A requested release updates Gradle version, current-only RELEASE_NOTES and historical CHANGELOG, then uses an annotated `vX.Y.Z` tag; release APK `HDR-Lab-Light-vX.Y.Z.apk`. README remains an accessible user guide.
 
-`ci.yml` verifies pull requests, pushes to `main` and manual runs: unit tests, release lint/build, all nine patterns and an APK strictly below 2,000,000 bytes. Test/lint reports are uploaded as artifacts even after failure. `release.yml` runs the same checks before publishing. Manual release dispatch requires an existing tag; it checks out that tag and requires its name to equal `v` plus `:app:printVersion`. Use tags containing the 0.2.0 tooling or newer; historical tags without that task cannot pass the updated workflow.
+`ci.yml` verifies pull requests, pushes to `main`/`beta` and manual runs: unit tests, release lint/build, all nine patterns and release APK output. Test/lint reports are uploaded as artifacts even after failure. `release.yml` runs the same checks before publishing. Manual release dispatch requires an existing tag; it checks out that tag and requires its name to equal `v` plus `:app:printVersion`. Use tags containing the 0.2.0 tooling or newer; historical tags without that task cannot pass the updated workflow.
 
 The release key `app/hdrlab-release.keystore` and build credentials are already exposed in Git. This is unresolved. Do not copy passwords into new docs/logs, silently delete/rotate the key or substitute machine-specific debug signing. Installed apps depend on signing continuity; secure storage/migration is separate work.
 

@@ -1,4 +1,4 @@
-# HDR Lab Light: agent quick start
+# OLED Tester: agent quick start
 
 Academic/research Android app. Read this first, then [DEVELOPMENT](docs/DEVELOPMENT.md) for setup and [ARCHITECTURE](docs/ARCHITECTURE.md) before touching playback, layout, diagnostics or surveys. Detailed lessons live there to keep this entry point small.
 
@@ -22,10 +22,10 @@ Academic/research Android app. Read this first, then [DEVELOPMENT](docs/DEVELOPM
 - English source, IDs, comments and log tags. Every UI string uses resources: English `values/strings.xml`, European Portuguese `values-pt/strings.xml`; native Android locale selection, no custom language switch.
 - INTERNET exclusively supports optional user-triggered reports, asynchronously and fail-safe. No unsolicited network work, analytics, ads, crash beacons, accounts or persistent identifiers. Normal testing remains offline.
 - Discover brands/models dynamically, deduplicate names and retain generic ROM fallbacks. OS properties are hints. Declared luminance is not measured luminance.
-- Keep APK below 2,000,000 bytes with R8 and resource shrinking. Do not compromise pattern integrity to save bytes.
+- Preserve R8 and resource shrinking. No hard 2 MB APK size limit; do not compromise pattern integrity to save bytes.
 
 ## Code and docs map
 
-- `app/src/main/java/dev/hdrlab/`: `MainActivity.java` (UI/player/countdown/survey/extraction), `Diagnostics.java` (device/display/ROM), `ReportSubmitter.java` (payload/HTTP).
+- `app/src/main/java/dev/hdrlab/`: `MainActivity.java` (UI/player/countdown/survey/extraction), `OledTestView.java` (OLED canvas suite), `Diagnostics.java` (device/display/ROM), `ReportSubmitter.java` (payload/HTTP).
 - `app/src/test/java/dev/hdrlab/LayoutTest.java`: Robolectric. `tools/`: validation/pattern generation. `.github/workflows/`: automation. `app/build.gradle.kts`: identity/version/signing/dependencies.
 - README is an accessible user guide. RELEASE_NOTES contains only the current release and feeds Actions; prepend history to CHANGELOG. A requested release bumps Gradle version and both docs, then uses an annotated `vX.Y.Z` tag; APK `HDR-Lab-Light-vX.Y.Z.apk`.

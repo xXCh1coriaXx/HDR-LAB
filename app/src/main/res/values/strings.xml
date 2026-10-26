@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- App & Header -->
-    <string name="app_name">HDR Lab Light</string>
+    <string name="app_name">OLED Tester</string>
     <string name="header_eyebrow">DISPLAY DIAGNOSTICS</string>
-    <string name="header_title">HDR Lab Light</string>
+    <string name="header_title">OLED Tester</string>
     <string name="header_subtitle">Verify black levels and HDR capability of your display.</string>
 
     <!-- Card 1: Screen Capabilities -->
@@ -59,7 +59,7 @@
     <string name="dialog_btn_share">Share</string>
     <string name="dialog_btn_close">Close</string>
     <string name="share_report_title">Share Report</string>
-    <string name="share_clip_label">HDR Lab Light report</string>
+    <string name="share_clip_label">OLED Tester report</string>
     <string name="error_dialog">Error: %1$s</string>
     <string name="error_share">Failed to share: %1$s</string>
 
@@ -88,10 +88,64 @@
     <string name="dialog_report_q4_opt_b">4 to 5 steps visible in HDR</string>
     <string name="dialog_report_q4_opt_c">Less than 4 steps in HDR (HDR crushed shadows)</string>
     <!-- Section 3: Notes -->
-    <string name="dialog_report_q5_title">5. Observations / Notes (optional):</string>
+    <string name="dialog_report_q5_title">9. Observations / Notes (optional):</string>
     <string name="dialog_report_q5_hint">e.g. ambient lighting, screen mode…</string>
     <string name="dialog_btn_cancel">Cancel</string>
     <string name="dialog_btn_submit">Submit</string>
     <string name="report_submit_success">✅ Report submitted successfully! Thank you.</string>
     <string name="report_submit_error">❌ Failed to submit report: %1$s</string>
+
+    <!-- Card 3: OLED Test Suite -->
+    <string name="card_oled_title">OLED Test Suite</string>
+    <string name="card_oled_subtitle">Fullscreen patterns for smearing, black crush, uniformity and ABL</string>
+    <string name="oled_caveat">Visual observations only: patterns use signal levels, not measured luminance. Vendor processing, brightness and ambient light affect results.</string>
+    <string name="btn_oled_smear">Black-to-Dark Smear (Motion)</string>
+    <string name="btn_oled_ladder">Near-Black Ladder &amp; Black Crush</string>
+    <string name="btn_oled_dse">Near-Black Uniformity / DSE</string>
+    <string name="btn_oled_apl">ABL / APL Windows &amp; Floating Black</string>
+
+    <!-- OLED Fullscreen HUD -->
+    <string name="hud_btn_prev">◀ Prev</string>
+    <string name="hud_btn_next">Next ▶</string>
+    <string name="oled_brightness">Brightness</string>
+    <string name="oled_dir_horizontal">horizontal</string>
+    <string name="oled_dir_vertical">vertical</string>
+    <string name="oled_title_smear">SMEAR · %1$d px/s · %2$s</string>
+    <string name="oled_tip_smear">Watch the trailing edges of the dark blocks for purple or blue trails. Compare low and high brightness.</string>
+    <string name="oled_title_ladder_canvas">BLACK CRUSH · Pipeline A: Canvas / OS UI</string>
+    <string name="oled_title_ladder_video">BLACK CRUSH · Pipeline B: %1$s video</string>
+    <string name="oled_tip_ladder_canvas" formatted="false">Find the first numbered patch you can tell apart from pure black (0.5% to 10% signal).</string>
+    <string name="oled_tip_ladder_video">Media3 SurfaceView playback of the reference step video. Compare visible steps with the canvas ladder.</string>
+    <string name="oled_title_dse">UNIFORMITY · %1$.0f%% · %2$s</string>
+    <string name="oled_dse_static">static</string>
+    <string name="oled_dse_pan">slow pan</string>
+    <string name="oled_tip_dse">Look for vertical bands, blotches or mottling. The slow pan helps reveal fixed panel non-uniformity.</string>
+    <string name="oled_title_apl">ABL / APL · %1$.0f%% window</string>
+    <string name="oled_tip_apl">Does the black surround stay off? Does the white box dim as the window grows?</string>
+    <string name="oled_ladder_label">%1$d · %2$.1f%%</string>
+    <string name="oled_stats_format">%1$.1f fps · %2$d dropped · %3$.0f Hz</string>
+    <string name="oled_video_sdr" translatable="false">SDR</string>
+    <string name="oled_video_pq" translatable="false">HDR10 / PQ</string>
+    <string name="oled_video_hlg" translatable="false">HLG</string>
+
+    <!-- Community Report: OLED Test Suite -->
+    <string name="dialog_report_oled_header">OLED TEST SUITE (OPTIONAL)</string>
+    <string name="oled_not_tested">Not tested</string>
+    <string name="dialog_report_crush_title">5. Black Crush Threshold (Near-Black Ladder):</string>
+    <string name="dialog_report_crush_all" formatted="false">All steps visible (0.5% and above)</string>
+    <string name="dialog_report_crush_below1" formatted="false">Crushes below 1%</string>
+    <string name="dialog_report_crush_below2" formatted="false">Crushes below 2%</string>
+    <string name="dialog_report_crush_below3" formatted="false">Crushes below 3%</string>
+    <string name="dialog_report_crush_above3" formatted="false">Crushes 3% or more</string>
+    <string name="dialog_report_smear_title">6. OLED Purple Smear (Motion):</string>
+    <string name="dialog_report_smear_none">None</string>
+    <string name="dialog_report_smear_mild">Mild</string>
+    <string name="dialog_report_smear_severe">Severe</string>
+    <string name="dialog_report_dse_title">7. Near-Black Uniformity / DSE:</string>
+    <string name="dialog_report_dse_clean">Clean &amp; uniform</string>
+    <string name="dialog_report_dse_banding">Visible banding</string>
+    <string name="dialog_report_dse_mottling">Severe mottling / DSE</string>
+    <string name="dialog_report_float_title">8. Floating Black Under Bright Window:</string>
+    <string name="dialog_report_float_true">True black (pixels off)</string>
+    <string name="dialog_report_float_glow">Visible glow around the window</string>
 </resources>

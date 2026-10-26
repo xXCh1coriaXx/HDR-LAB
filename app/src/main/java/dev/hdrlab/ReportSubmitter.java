@@ -55,6 +55,14 @@ public final class ReportSubmitter {
         public final String activeMode;
         public final String appVersion;
 
+        // Display refresh modes and optional OLED suite observations (stable keys, "" when absent)
+        public final float refreshRateHz;
+        public final List<String> supportedModes;
+        public final String oledBlackCrush;
+        public final String oledSmear;
+        public final String oledUniformity;
+        public final String oledFloatingBlack;
+
         // Legacy compatibility fields
         public final String hdr;
         public final String nits;
@@ -67,6 +75,23 @@ public final class ReportSubmitter {
                                String sdrBlackLevel, String sdrSteps,
                                String hdrBlackLevel, String hdrSteps,
                                String comments, long timestamp) {
+            this(deviceName, model, manufacturer, brand, product, hardware, socModel, os, androidRelease,
+                 sdkInt, hdrTypes, peakNits, minNits, wideColorGamut, activeMode, appVersion,
+                 sdrBlackLevel, sdrSteps, hdrBlackLevel, hdrSteps, comments, timestamp,
+                 -1f, null, null, null, null, null);
+        }
+
+        public CommunityReport(String deviceName, String model, String manufacturer, String brand,
+                               String product, String hardware, String socModel,
+                               String os, String androidRelease, int sdkInt,
+                               List<String> hdrTypes, float peakNits, float minNits,
+                               boolean wideColorGamut, String activeMode, String appVersion,
+                               String sdrBlackLevel, String sdrSteps,
+                               String hdrBlackLevel, String hdrSteps,
+                               String comments, long timestamp,
+                               float refreshRateHz, List<String> supportedModes,
+                               String oledBlackCrush, String oledSmear,
+                               String oledUniformity, String oledFloatingBlack) {
             this.deviceName = deviceName != null && !deviceName.isEmpty()
                 ? deviceName : Diagnostics.getCleanDeviceName(manufacturer, model);
             this.model = model != null ? model : "";
@@ -91,6 +116,14 @@ public final class ReportSubmitter {
             this.hdrSteps = hdrSteps != null ? hdrSteps : "";
             this.comments = comments != null ? comments : "";
             this.timestamp = timestamp > 0 ? timestamp : System.currentTimeMillis();
+
+            this.refreshRateHz = refreshRateHz;
+            this.supportedModes = supportedModes != null
+                ? Collections.unmodifiableList(new ArrayList<>(supportedModes)) : Collections.emptyList();
+            this.oledBlackCrush = oledBlackCrush != null ? oledBlackCrush : "";
+            this.oledSmear = oledSmear != null ? oledSmear : "";
+            this.oledUniformity = oledUniformity != null ? oledUniformity : "";
+            this.oledFloatingBlack = oledFloatingBlack != null ? oledFloatingBlack : "";
 
             this.hdr = !this.hdrTypes.isEmpty() ? String.join(", ", this.hdrTypes) : "None";
             this.nits = this.peakNits > 0 ? String.valueOf(Math.round(this.peakNits)) : "Not reported";
@@ -156,6 +189,12 @@ public final class ReportSubmitter {
             this.wideColorGamut = false;
             this.activeMode = "";
             this.appVersion = APP_VERSION;
+            this.refreshRateHz = -1f;
+            this.supportedModes = Collections.emptyList();
+            this.oledBlackCrush = "";
+            this.oledSmear = "";
+            this.oledUniformity = "";
+            this.oledFloatingBlack = "";
         }
 
         public JSONObject toJson() {
@@ -198,6 +237,12 @@ public final class ReportSubmitter {
 
                 json.put("wideColorGamut", wideColorGamut);
                 json.put("activeMode", activeMode);
+                if (refreshRateHz > 0 && Float.isFinite(refreshRateHz)) {
+                    json.put("refreshRateHz", Math.round(refreshRateHz * 100.0) / 100.0);
+                } else {
+                    json.put("refreshRateHz", JSONObject.NULL);
+                }
+                json.put("supportedModes", new JSONArray(supportedModes));
 
                 // User survey results
                 json.put("sdrBlackLevel", sdrBlackLevel);
@@ -205,6 +250,12 @@ public final class ReportSubmitter {
                 json.put("hdrBlackLevel", hdrBlackLevel);
                 json.put("hdrSteps", hdrSteps);
                 json.put("comments", comments);
+
+                // Optional OLED suite observations
+                json.put("oledBlackCrush", oledBlackCrush);
+                json.put("oledSmear", oledSmear);
+                json.put("oledUniformity", oledUniformity);
+                json.put("oledFloatingBlack", oledFloatingBlack);
 
                 // Compatibility aliases
                 json.put("hdr", hdr);
