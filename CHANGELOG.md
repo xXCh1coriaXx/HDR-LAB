@@ -4,6 +4,18 @@ Historical changes, not guarantees of current behaviour. See [current constraint
 
 ## OLED Tester / HDR Lab Light
 
+### v0.3.0-beta.5 — Security hardening, stability and optimization
+
+- Enforced strict HTTPS transport on community report submissions with complete socket and stream lifecycle cleanup.
+- Added explicit network security configuration disabling cleartext traffic globally.
+- Applied 500-character input bounds on public research survey comments.
+- Added null-safe guards for `formatMode()`, `highestRefreshMode()`, and active display mode queries across headless/external display states.
+- Protected Android 14+ `getHdrSdrRatio()` queries against non-finite float/JSON serialization errors.
+- Added `isFinishing()` guard to prevent asynchronous dialog token exceptions on activity exit.
+- Resynchronized frame timing in `OledTestView` after pauses or notification shade interactions to avoid spurious dropped-frame counters.
+- Statically cached `SystemProperties.get` reflection method in `Diagnostics`, eliminating repeated reflection lookups during OS detection.
+- Cleaned unused FileProvider mappings and bounded report sharing to canonical cache files.
+
 ### v0.3.0-beta.4 — HDR references and ramp fix
 
 - Removed SDR ramp seams with pixel-aligned signal bands.
