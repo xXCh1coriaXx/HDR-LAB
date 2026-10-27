@@ -4,6 +4,14 @@ Historical changes, not guarantees of current behaviour. See [current constraint
 
 ## OLED Tester / HDR Lab Light
 
+### v0.3.0-beta.4 — HDR references and ramp fix
+
+- Removed SDR ramp seams with pixel-aligned signal bands.
+- Added HDR10/PQ references for static ladder, uniformity, APL, color slides and ramps; moving tests remain SDR.
+- Added 400/1,000/4,000-nit nominal APL targets and clear SDR fallback when HDR playback is unavailable.
+- Matched technical report, OLED and Quick Test accents to red, blue and green.
+- Verified 53 reference videos, lifecycle/fallback behavior and real-device SDR/HDR visual observations.
+
 ### v0.3.0-beta.3 — SDR ramps and fullscreen reliability
 
 - Seven SDR grayscale/RGB/CMY ramps with 0–255 code labels and localized observation guidance.
