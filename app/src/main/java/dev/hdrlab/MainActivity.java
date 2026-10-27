@@ -1053,7 +1053,7 @@ public final class MainActivity extends Activity {
                 JSONObject report = Diagnostics.device(this);
                 String text = report.toString(2);
                 handler.post(() -> {
-                    if (isDestroyed()) return;
+                    if (isFinishing() || isDestroyed()) return;
                     showReportDialog(text, report);
                 });
             } catch (Exception e) {
@@ -1242,6 +1242,9 @@ public final class MainActivity extends Activity {
         content.addView(q5Title);
 
         EditText etComments = new EditText(this);
+        etComments.setFilters(new android.text.InputFilter[] {
+            new android.text.InputFilter.LengthFilter(500)
+        });
         etComments.setHint(getString(R.string.dialog_report_q5_hint));
         etComments.setHintTextColor(0x88a7b2a5);
         etComments.setTextColor(TEXT);
@@ -1414,9 +1417,15 @@ public final class MainActivity extends Activity {
 
     private void shareReportJson(JSONObject report) {
         try {
-            File dir = new File(getFilesDir(), "reports");
+            File oldDir = new File(getFilesDir(), "reports");
+            if (oldDir.exists()) {
+                File[] oldFiles = oldDir.listFiles();
+                if (oldFiles != null) for (File f : oldFiles) f.delete();
+                oldDir.delete();
+            }
+            File dir = new File(getCacheDir(), "reports");
             dir.mkdirs();
-            File file = new File(dir, "hdr-lab-light-report-" + System.currentTimeMillis() + ".json");
+            File file = new File(dir, "hdr-lab-light-report.json");
             try (OutputStream output = new FileOutputStream(file)) {
                 output.write(report.toString(2).getBytes(StandardCharsets.UTF_8));
             }

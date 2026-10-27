@@ -123,13 +123,20 @@ final class OledTestView extends View implements Choreographer.FrameCallback {
             windowStartNanos = frameTimeNanos;
         } else {
             long delta = frameTimeNanos - lastFrameNanos;
-            float speed = mode == MODE_SMEAR ? smearSpeed() : DSE_PAN_SPEED;
-            float period = period();
-            offset += speed * delta / 1e9f;
-            if (period > 0) offset %= period;
-            float interval = 1e9f / refreshRate();
-            if (delta > interval * 1.5f) droppedFrames += Math.round(delta / interval) - 1;
-            framesInWindow++;
+            if (delta > 200_000_000L) {
+                // If paused or long stall (e.g. notification shade or app backgrounding),
+                // resync timing baseline to avoid spurious frame drops or jumping offset.
+                windowStartNanos = frameTimeNanos;
+                framesInWindow = 0;
+            } else {
+                float speed = mode == MODE_SMEAR ? smearSpeed() : DSE_PAN_SPEED;
+                float period = period();
+                offset += speed * delta / 1e9f;
+                if (period > 0) offset %= period;
+                float interval = 1e9f / refreshRate();
+                if (delta > interval * 1.5f) droppedFrames += Math.round(delta / interval) - 1;
+                framesInWindow++;
+            }
             long window = frameTimeNanos - windowStartNanos;
             if (window >= 500_000_000L || (statsText.isEmpty() && delta > 0)) {
                 fps = framesInWindow * 1e9f / Math.max(1L, window);

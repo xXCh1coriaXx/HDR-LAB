@@ -24,6 +24,18 @@ final class Diagnostics {
         String get(String key);
     }
 
+    private static final java.lang.reflect.Method SYSTEM_PROPERTIES_GET;
+    static {
+        java.lang.reflect.Method m = null;
+        try {
+            Class<?> sp = Class.forName("android.os.SystemProperties");
+            m = sp.getMethod("get", String.class);
+        } catch (Throwable ignored) {
+            m = null;
+        }
+        SYSTEM_PROPERTIES_GET = m;
+    }
+
     static String getSystemProperty(String key) {
         if ("SEM_PLATFORM_INT".equals(key)) {
             try {
@@ -34,10 +46,9 @@ final class Diagnostics {
                 return null;
             }
         }
+        if (SYSTEM_PROPERTIES_GET == null) return null;
         try {
-            Class<?> sp = Class.forName("android.os.SystemProperties");
-            java.lang.reflect.Method get = sp.getMethod("get", String.class);
-            String val = (String) get.invoke(null, key);
+            String val = (String) SYSTEM_PROPERTIES_GET.invoke(null, key);
             return (val != null && !val.trim().isEmpty()) ? val.trim() : null;
         } catch (Throwable ignored) {
             return null;
@@ -379,20 +390,27 @@ final class Diagnostics {
             putLuminance(screen, "desiredMinLuminanceNits", caps == null ? -1 : caps.getDesiredMinLuminance());
             Display.Mode active = display.getMode();
             screen.put("activeMode", formatMode(active));
-            screen.put("activeModeId", active.getModeId());
+            screen.put("activeModeId", active != null ? active.getModeId() : -1);
             screen.put("refreshRateHz", round2(display.getRefreshRate()));
             JSONArray modes = new JSONArray();
             Display.Mode[] supported = display.getSupportedModes();
-            if (supported == null || supported.length == 0) supported = new Display.Mode[] {active};
-            for (Display.Mode m : supported) {
-                if (m == null) continue;
-                modes.put(new JSONObject().put("id", m.getModeId())
-                    .put("width", m.getPhysicalWidth()).put("height", m.getPhysicalHeight())
-                    .put("refreshRateHz", round2(m.getRefreshRate())));
+            if ((supported == null || supported.length == 0) && active != null) {
+                supported = new Display.Mode[] {active};
+            }
+            if (supported != null) {
+                for (Display.Mode m : supported) {
+                    if (m == null) continue;
+                    modes.put(new JSONObject().put("id", m.getModeId())
+                        .put("width", m.getPhysicalWidth()).put("height", m.getPhysicalHeight())
+                        .put("refreshRateHz", round2(m.getRefreshRate())));
+                }
             }
             screen.put("supportedModes", modes);
             if (Build.VERSION.SDK_INT >= 34 && display.isHdrSdrRatioAvailable()) {
-                screen.put("reportedHdrSdrRatio", display.getHdrSdrRatio());
+                float ratio = display.getHdrSdrRatio();
+                if (Float.isFinite(ratio)) {
+                    screen.put("reportedHdrSdrRatio", ratio);
+                }
             }
             screen.put("caveat", "OS declarations, not measured luminance or confirmation of HDR output. "
                 + "HDR/SDR ratio is a display snapshot, not a per-video measurement.");
@@ -427,6 +445,7 @@ final class Diagnostics {
     }
 
     static String formatMode(Display.Mode mode) {
+        if (mode == null) return "Unknown";
         return mode.getPhysicalWidth() + " × " + mode.getPhysicalHeight()
             + " @ " + String.format(Locale.US, "%.2f Hz", mode.getRefreshRate());
     }
@@ -444,6 +463,7 @@ final class Diagnostics {
 
     /** Highest-refresh supported mode at the active resolution, or the active mode. */
     static Display.Mode highestRefreshMode(Display display) {
+        if (display == null) return null;
         Display.Mode best = display.getMode();
         Display.Mode[] supported = display.getSupportedModes();
         if (best != null && supported != null) for (Display.Mode m : supported) {

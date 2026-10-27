@@ -12,6 +12,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -296,12 +297,10 @@ public final class ReportSubmitter {
 
     public static Future<?> submit(CommunityReport report, String endpointUrl, Callback callback) {
         return executor.submit(() -> {
+            HttpURLConnection conn = null;
             try {
                 String targetUrl = (endpointUrl != null && !endpointUrl.trim().isEmpty())
                     ? endpointUrl.trim() : DEFAULT_ENDPOINT;
-
-                JSONObject payload = (report != null) ? report.toJson() : new JSONObject();
-                byte[] postBytes = payload.toString().getBytes(StandardCharsets.UTF_8);
 
                 // Handled mock/fallback submission when template ID or mock protocol is used
                 if (targetUrl.contains("DEFAULT_FORM_ID") || targetUrl.startsWith("mock://")) {
@@ -311,8 +310,18 @@ public final class ReportSubmitter {
                     return;
                 }
 
+                if (!targetUrl.toLowerCase(Locale.US).startsWith("https://")) {
+                    mainHandler.post(() -> {
+                        if (callback != null) callback.onError("Insecure endpoint: HTTPS is required.");
+                    });
+                    return;
+                }
+
+                JSONObject payload = (report != null) ? report.toJson() : new JSONObject();
+                byte[] postBytes = payload.toString().getBytes(StandardCharsets.UTF_8);
+
                 URL url = new URL(targetUrl);
-                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                conn = (HttpURLConnection) url.openConnection();
                 conn.setRequestMethod("POST");
                 conn.setConnectTimeout(10000);
                 conn.setReadTimeout(10000);
@@ -338,12 +347,19 @@ public final class ReportSubmitter {
                         if (callback != null) callback.onError(msg);
                     });
                 }
-                conn.disconnect();
             } catch (Exception e) {
                 String errorMsg = e.getMessage() != null ? e.getMessage() : e.toString();
                 mainHandler.post(() -> {
                     if (callback != null) callback.onError(errorMsg);
                 });
+            } finally {
+                if (conn != null) {
+                    try {
+                        if (conn.getErrorStream() != null) conn.getErrorStream().close();
+                        if (conn.getInputStream() != null) conn.getInputStream().close();
+                    } catch (Throwable ignored) {}
+                    conn.disconnect();
+                }
             }
         });
     }
