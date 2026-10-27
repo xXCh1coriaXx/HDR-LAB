@@ -45,7 +45,7 @@
     <string name="hud_tip_sdr_countdown">Observa o preto e os seis degraus; regista os visíveis. São referências de sinal.</string>
     <string name="hud_title_sdr_active">MODO SDR ATIVADO</string>
     <string name="hud_tip_sdr_active">Observa o preto e os seis degraus; regista os visíveis. São referências de sinal.</string>
-    <string name="hud_title_hdr_active">MODO HDR (HDR10 / PQ) ATIVADO</string>
+    <string name="hud_title_hdr_active">HDR10 / PQ SOLICITADO</string>
     <string name="hud_tip_hdr_active">HDR10/PQ solicitado. Regista o preto e os degraus visíveis; isto não confirma saída HDR.</string>
 
     <!-- HUD Control Buttons -->
@@ -98,20 +98,34 @@
 
     <!-- Cartão 3: Bateria de Testes OLED -->
     <string name="card_oled_title">Bateria de Testes OLED</string>
-    <string name="card_oled_subtitle">Padrões em ecrã inteiro para movimento, quase-preto, uniformidade, ABL, burn-in e rampas SDR</string>
+    <string name="card_oled_subtitle">Padrões em ecrã inteiro para movimento, quase-preto, uniformidade, ABL, burn-in e rampas de cor</string>
     <string name="oled_caveat">Apenas observações visuais: os padrões usam níveis de sinal, não luminância medida. O processamento do fabricante, o brilho e a luz ambiente afetam os resultados.</string>
     <string name="btn_oled_smear">Arrastamento Preto-Escuro (Movimento)</string>
     <string name="btn_oled_ladder">Escada Quase-Preto e Black Crush</string>
     <string name="btn_oled_dse">Uniformidade Quase-Preto / DSE</string>
     <string name="btn_oled_apl">Janelas ABL / APL e Preto Flutuante</string>
     <string name="btn_oled_burnin">Verificação de Burn-In e Subpíxeis</string>
-    <string name="btn_oled_ramp">Rampas SDR de Cores e Cinzentos</string>
+    <string name="btn_oled_ramp">Rampas de Cores e Cinzentos</string>
 
     <!-- HUD OLED em ecrã cheio -->
     <string name="hud_btn_prev">◀ Anterior</string>
     <string name="hud_btn_next">Seguinte ▶</string>
     <string name="hud_btn_oled_sdr">Modo: SDR</string>
     <string name="hud_btn_oled_hdr">Modo: HDR</string>
+    <string name="oled_hdr_requested">HDR10/PQ solicitado · vídeo de referência</string>
+    <string name="oled_hdr_title_format">%1$s · %2$s</string>
+    <string name="oled_hdr_reference_peak">Escala nominal de pico por canal: %1$d nits. A saída não é medida.</string>
+    <string name="oled_hdr_apl_reference">Janela nominal de %1$d%% a %2$d nits; a saída não é medida.</string>
+    <string name="oled_hdr_levels">O código SDR %1$d corresponde a cerca de %2$.3f nits nominais nesta referência HDR10 quantizada; a saída não é medida.</string>
+    <string name="oled_hdr_ladder_levels">Degraus 1–8, nits nominais: %1$s. A saída HDR não é medida.</string>
+    <string name="oled_hdr_unavailable_display">Este ecrã não declara HDR10. A mostrar o mesmo padrão em SDR.</string>
+    <string name="oled_hlg_unavailable_display">Este ecrã não declara HLG. A mostrar o vídeo SDR da escada.</string>
+    <string name="oled_hdr_unavailable_decoder">Não foi encontrado um descodificador HEVC de 10 bits compatível. A mostrar o mesmo padrão em SDR.</string>
+    <string name="oled_hdr_playback_failed">Falha na reprodução HDR10. A mostrar o mesmo padrão em SDR.</string>
+    <string name="oled_hlg_playback_failed">Falha na reprodução HLG. A mostrar o vídeo SDR da escada.</string>
+    <string name="oled_hdr_motion_unavailable">HDR10 não está disponível para este padrão em movimento; permanece em SDR.</string>
+    <string name="oled_apl_peak_button">Pico: %1$d nits</string>
+    <string name="oled_title_hdr_ramp">RAMPA HDR · %1$s</string>
     <string name="a11y_previous_pattern">Padrão anterior</string>
     <string name="a11y_next_pattern">Padrão seguinte</string>
     <string name="a11y_exit_test">Sair do teste</string>

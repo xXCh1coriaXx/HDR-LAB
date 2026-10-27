@@ -61,6 +61,6 @@ Use OLED and LCD where possible. Record device, OS and settings. Separate visual
 
 Prefer GitHub Actions for shared builds/releases. Release only when requested: update the Gradle version, current-only `RELEASE_NOTES.md` and historical `CHANGELOG.md`, then use an annotated `vX.Y.Z` tag. APK name: `HDR-Lab-Light-vX.Y.Z.apk`. Reports use `BuildConfig.VERSION_NAME`; release tooling uses `:app:printVersion`.
 
-CI checks PRs, `main`/`beta` pushes and manual runs: unit tests, release lint/build and all nine patterns. Reports are uploaded even after failure. Release workflow repeats these checks and consumes `RELEASE_NOTES.md`. Manual release requires an existing tag matching `v` plus the checked-out Gradle version; older tags without `printVersion` cannot pass.
+CI checks PRs, `main`/`beta` pushes and manual runs: unit tests, release lint/build and all packaged reference patterns. Reports are uploaded even after failure. Release workflow repeats these checks and consumes `RELEASE_NOTES.md`. Manual release requires an existing tag matching `v` plus the checked-out Gradle version; older tags without `printVersion` cannot pass.
 
 The tracked `app/hdrlab-release.keystore` and credentials are exposed. Preserve signing continuity; do not copy passwords into docs/logs, silently delete/rotate the key or use machine debug signing. Removing a file cannot revoke past copies. Secure storage/key migration remains separate work.

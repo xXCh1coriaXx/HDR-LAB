@@ -45,7 +45,7 @@
     <string name="hud_tip_sdr_countdown">Observe black and the six steps; record visible steps. Signal references only.</string>
     <string name="hud_title_sdr_active">SDR MODE ACTIVE</string>
     <string name="hud_tip_sdr_active">Observe black and the six steps; record visible steps. Signal references only.</string>
-    <string name="hud_title_hdr_active">HDR MODE (HDR10 / PQ) ACTIVE</string>
+    <string name="hud_title_hdr_active">HDR10 / PQ REQUESTED</string>
     <string name="hud_tip_hdr_active">HDR10/PQ requested. Note black and visible steps; this does not confirm HDR output.</string>
 
     <!-- HUD Control Buttons -->
@@ -98,20 +98,34 @@
 
     <!-- Card 3: OLED Test Suite -->
     <string name="card_oled_title">OLED Test Suite</string>
-    <string name="card_oled_subtitle">Fullscreen patterns for motion, near-black, uniformity, ABL, burn-in and SDR ramps</string>
+    <string name="card_oled_subtitle">Fullscreen patterns for motion, near-black, uniformity, ABL, burn-in and color ramps</string>
     <string name="oled_caveat">Visual observations only: patterns use signal levels, not measured luminance. Vendor processing, brightness and ambient light affect results.</string>
     <string name="btn_oled_smear">Black-to-Dark Smear (Motion)</string>
     <string name="btn_oled_ladder">Near-Black Ladder &amp; Black Crush</string>
     <string name="btn_oled_dse">Near-Black Uniformity / DSE</string>
     <string name="btn_oled_apl">ABL / APL Windows &amp; Floating Black</string>
     <string name="btn_oled_burnin">Subpixel Burn-In &amp; Aging Check</string>
-    <string name="btn_oled_ramp">SDR Color &amp; Grayscale Ramps</string>
+    <string name="btn_oled_ramp">Color &amp; Grayscale Ramps</string>
 
     <!-- OLED Fullscreen HUD -->
     <string name="hud_btn_prev">◀ Prev</string>
     <string name="hud_btn_next">Next ▶</string>
     <string name="hud_btn_oled_sdr">Mode: SDR</string>
     <string name="hud_btn_oled_hdr">Mode: HDR</string>
+    <string name="oled_hdr_requested">HDR10/PQ requested · reference video</string>
+    <string name="oled_hdr_title_format">%1$s · %2$s</string>
+    <string name="oled_hdr_reference_peak">Nominal peak channel scale: %1$d nits. Output is not measured.</string>
+    <string name="oled_hdr_apl_reference">Nominal %1$d%% window at %2$d nits; output is not measured.</string>
+    <string name="oled_hdr_levels">SDR code %1$d maps to approximately %2$.3f nominal nits in this quantized HDR10 reference; output is not measured.</string>
+    <string name="oled_hdr_ladder_levels">Steps 1–8, nominal nits: %1$s. HDR output is not measured.</string>
+    <string name="oled_hdr_unavailable_display">HDR10 is not declared by this display. Showing the same pattern in SDR.</string>
+    <string name="oled_hlg_unavailable_display">HLG is not declared by this display. Showing the SDR ladder video.</string>
+    <string name="oled_hdr_unavailable_decoder">No supported 10-bit HEVC decoder was found. Showing the same pattern in SDR.</string>
+    <string name="oled_hdr_playback_failed">HDR10 playback failed. Showing the same pattern in SDR.</string>
+    <string name="oled_hlg_playback_failed">HLG playback failed. Showing the SDR ladder video.</string>
+    <string name="oled_hdr_motion_unavailable">HDR10 is unavailable for this moving pattern; it remains SDR.</string>
+    <string name="oled_apl_peak_button">Peak %1$d nits</string>
+    <string name="oled_title_hdr_ramp">HDR RAMP · %1$s</string>
     <string name="a11y_previous_pattern">Previous pattern</string>
     <string name="a11y_next_pattern">Next pattern</string>
     <string name="a11y_exit_test">Exit test</string>

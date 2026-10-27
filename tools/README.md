@@ -19,4 +19,4 @@ Android Platform 36 / Build-Tools 36.0.0: `local.properties` (`sdk.dir`) takes p
 
 Logs: `app/build/validation/`; reports: `app/build/reports/`. Success prints a summary; failure prints the last 40 log lines. Native failures retain their exit code; prerequisite/APK validation failures return 1. No software is installed; Gradle may download dependencies. Do not run concurrent Gradle builds in this checkout.
 
-`generate_patterns.py` needs its configured FFmpeg encoders and changes research assets. Regenerate only when requested; then run `verify_patterns.py` and review the asset diff. Verification checks signalling and decoded first/last frames, not every frame or physical playback.
+`generate_patterns.py` generates the original nine videos. `generate_oled_hdr_patterns.py` generates the separate static OLED HDR references. Both need their configured FFmpeg encoders and change research assets; regenerate only when requested, then run `verify_patterns.py` and review the asset diff. Verification checks signalling and decoded first/last frames, not every frame or physical playback.

@@ -15,6 +15,7 @@ import androidx.media3.common.C;
 import androidx.media3.common.ColorInfo;
 import androidx.media3.common.Player;
 import androidx.media3.common.PlaybackException;
+import androidx.media3.exoplayer.ExoPlayer;
 import androidx.media3.ui.PlayerView;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -65,6 +66,49 @@ public class LayoutTest {
         Method m = MainActivity.class.getDeclaredMethod(name);
         m.setAccessible(true);
         m.invoke(activity);
+    }
+
+    private void setField(String name, Object value) throws Exception {
+        Field f = MainActivity.class.getDeclaredField(name);
+        f.setAccessible(true);
+        f.set(activity, value);
+    }
+
+    private String hdrAsset(int mode, int variant) throws Exception {
+        Method m = MainActivity.class.getDeclaredMethod("hdrPatternName", int.class, int.class);
+        m.setAccessible(true);
+        return (String) m.invoke(activity, mode, variant);
+    }
+
+    private TextView findText(View view, String value) {
+        if (view instanceof TextView && value.contentEquals(((TextView) view).getText())) return (TextView) view;
+        if (view instanceof android.view.ViewGroup) {
+            android.view.ViewGroup group = (android.view.ViewGroup) view;
+            for (int i = 0; i < group.getChildCount(); i++) {
+                TextView match = findText(group.getChildAt(i), value);
+                if (match != null) return match;
+            }
+        }
+        return null;
+    }
+
+    @Test public void technicalReportUsesLocalizedRedTitleAndActions() throws Exception {
+        Method show = MainActivity.class.getDeclaredMethod("showReportDialog", String.class, JSONObject.class);
+        show.setAccessible(true);
+        show.invoke(activity, "{\"display\":true}", new JSONObject());
+        AlertDialog dialog = ShadowAlertDialog.getLatestAlertDialog();
+        assertTrue(dialog.isShowing());
+        TextView title = findText(dialog.getWindow().getDecorView(),
+            activity.getString(R.string.dialog_technical_report_title));
+        assertNotNull(title);
+        assertEquals(0xffff6b6b, title.getCurrentTextColor());
+        assertTrue(title.isAccessibilityHeading());
+        assertEquals(title.getText(), title.getContentDescription());
+        TextView body = findText(dialog.getWindow().getDecorView(), "{\"display\":true}");
+        assertNotNull(body);
+        assertTrue(body.isTextSelectable());
+        assertEquals(0xffff6b6b, dialog.getButton(AlertDialog.BUTTON_POSITIVE).getCurrentTextColor());
+        assertEquals(0xffff6b6b, dialog.getButton(AlertDialog.BUTTON_NEGATIVE).getCurrentTextColor());
     }
 
     @Test public void deviceCapabilitiesCardDisplaysModelHdrGamutBrightness() throws Exception {
@@ -649,7 +693,7 @@ public class LayoutTest {
         assertEquals("▶ Start Fullscreen SDR vs HDR Test", enRes.getString(R.string.btn_start_test));
         assertEquals("📋 Submit Community Report", enRes.getString(R.string.btn_community_report));
         assertEquals("SDR MODE · %1$ds remaining", enRes.getString(R.string.hud_title_sdr_countdown));
-        assertEquals("HDR MODE (HDR10 / PQ) ACTIVE", enRes.getString(R.string.hud_title_hdr_active));
+        assertEquals("HDR10 / PQ REQUESTED", enRes.getString(R.string.hud_title_hdr_active));
         assertEquals("Watch SDR", enRes.getString(R.string.hud_btn_watch_sdr));
         assertEquals("Watch HDR", enRes.getString(R.string.hud_btn_watch_hdr));
         assertEquals("⟲ Restart", enRes.getString(R.string.hud_btn_restart));
@@ -711,7 +755,7 @@ public class LayoutTest {
         assertEquals("▶ Iniciar Teste SDR vs HDR em Ecrã Cheio", ptRes.getString(R.string.btn_start_test));
         assertEquals("📋 Submeter Relatório Comunitário", ptRes.getString(R.string.btn_community_report));
         assertEquals("MODO SDR · %1$ds restantes", ptRes.getString(R.string.hud_title_sdr_countdown));
-        assertEquals("MODO HDR (HDR10 / PQ) ATIVADO", ptRes.getString(R.string.hud_title_hdr_active));
+        assertEquals("HDR10 / PQ SOLICITADO", ptRes.getString(R.string.hud_title_hdr_active));
         assertEquals("Ver em SDR", ptRes.getString(R.string.hud_btn_watch_sdr));
         assertEquals("Ver em HDR", ptRes.getString(R.string.hud_btn_watch_hdr));
         assertEquals("⟲ Reiniciar", ptRes.getString(R.string.hud_btn_restart));
@@ -758,6 +802,7 @@ public class LayoutTest {
     }
 
     @Test public void oledSuiteCardLaunchesExistingSuitesAndCyclesVariants() throws Exception {
+        setField("hdrAvailabilityOverride", 0);
         LinearLayout oledCard = field("oledCard");
         assertNotNull("OLED suite card must exist", oledCard);
         LinearLayout cardsContainer = field("cardsContainer");
@@ -830,7 +875,11 @@ public class LayoutTest {
         assertEquals(View.VISIBLE, playerView.getVisibility());
         btnNext.performClick(); // Variant 3 -> HLG video
         assertEquals(View.VISIBLE, playerView.getVisibility());
-        btnNext.performClick(); // Wraps back to Variant 0 -> Canvas
+        btnNext.performClick(); // Wraps to Variant 0, now the HDR PQ static ladder video.
+        assertEquals(0, ((Integer) field("oledVariant")).intValue());
+        assertTrue(btnOledHdr.isSelected());
+        assertEquals(View.VISIBLE, playerView.getVisibility());
+        btnOledHdr.performClick(); // SDR variant 0 remains the original Canvas ladder.
         assertEquals(View.VISIBLE, oledView.getVisibility());
         assertEquals(View.GONE, playerView.getVisibility());
 
@@ -917,7 +966,8 @@ public class LayoutTest {
         assertEquals("hdr", field("currentMode"));
     }
 
-    @Test public void rampStaysSdrAndLadderButtonsFollowVideoVariants() throws Exception {
+    @Test public void rampStartsSdrAndLadderButtonsFollowVideoVariants() throws Exception {
+        setField("hdrAvailabilityOverride", 0);
         Method startSuite = MainActivity.class.getDeclaredMethod("startOledSuite", int.class);
         startSuite.setAccessible(true);
         startSuite.invoke(activity, OledTestView.MODE_LADDER);
@@ -932,7 +982,8 @@ public class LayoutTest {
         assertTrue(hdr.isSelected());
 
         startSuite.invoke(activity, OledTestView.MODE_RAMP);
-        assertEquals(View.GONE, hdr.getVisibility());
+        assertEquals(View.VISIBLE, hdr.getVisibility());
+        assertFalse(hdr.isSelected());
         assertEquals(android.content.pm.ActivityInfo.COLOR_MODE_DEFAULT, activity.getWindow().getColorMode());
         assertEquals(1f, activity.getWindow().getDesiredHdrHeadroom(), 0.001f);
         OledTestView view = field("oledView");
@@ -950,6 +1001,174 @@ public class LayoutTest {
         assertEquals(0.25f, activity.getWindow().getAttributes().screenBrightness, 0.001f);
         TextView brightness = field("brightnessLabel");
         assertEquals(activity.getString(R.string.oled_brightness_value, 25), brightness.getText().toString());
+    }
+
+    @Test public void hdrAssetsCoverEveryStaticVariantAndAplPeak() throws Exception {
+        assertEquals("pq_oled_ladder", hdrAsset(OledTestView.MODE_LADDER, 0));
+        for (int v = 1; v <= 3; v++) assertNull(hdrAsset(OledTestView.MODE_LADDER, v));
+        String[] dse = {"01", "02", "03", "05", "10", "15"};
+        for (int i = 0; i < dse.length; i++) {
+            assertEquals("pq_oled_dse_" + dse[i], hdrAsset(OledTestView.MODE_DSE, i));
+        }
+        for (int i = 6; i < 12; i++) assertNull(hdrAsset(OledTestView.MODE_DSE, i));
+        String[] sizes = {"01", "02", "05", "10", "25", "50", "100"};
+        int[] peaks = {1000, 4000, 400};
+        for (int peak : peaks) {
+            for (int i = 0; i < sizes.length; i++) {
+                assertEquals("pq_oled_apl_" + peak + "_" + sizes[i], hdrAsset(OledTestView.MODE_APL, i));
+            }
+            Button peakButton = field("btnAplPeak");
+            peakButton.performClick();
+        }
+        String[] ramp = {"gray", "red", "green", "blue", "cyan", "magenta", "yellow"};
+        for (int i = 0; i < ramp.length; i++) {
+            assertEquals("pq_oled_ramp_" + ramp[i], hdrAsset(OledTestView.MODE_RAMP, i));
+        }
+        String[] burnin = {"red", "green", "blue", "white", "gray50", "gray20", "cyan", "magenta", "yellow"};
+        for (int i = 0; i < burnin.length; i++) {
+            assertEquals("pq_oled_burnin_" + burnin[i], hdrAsset(OledTestView.MODE_BURNIN, i));
+        }
+    }
+
+    @Test public void hdrMotionIsDisabledAndPlaybackFailureKeepsSelectedSuite() throws Exception {
+        Method start = MainActivity.class.getDeclaredMethod("startOledSuite", int.class);
+        start.setAccessible(true);
+        start.invoke(activity, OledTestView.MODE_DSE);
+        Button hdr = field("btnOledHdr");
+        assertTrue(hdr.isEnabled());
+        Button next = field("btnNext");
+        for (int i = 0; i < 6; i++) next.performClick();
+        assertEquals(6, (int) field("oledVariant"));
+        assertFalse(hdr.isEnabled());
+        assertFalse(hdr.isSelected());
+        assertTrue(((TextView) field("hudTipLabel")).getText().toString()
+            .contains(activity.getString(R.string.oled_hdr_motion_unavailable)));
+
+        start.invoke(activity, OledTestView.MODE_APL);
+        next.performClick();
+        ((PlayerView) field("playerView")).setVisibility(View.VISIBLE);
+        ((OledTestView) field("oledView")).setVisibility(View.GONE);
+        setField("oledHdrPatternPlaying", true);
+        setField("oledHdrMode", true);
+        call("ensurePlayer");
+        Player.Listener listener = field("playbackListener");
+        listener.onPlayerError(new PlaybackException("HDR decoder failure", null,
+            PlaybackException.ERROR_CODE_DECODING_FAILED));
+        assertTrue((Boolean) field("fullscreen"));
+        assertEquals(OledTestView.MODE_APL, (int) field("activeOledMode"));
+        assertEquals(1, (int) field("oledVariant"));
+        assertFalse(hdr.isSelected());
+        assertEquals(View.VISIBLE, ((OledTestView) field("oledView")).getVisibility());
+        assertTrue(((TextView) field("hudTipLabel")).getText().toString()
+            .contains(activity.getString(R.string.oled_hdr_playback_failed)));
+    }
+
+    @Test public void nominalHdrLevelsMatchQuantizedPqReference() throws Exception {
+        Method nits = MainActivity.class.getDeclaredMethod("nominalNits", int.class);
+        nits.setAccessible(true);
+        assertEquals(.030002, (Double) nits.invoke(null, 1), .000001);
+        assertEquals(.089120, (Double) nits.invoke(null, 3), .000001);
+        assertEquals(.402620, (Double) nits.invoke(null, 13), .000001);
+        assertEquals(1.037416, (Double) nits.invoke(null, 26), .000001);
+    }
+
+    @Test public void hdrSelectionAndAplPeakChangeActualMediaItem() throws Exception {
+        setField("hdrAvailabilityOverride", 0);
+        Method start = MainActivity.class.getDeclaredMethod("startOledSuite", int.class);
+        start.setAccessible(true);
+        start.invoke(activity, OledTestView.MODE_APL);
+        Button hdr = field("btnOledHdr");
+        Button peak = field("btnAplPeak");
+        assertEquals(View.VISIBLE, peak.getVisibility());
+        assertTrue(peak.getContentDescription().toString().contains("1000"));
+        hdr.performClick();
+        assertTrue(hdr.isSelected());
+        assertEquals(View.VISIBLE, ((PlayerView) field("playerView")).getVisibility());
+        ExoPlayer player = field("player");
+        assertTrue(player.getCurrentMediaItem().localConfiguration.uri.toString().contains("pq_oled_apl_1000_01"));
+        assertEquals(androidx.media3.ui.AspectRatioFrameLayout.RESIZE_MODE_FILL,
+            ((PlayerView) field("playerView")).getResizeMode());
+        peak.performClick();
+        assertTrue(peak.getContentDescription().toString().contains("4000"));
+        assertTrue(player.getCurrentMediaItem().localConfiguration.uri.toString().contains("pq_oled_apl_4000_01"));
+        Button next = field("btnNext");
+        next.performClick();
+        assertTrue(player.getCurrentMediaItem().localConfiguration.uri.toString().contains("pq_oled_apl_4000_02"));
+        start.invoke(activity, OledTestView.MODE_RAMP);
+        assertFalse(hdr.isSelected());
+        assertEquals(View.VISIBLE, hdr.getVisibility());
+        hdr.performClick();
+        assertTrue(player.getCurrentMediaItem().localConfiguration.uri.toString().contains("pq_oled_ramp_gray"));
+        assertTrue(((TextView) field("hudTitleLabel")).getText().toString()
+            .contains(activity.getString(R.string.oled_hdr_requested)));
+    }
+
+    @Test public void knownUnsupportedHdrKeepsCanvasAndLegacyVideoFailureKeepsLadder() throws Exception {
+        setField("hdrAvailabilityOverride", R.string.oled_hdr_unavailable_decoder);
+        Method start = MainActivity.class.getDeclaredMethod("startOledSuite", int.class);
+        start.setAccessible(true);
+        start.invoke(activity, OledTestView.MODE_DSE);
+        Button hdr = field("btnOledHdr");
+        hdr.performClick();
+        assertFalse(hdr.isSelected());
+        assertEquals(View.VISIBLE, ((OledTestView) field("oledView")).getVisibility());
+        assertTrue(((TextView) field("hudTipLabel")).getText().toString()
+            .contains(activity.getString(R.string.oled_hdr_unavailable_decoder)));
+        assertEquals(0, (int) field("oledVariant"));
+
+        setField("hdrAvailabilityOverride", 0);
+        start.invoke(activity, OledTestView.MODE_LADDER);
+        Button next = field("btnNext");
+        next.performClick();
+        next.performClick();
+        assertEquals(2, (int) field("oledVariant"));
+        Player.Listener listener = field("playbackListener");
+        listener.onPlayerError(new PlaybackException("PQ error", null,
+            PlaybackException.ERROR_CODE_DECODING_FAILED));
+        assertTrue((Boolean) field("fullscreen"));
+        assertEquals(OledTestView.MODE_LADDER, (int) field("activeOledMode"));
+        assertEquals(1, (int) field("oledVariant"));
+        assertFalse(hdr.isSelected());
+        assertTrue(((TextView) field("hudTipLabel")).getText().toString()
+            .contains(activity.getString(R.string.oled_hdr_playback_failed)));
+    }
+
+    @Test public void legacyPqAndHlgKnownUnsupportedFallbackToSdrVideo() throws Exception {
+        Method start = MainActivity.class.getDeclaredMethod("startOledSuite", int.class);
+        start.setAccessible(true);
+        start.invoke(activity, OledTestView.MODE_LADDER);
+        setField("hdrAvailabilityOverride", R.string.oled_hdr_unavailable_display);
+        Method show = MainActivity.class.getDeclaredMethod("showOledVariant", int.class, int.class);
+        show.setAccessible(true);
+        show.invoke(activity, OledTestView.MODE_LADDER, 2);
+        assertEquals(1, (int) field("oledVariant"));
+        assertTrue(((TextView) field("hudTipLabel")).getText().toString()
+            .contains(activity.getString(R.string.oled_hdr_unavailable_display)));
+        setField("hdrAvailabilityOverride", R.string.oled_hlg_unavailable_display);
+        show.invoke(activity, OledTestView.MODE_LADDER, 3);
+        assertEquals(1, (int) field("oledVariant"));
+        assertTrue(((TextView) field("hudTipLabel")).getText().toString()
+            .contains(activity.getString(R.string.oled_hlg_unavailable_display)));
+        assertTrue((Boolean) field("fullscreen"));
+    }
+
+    @Test public void legacyHlgDecodeFailureReportsHlgAndStaysInLadder() throws Exception {
+        setField("hdrAvailabilityOverride", 0);
+        Method start = MainActivity.class.getDeclaredMethod("startOledSuite", int.class);
+        start.setAccessible(true);
+        start.invoke(activity, OledTestView.MODE_LADDER);
+        Method show = MainActivity.class.getDeclaredMethod("showOledVariant", int.class, int.class);
+        show.setAccessible(true);
+        show.invoke(activity, OledTestView.MODE_LADDER, 3);
+        assertEquals(3, (int) field("oledVariant"));
+        Player.Listener listener = field("playbackListener");
+        listener.onPlayerError(new PlaybackException("HLG error", null,
+            PlaybackException.ERROR_CODE_DECODING_FAILED));
+        assertEquals(1, (int) field("oledVariant"));
+        assertEquals(OledTestView.MODE_LADDER, (int) field("activeOledMode"));
+        assertTrue(((TextView) field("hudTipLabel")).getText().toString()
+            .contains(activity.getString(R.string.oled_hlg_playback_failed)));
+        assertTrue((Boolean) field("fullscreen"));
     }
 
     @Test public void pauseStopBackAndExitRestoreAllDisplayOverrides() throws Exception {
@@ -1073,6 +1292,28 @@ public class LayoutTest {
         PlayerView playerView = field("playerView");
         playerView.performClick();
         assertEquals(View.VISIBLE, hud.getVisibility());
+        call("exitFullscreen");
+        Method startOled = MainActivity.class.getDeclaredMethod("startOledSuite", int.class);
+        startOled.setAccessible(true);
+        startOled.invoke(activity, OledTestView.MODE_APL);
+        root.measure(View.MeasureSpec.makeMeasureSpec(w, View.MeasureSpec.EXACTLY),
+            View.MeasureSpec.makeMeasureSpec(h, View.MeasureSpec.EXACTLY));
+        root.layout(0, 0, w, h);
+        call("applyFullscreenLayout");
+        root.measure(View.MeasureSpec.makeMeasureSpec(w, View.MeasureSpec.EXACTLY),
+            View.MeasureSpec.makeMeasureSpec(h, View.MeasureSpec.EXACTLY));
+        root.layout(0, 0, w, h);
+        assertEquals(LinearLayout.VERTICAL, bottom.getOrientation());
+        for (String name : new String[] {"btnPrev", "btnNext", "btnOledHdr", "btnAplPeak", "btnExit"}) {
+            Button control = field(name);
+            assertEquals(View.VISIBLE, control.getVisibility());
+            assertTrue(control.getHeight() >= (int) (48 * activity.getResources().getDisplayMetrics().density));
+            assertTrue(control.getRight() <= bottom.getWidth());
+        }
+        assertEquals(View.VISIBLE, hideButton.getVisibility());
+        Button peak = field("btnAplPeak");
+        assertTrue(peak.getContentDescription().toString().contains("1000"));
+        assertTrue(bottom.getParent().getParent() instanceof android.widget.ScrollView);
         call("exitFullscreen");
         Button start = field("btnStartTest");
         assertFalse("Long dashboard buttons need to wrap", start.isSingleLine());

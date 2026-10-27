@@ -22,29 +22,49 @@ import static org.junit.Assert.assertTrue;
 @Config(sdk = 35)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 public class OledRampTest {
-    @Test public void sevenStaticRampsHaveAllFullRangeCodesInOrder() {
+    @Test public void sevenStaticRampsHaveContiguousIntegerBandsAtEveryWidth() {
         OledTestView view = new OledTestView(RuntimeEnvironment.getApplication());
-        view.layout(0, 0, 768, 400);
-        Bitmap bitmap = Bitmap.createBitmap(768, 400, Bitmap.Config.ARGB_8888);
-        Canvas canvas = new Canvas(bitmap);
         int[] channels = {7, 1, 2, 4, 6, 5, 3};
+        int[] widths = {256, 271, 393, 768, 1081, 3000, 173};
 
         assertEquals(channels.length, OledTestView.variantCount(OledTestView.MODE_RAMP));
-        for (int variant = 0; variant < channels.length; variant++) {
-            view.setPattern(OledTestView.MODE_RAMP, variant);
-            assertFalse(view.isRunning());
-            view.draw(canvas);
-            assertEquals(Color.BLACK, bitmap.getPixel(384, 5));
-            assertEquals(Color.BLACK, bitmap.getPixel(384, 395));
-            for (int code = 0; code < 256; code++) {
+        for (int width : widths) {
+            view.layout(0, 0, width, 400);
+            Bitmap bitmap = Bitmap.createBitmap(width, 400, Bitmap.Config.ARGB_8888);
+            Canvas canvas = new Canvas(bitmap);
+            for (int variant = 0; variant < channels.length; variant++) {
+                view.setPattern(OledTestView.MODE_RAMP, variant);
+                assertFalse(view.isRunning());
+                view.draw(canvas);
+                assertEquals(Color.BLACK, bitmap.getPixel(width / 2, 5));
+                assertEquals(Color.BLACK, bitmap.getPixel(width / 2, 395));
+
+                int previousCode = -1;
+                for (int x = 0; x < width; x++) {
+                    int code = width == 1 ? 255
+                        : (int) ((x * 255L + (width - 1L) / 2L) / (width - 1L));
+                    assertTrue("non-monotonic code at width " + width + ", x " + x,
+                        code >= previousCode);
+                    int mask = channels[variant];
+                    int expected = Color.rgb(
+                        (mask & 1) != 0 ? code : 0,
+                        (mask & 2) != 0 ? code : 0,
+                        (mask & 4) != 0 ? code : 0);
+                    assertEquals("variant " + variant + ", width " + width + ", x " + x,
+                        expected, bitmap.getPixel(x, 200));
+                    previousCode = code;
+                }
+                assertEquals("black endpoint, variant " + variant + ", width " + width,
+                    Color.BLACK, bitmap.getPixel(0, 200));
                 int mask = channels[variant];
-                int expected = Color.rgb(
-                    (mask & 1) != 0 ? code : 0,
-                    (mask & 2) != 0 ? code : 0,
-                    (mask & 4) != 0 ? code : 0);
-                assertEquals("variant " + variant + ", code " + code,
-                    expected, bitmap.getPixel(code * 3 + 1, 200));
+                int endpoint = Color.rgb(
+                    (mask & 1) != 0 ? 255 : 0,
+                    (mask & 2) != 0 ? 255 : 0,
+                    (mask & 4) != 0 ? 255 : 0);
+                assertEquals("white endpoint, variant " + variant + ", width " + width,
+                    endpoint, bitmap.getPixel(width - 1, 200));
             }
+            bitmap.recycle();
         }
     }
 

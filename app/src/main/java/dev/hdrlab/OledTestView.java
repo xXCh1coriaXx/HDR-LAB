@@ -239,12 +239,18 @@ final class OledTestView extends View implements Choreographer.FrameCallback {
         }
 
         int channels = RAMP_CHANNELS[variant];
-        for (int code = 0; code < 256; code++) {
+        int runStart = 0;
+        int runCode = rampCodeAt(0, w);
+        for (int x = 1; x <= w; x++) {
+            int code = x < w ? rampCodeAt(x, w) : -1;
+            if (code == runCode) continue;
             fill.setColor(Color.rgb(
-                (channels & 1) != 0 ? code : 0,
-                (channels & 2) != 0 ? code : 0,
-                (channels & 4) != 0 ? code : 0));
-            canvas.drawRect(code * w / 256f, top, (code + 1) * w / 256f, bottom, fill);
+                (channels & 1) != 0 ? runCode : 0,
+                (channels & 2) != 0 ? runCode : 0,
+                (channels & 4) != 0 ? runCode : 0));
+            canvas.drawRect(runStart, top, x, bottom, fill);
+            runStart = x;
+            runCode = code;
         }
 
         int originalColor = text.getColor();
@@ -262,6 +268,12 @@ final class OledTestView extends View implements Choreographer.FrameCallback {
         canvas.drawText("128", (w - text.measureText("128")) / 2f, baseline, text);
         canvas.drawText("255", w - padding - text.measureText("255"), baseline, text);
         text.setColor(originalColor);
+    }
+
+    /** Maps each physical view column to an exact full-range signal code. */
+    private static int rampCodeAt(int x, int width) {
+        if (width <= 1) return 255;
+        return (int) ((x * 255L + (width - 1L) / 2L) / (width - 1L));
     }
 
     private static int gray(int c) {

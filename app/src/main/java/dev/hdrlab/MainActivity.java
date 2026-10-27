@@ -10,6 +10,8 @@ import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.RippleDrawable;
+import android.media.MediaCodecInfo;
+import android.media.MediaCodecList;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -45,6 +47,7 @@ import androidx.media3.exoplayer.DefaultRenderersFactory;
 import androidx.media3.exoplayer.ExoPlayer;
 import androidx.media3.exoplayer.SeekParameters;
 import androidx.media3.ui.PlayerView;
+import androidx.media3.ui.AspectRatioFrameLayout;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import java.io.File;
@@ -56,6 +59,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -64,6 +68,9 @@ public final class MainActivity extends Activity {
     private static final int BG = Color.BLACK, CARD = 0xff161616, TEXT = 0xfff5f5f5;
     private static final int MUTED = 0xffb8b8b8, ACCENT = 0xff69f0ae, CARD_STROKE = 0xff343434;
     private static final int RED = 0xffff6b6b, BLUE = 0xff82b1ff;
+    private static final int[] APL_PEAKS = {400, 1000, 4000};
+    private static final String[] HDR_RAMP_NAMES = {"gray", "red", "green", "blue", "cyan", "magenta", "yellow"};
+    private static final String[] HDR_BURNIN_NAMES = {"red", "green", "blue", "white", "gray50", "gray20", "cyan", "magenta", "yellow"};
     /** Pipeline B ladder variants reuse the packaged reference step videos. */
     private static final String[] LADDER_VIDEOS = {"sdr_steps", "pq_steps", "hlg_steps"};
     private static final int[] LADDER_VIDEO_LABELS = {R.string.oled_video_sdr, R.string.oled_video_pq, R.string.oled_video_hlg};
@@ -119,11 +126,17 @@ public final class MainActivity extends Activity {
     private Button btnPrev;
     private Button btnNext;
     private Button btnOledHdr;
+    private Button btnAplPeak;
     private LinearLayout oledBrightnessRow;
     private SeekBar brightnessSeek;
     private TextView brightnessLabel;
     private int oledVariant;
     private boolean oledHdrMode;
+    private boolean oledHdrPatternPlaying;
+    private int activeOledMode = -1;
+    private int aplPeakIndex = 1;
+    // -1 uses platform capabilities; tests can choose an explicit availability result.
+    private int hdrAvailabilityOverride = -1;
     private int originalDisplayModeId;
     private int originalColorMode;
     private float originalHdrHeadroom;
@@ -428,9 +441,14 @@ public final class MainActivity extends Activity {
         btnWatchHdr = hudButton(getString(R.string.hud_btn_watch_hdr), this::switchToHdr);
         btnRestart = hudButton(getString(R.string.hud_btn_restart), this::restartTest);
         btnExit = hudButton(getString(R.string.hud_btn_exit), this::exitFullscreen);
-        btnPrev = hudButton(getString(R.string.hud_btn_prev), () -> showOledVariant(oledView.getMode(), oledVariant - 1));
-        btnNext = hudButton(getString(R.string.hud_btn_next), () -> showOledVariant(oledView.getMode(), oledVariant + 1));
+        btnPrev = hudButton(getString(R.string.hud_btn_prev), () -> showOledVariant(activeOledMode, oledVariant - 1));
+        btnNext = hudButton(getString(R.string.hud_btn_next), () -> showOledVariant(activeOledMode, oledVariant + 1));
         btnOledHdr = hudButton(getString(R.string.hud_btn_oled_sdr), this::toggleOledHdr);
+        btnAplPeak = hudButton(getString(R.string.oled_apl_peak_button, APL_PEAKS[aplPeakIndex]), () -> {
+            aplPeakIndex = (aplPeakIndex + 1) % APL_PEAKS.length;
+            updateAplPeakButton();
+            showOledVariant(activeOledMode, oledVariant);
+        });
         btnPrev.setContentDescription(getString(R.string.a11y_previous_pattern));
         btnNext.setContentDescription(getString(R.string.a11y_next_pattern));
         btnRestart.setContentDescription(getString(R.string.a11y_restart_test));
@@ -438,6 +456,7 @@ public final class MainActivity extends Activity {
         btnPrev.setVisibility(View.GONE);
         btnNext.setVisibility(View.GONE);
         btnOledHdr.setVisibility(View.GONE);
+        btnAplPeak.setVisibility(View.GONE);
 
         fullscreenBottomHud.addView(btnWatchSdr);
         fullscreenBottomHud.addView(btnWatchHdr);
@@ -445,6 +464,7 @@ public final class MainActivity extends Activity {
         fullscreenBottomHud.addView(btnPrev);
         fullscreenBottomHud.addView(btnNext);
         fullscreenBottomHud.addView(btnOledHdr);
+        fullscreenBottomHud.addView(btnAplPeak);
         fullscreenBottomHud.addView(btnExit);
         Button btnHide = hudButton(getString(R.string.hud_btn_hide), () -> {});
         btnHide.setOnClickListener(v -> {
@@ -502,7 +522,10 @@ public final class MainActivity extends Activity {
         if (player != null) player.pause();
         setFullscreen(true);
         oledHdrMode = false;
+        activeOledMode = -1;
+        oledHdrPatternPlaying = false;
         applyDisplayColorMode(false);
+        playerView.setResizeMode(AspectRatioFrameLayout.RESIZE_MODE_FIT);
         configureHudForOled(false);
         oledBrightnessRow.setVisibility(View.VISIBLE);
         brightnessSeek.setProgress(100);
@@ -521,9 +544,13 @@ public final class MainActivity extends Activity {
     private void startOledSuite(int mode) {
         cancelAutomatedTest();
         setFullscreen(true);
+        activeOledMode = mode;
         oledHdrMode = false;
+        oledHdrPatternPlaying = false;
+        aplPeakIndex = 1;
         configureHudForOled(true);
-        btnOledHdr.setVisibility(mode == OledTestView.MODE_RAMP ? View.GONE : View.VISIBLE);
+        btnAplPeak.setVisibility(mode == OledTestView.MODE_APL ? View.VISIBLE : View.GONE);
+        updateAplPeakButton();
         oledBrightnessRow.setVisibility(View.VISIBLE);
         brightnessSeek.setProgress(100);
         applyOledColorMode();
@@ -540,13 +567,13 @@ public final class MainActivity extends Activity {
         btnPrev.setVisibility(oledVis);
         btnNext.setVisibility(oledVis);
         btnOledHdr.setVisibility(oledVis);
+        btnAplPeak.setVisibility(oled && activeOledMode == OledTestView.MODE_APL ? View.VISIBLE : View.GONE);
     }
 
     private void toggleOledHdr() {
-        if (!fullscreen || oledView.getMode() == OledTestView.MODE_RAMP) return;
+        if (!fullscreen || activeOledMode < 0 || !hdrVariantAvailable(activeOledMode, oledVariant)) return;
         oledHdrMode = !oledHdrMode;
-        applyOledColorMode();
-        if (oledView.getMode() == OledTestView.MODE_LADDER) {
+        if (activeOledMode == OledTestView.MODE_LADDER) {
             if (oledHdrMode && oledVariant == 1) {
                 showOledVariant(OledTestView.MODE_LADDER, 2);
                 return;
@@ -555,16 +582,22 @@ public final class MainActivity extends Activity {
                 return;
             }
         }
-        showOledVariant(oledView.getMode(), oledVariant);
+        showOledVariant(activeOledMode, oledVariant);
     }
 
     private void applyOledColorMode() {
         applyDisplayColorMode(oledHdrMode);
         btnOledHdr.setSelected(oledHdrMode);
         btnOledHdr.setText((oledHdrMode ? "✓ " : "") + getString(oledHdrMode ? R.string.hud_btn_oled_hdr : R.string.hud_btn_oled_sdr));
-        btnOledHdr.setTextColor(oledHdrMode ? ACCENT : TEXT);
+        btnOledHdr.setTextColor(oledHdrMode ? BLUE : TEXT);
         btnOledHdr.setTypeface(Typeface.DEFAULT, oledHdrMode ? Typeface.BOLD : Typeface.NORMAL);
-        btnOledHdr.setBackground(ripple(oledHdrMode ? 0x33416955 : 0x33222222, oledHdrMode ? ACCENT : CARD_STROKE, 14));
+        btnOledHdr.setBackground(ripple(oledHdrMode ? 0x332f64ae : 0x33222222, oledHdrMode ? BLUE : CARD_STROKE, 14));
+        btnOledHdr.setContentDescription(btnOledHdr.getText());
+    }
+
+    private void updateAplPeakButton() {
+        btnAplPeak.setText(getString(R.string.oled_apl_peak_button, APL_PEAKS[aplPeakIndex]));
+        btnAplPeak.setContentDescription(btnAplPeak.getText());
     }
 
     private void applyDisplayColorMode(boolean hdr) {
@@ -574,26 +607,72 @@ public final class MainActivity extends Activity {
 
     private void showOledVariant(int mode, int variant) {
         if (!fullscreen) return;
+        activeOledMode = mode;
         int count = mode == OledTestView.MODE_LADDER ? 1 + LADDER_VIDEOS.length : OledTestView.variantCount(mode);
         oledVariant = Math.floorMod(variant, count);
         oledBrightnessRow.setVisibility(View.VISIBLE);
+        boolean motion = !hdrVariantAvailable(mode, oledVariant);
+        btnOledHdr.setEnabled(!motion);
+        btnOledHdr.setAlpha(motion ? .55f : 1f);
+        btnAplPeak.setVisibility(mode == OledTestView.MODE_APL ? View.VISIBLE : View.GONE);
+        if (motion) oledHdrMode = false;
         if (mode == OledTestView.MODE_LADDER && oledVariant > 0) {
             int videoIdx = oledVariant - 1;
+            int unavailable = videoIdx == 0 ? 0 : hdrUnavailableReason(videoIdx == 2);
+            if (unavailable != 0) {
+                showOledVariant(mode, 1);
+                hudTipLabel.append(" " + getString(unavailable));
+                updatePatternDescription();
+                return;
+            }
             oledHdrMode = videoIdx > 0;
+            oledHdrPatternPlaying = false;
             applyOledColorMode();
             oledView.stop();
             oledView.setVisibility(View.GONE);
             playerView.setVisibility(View.VISIBLE);
+            playerView.setResizeMode(AspectRatioFrameLayout.RESIZE_MODE_FIT);
             playPattern(LADDER_VIDEOS[videoIdx], 0);
             hudTitleLabel.setText(getString(R.string.oled_title_ladder_video, getString(LADDER_VIDEO_LABELS[videoIdx])));
             hudTipLabel.setText(getString(R.string.oled_tip_ladder_video));
+            styleOledHud();
             updatePatternDescription();
             return;
         }
+        String hdrPattern = oledHdrMode ? hdrPatternName(mode, oledVariant) : null;
+        int unavailable = hdrPattern == null ? 0 : hdrUnavailableReason();
+        if (unavailable != 0) oledHdrMode = false;
+        if (oledHdrMode) {
+            oledHdrPatternPlaying = true;
+            applyOledColorMode();
+            oledView.stop();
+            oledView.setVisibility(View.GONE);
+            playerView.setVisibility(View.VISIBLE);
+            playerView.setResizeMode(AspectRatioFrameLayout.RESIZE_MODE_FILL);
+            setOledHudText(mode, oledVariant, true);
+            styleOledHud();
+            updatePatternDescription();
+            try {
+                playPattern(hdrPattern, 0);
+            } catch (RuntimeException error) {
+                fallbackHdrPattern(R.string.oled_hdr_playback_failed);
+            }
+            return;
+        }
+        oledHdrPatternPlaying = false;
+        applyOledColorMode();
         if (player != null) player.pause();
         playerView.setVisibility(View.GONE);
         oledView.setVisibility(View.VISIBLE);
         oledView.setPattern(mode, oledVariant);
+        setOledHudText(mode, oledVariant, false);
+        if (unavailable != 0) hudTipLabel.append(" " + getString(unavailable));
+        else if (motion) hudTipLabel.append(" " + getString(R.string.oled_hdr_motion_unavailable));
+        styleOledHud();
+        updatePatternDescription();
+    }
+
+    private void setOledHudText(int mode, int variant, boolean hdr) {
         switch (mode) {
             case OledTestView.MODE_SMEAR:
                 hudTitleLabel.setText(getString(R.string.oled_title_smear, oledView.smearSpeed(),
@@ -601,16 +680,19 @@ public final class MainActivity extends Activity {
                 hudTipLabel.setText(getString(R.string.oled_tip_smear));
                 break;
             case OledTestView.MODE_LADDER:
-                hudTitleLabel.setText(getString(R.string.oled_title_ladder_canvas));
+                hudTitleLabel.setText(hdr
+                    ? getString(R.string.oled_title_ladder_video, getString(R.string.oled_video_pq))
+                    : getString(R.string.oled_title_ladder_canvas));
                 hudTipLabel.setText(getString(R.string.oled_tip_ladder_canvas));
                 break;
             case OledTestView.MODE_DSE:
-                hudTitleLabel.setText(getString(R.string.oled_title_dse, oledView.dsePercent(),
-                    getString(oledView.dsePan() ? R.string.oled_dse_pan : R.string.oled_dse_static)));
+                hudTitleLabel.setText(getString(R.string.oled_title_dse,
+                    OledTestView.DSE_PERCENT[variant % OledTestView.DSE_PERCENT.length],
+                    getString(variant >= OledTestView.DSE_PERCENT.length ? R.string.oled_dse_pan : R.string.oled_dse_static)));
                 hudTipLabel.setText(getString(R.string.oled_tip_dse));
                 break;
             case OledTestView.MODE_APL:
-                hudTitleLabel.setText(getString(R.string.oled_title_apl, oledView.aplPercent()));
+                hudTitleLabel.setText(getString(R.string.oled_title_apl, OledTestView.APL_PERCENT[variant]));
                 hudTipLabel.setText(getString(R.string.oled_tip_apl));
                 break;
             case OledTestView.MODE_BURNIN:
@@ -618,11 +700,121 @@ public final class MainActivity extends Activity {
                 hudTipLabel.setText(getString(R.string.oled_tip_burnin));
                 break;
             case OledTestView.MODE_RAMP:
-                hudTitleLabel.setText(getString(R.string.oled_title_ramp, getString(RAMP_LABELS[oledVariant])));
+                hudTitleLabel.setText(getString(hdr ? R.string.oled_title_hdr_ramp : R.string.oled_title_ramp,
+                    getString(RAMP_LABELS[variant])));
                 hudTipLabel.setText(getString(R.string.oled_tip_ramp));
                 break;
         }
+        if (hdr) {
+            hudTitleLabel.setText(getString(R.string.oled_hdr_title_format,
+                getString(R.string.oled_hdr_requested), hudTitleLabel.getText()));
+            if (mode == OledTestView.MODE_APL) {
+                hudTipLabel.append(" " + getString(R.string.oled_hdr_apl_reference,
+                    (int) OledTestView.APL_PERCENT[variant], APL_PEAKS[aplPeakIndex]));
+            } else if (mode == OledTestView.MODE_DSE) {
+                int code = OledTestView.code(OledTestView.DSE_PERCENT[variant]);
+                hudTipLabel.append(" " + getString(R.string.oled_hdr_levels, code, nominalNits(code)));
+            } else if (mode == OledTestView.MODE_LADDER) {
+                StringBuilder levels = new StringBuilder();
+                for (int i = 0; i < OledTestView.LADDER_PERCENT.length; i++) {
+                    if (i > 0) levels.append(", ");
+                    levels.append(String.format(getResources().getConfiguration().getLocales().get(0), "%.3f",
+                        nominalNits(OledTestView.code(OledTestView.LADDER_PERCENT[i]))));
+                }
+                hudTipLabel.append(" " + getString(R.string.oled_hdr_ladder_levels, levels.toString()));
+            } else {
+                hudTipLabel.append(" " + getString(R.string.oled_hdr_reference_peak, 1000));
+            }
+        }
+    }
+
+    private void styleOledHud() {
+        hudTitleLabel.setTextColor(BLUE);
+        brightnessSeek.setProgressTintList(ColorStateList.valueOf(BLUE));
+        brightnessSeek.setThumbTintList(ColorStateList.valueOf(BLUE));
+    }
+
+    private static boolean hdrVariantAvailable(int mode, int variant) {
+        return mode != OledTestView.MODE_SMEAR && (mode != OledTestView.MODE_DSE
+            || variant < OledTestView.DSE_PERCENT.length);
+    }
+
+    private String hdrPatternName(int mode, int variant) {
+        switch (mode) {
+            case OledTestView.MODE_LADDER: return variant == 0 ? "pq_oled_ladder" : null;
+            case OledTestView.MODE_DSE: return variant < OledTestView.DSE_PERCENT.length
+                ? String.format(Locale.ROOT, "pq_oled_dse_%02d", (int) OledTestView.DSE_PERCENT[variant]) : null;
+            case OledTestView.MODE_APL: return String.format(Locale.ROOT, "pq_oled_apl_%d_%02d",
+                APL_PEAKS[aplPeakIndex], (int) OledTestView.APL_PERCENT[variant]);
+            case OledTestView.MODE_BURNIN: return "pq_oled_burnin_" + HDR_BURNIN_NAMES[variant];
+            case OledTestView.MODE_RAMP: return "pq_oled_ramp_" + HDR_RAMP_NAMES[variant];
+            default: return null;
+        }
+    }
+
+    private static double nominalNits(int code) {
+        double signal = code / 255d;
+        double linear = signal <= .04045d ? signal / 12.92d : Math.pow((signal + .055d) / 1.055d, 2.4d);
+        // Match the limited-range 10-bit PQ quantization used by the packaged reference clips.
+        double m1 = 2610d / 16384d, m2 = 2523d / 32d;
+        double c1 = 3424d / 4096d, c2 = 2413d / 128d, c3 = 2392d / 128d;
+        double l = Math.pow(linear * 100d / 10000d, m1);
+        double pq = Math.pow((c1 + c2 * l) / (1d + c3 * l), m2);
+        int encoded = (int) Math.round(64d + 876d * pq);
+        double decoded = Math.pow((encoded - 64d) / 876d, 1d / m2);
+        return Math.pow(Math.max(0d, decoded - c1) / (c2 - c3 * decoded), 1d / m1) * 10000d;
+    }
+
+    private int hdrUnavailableReason() { return hdrUnavailableReason(false); }
+
+    private int hdrUnavailableReason(boolean hlg) {
+        if (hdrAvailabilityOverride != -1) return hdrAvailabilityOverride;
+        try {
+            Display display = Diagnostics.defaultDisplay(this);
+            if (display != null && display.getHdrCapabilities() != null) {
+                boolean transferSupported = false;
+                for (int type : display.getHdrCapabilities().getSupportedHdrTypes()) {
+                    if (type == (hlg ? Display.HdrCapabilities.HDR_TYPE_HLG
+                        : Display.HdrCapabilities.HDR_TYPE_HDR10)) transferSupported = true;
+                }
+                if (!transferSupported) return hlg ? R.string.oled_hlg_unavailable_display
+                    : R.string.oled_hdr_unavailable_display;
+            }
+        } catch (RuntimeException ignored) { /* Unknown capability: try the video. */ }
+        try {
+            MediaCodecInfo[] codecs = new MediaCodecList(MediaCodecList.REGULAR_CODECS).getCodecInfos();
+            boolean profileKnown = false, main10Seen = false, profileUnknown = false;
+            for (MediaCodecInfo codec : codecs) {
+                if (codec.isEncoder()) continue;
+                for (String type : codec.getSupportedTypes()) {
+                    if (!"video/hevc".equalsIgnoreCase(type)) continue;
+                    MediaCodecInfo.CodecProfileLevel[] profiles = codec.getCapabilitiesForType(type).profileLevels;
+                    if (profiles == null || profiles.length == 0) {
+                        profileUnknown = true;
+                        continue;
+                    }
+                    profileKnown = true;
+                    for (MediaCodecInfo.CodecProfileLevel profile : profiles) {
+                        if (profile.profile == MediaCodecInfo.CodecProfileLevel.HEVCProfileMain10
+                            || profile.profile == MediaCodecInfo.CodecProfileLevel.HEVCProfileMain10HDR10
+                            || profile.profile == MediaCodecInfo.CodecProfileLevel.HEVCProfileMain10HDR10Plus) main10Seen = true;
+                    }
+                }
+            }
+            if (profileKnown && !profileUnknown && !main10Seen) return R.string.oled_hdr_unavailable_decoder;
+        } catch (RuntimeException ignored) { /* Unknown capability: let Media3 report failure. */ }
+        return 0;
+    }
+
+    private void fallbackHdrPattern(int reason) {
+        if (!fullscreen || !oledHdrPatternPlaying || activeOledMode < 0) return;
+        oledHdrPatternPlaying = false;
+        oledHdrMode = false;
+        if (player != null) player.pause();
+        showOledVariant(activeOledMode, oledVariant);
+        hudTipLabel.append(" " + getString(reason));
         updatePatternDescription();
+        showFullscreenHud();
     }
 
     private void switchToHdr() {
@@ -704,6 +896,8 @@ public final class MainActivity extends Activity {
             oledView.setVisibility(View.GONE);
         }
         if (player != null) player.pause();
+        oledHdrPatternPlaying = false;
+        activeOledMode = -1;
 
         WindowManager.LayoutParams lp = getWindow().getAttributes();
         lp.screenBrightness = originalBrightness;
@@ -746,6 +940,20 @@ public final class MainActivity extends Activity {
 
             @Override public void onPlayerError(PlaybackException error) {
                 if (!fullscreen || playerView.getVisibility() != View.VISIBLE) return;
+                if (oledHdrPatternPlaying) {
+                    fallbackHdrPattern(R.string.oled_hdr_playback_failed);
+                    return;
+                }
+                if (activeOledMode == OledTestView.MODE_LADDER && oledVariant >= 2) {
+                    int failedVariant = oledVariant;
+                    oledHdrMode = false;
+                    showOledVariant(OledTestView.MODE_LADDER, 1);
+                    hudTipLabel.append(" " + getString(failedVariant == 3
+                        ? R.string.oled_hlg_playback_failed : R.string.oled_hdr_playback_failed));
+                    updatePatternDescription();
+                    showFullscreenHud();
+                    return;
+                }
                 exitFullscreen();
                 new AlertDialog.Builder(MainActivity.this)
                     .setMessage(getString(R.string.playback_error, error.getErrorCodeName()))
@@ -782,6 +990,9 @@ public final class MainActivity extends Activity {
     }
 
     private void updateHudMode(String mode, int countdown) {
+        hudTitleLabel.setTextColor(ACCENT);
+        brightnessSeek.setProgressTintList(ColorStateList.valueOf(ACCENT));
+        brightnessSeek.setThumbTintList(ColorStateList.valueOf(ACCENT));
         if ("sdr".equals(mode)) {
             if (countdown > 0) {
                 hudTitleLabel.setText(getString(R.string.hud_title_sdr_countdown, countdown));
@@ -852,6 +1063,11 @@ public final class MainActivity extends Activity {
     }
 
     private void showReportDialog(String text, JSONObject report) {
+        TextView title = label(getString(R.string.dialog_technical_report_title), 18, RED);
+        title.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        title.setPadding(dp(24), dp(20), dp(24), dp(8));
+        title.setAccessibilityHeading(true);
+        title.setContentDescription(title.getText());
         TextView body = label(text, 12, TEXT);
         body.setTextIsSelectable(true);
         body.setTypeface(Typeface.MONOSPACE);
@@ -859,12 +1075,14 @@ public final class MainActivity extends Activity {
         ScrollView scroll = new ScrollView(this);
         scroll.addView(body);
 
-        new AlertDialog.Builder(this)
-            .setTitle(getString(R.string.dialog_technical_report_title))
+        AlertDialog dialog = new AlertDialog.Builder(this)
+            .setCustomTitle(title)
             .setView(scroll)
             .setPositiveButton(getString(R.string.dialog_btn_share), (d, w) -> shareReportJson(report))
             .setNegativeButton(getString(R.string.dialog_btn_close), null)
             .show();
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(RED);
+        dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setTextColor(RED);
     }
 
     private void showCommunityReportSurvey() {
